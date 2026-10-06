@@ -64,6 +64,7 @@ Full plan: [docs/PLAN.md](docs/PLAN.md)
 | Path | What |
 |------|------|
 | `docs/PLAN.md` | Architecture and build slices |
+| `docs/ROADMAP.md` | What is verified, in progress and planned |
 | `docs/UPSTREAM-NOTE.md` | Notes for a later contribution to Anthropic's Buddy repo |
 | `firmware/draft/` | Uncompiled draft of the Bluetooth Buddy module (see notice below) |
 
