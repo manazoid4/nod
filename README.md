@@ -1,38 +1,40 @@
 # nod
 
-**Your AI agent asks. You nod.**
+**Ask. Listen. Nod.**
 
-### The physical control for the age of AI agents.
+### Your AI sidekick, in your pocket.
 
-AI agents now write code, send emails, move files, run workflows and spend money while you are somewhere else. They work fast, but they still need a human to say *yes*. Today that means being chained to a laptop, alt-tabbing back to a terminal, or approving blind from a phone notification buried under everything else.
+AI can already answer almost anything, remember everything and do real work for you. But it lives inside a phone full of notifications or a laptop you have to sit at. Every time you reach for it you lose the thread: unlock, find the app, type, scroll, get distracted.
 
-**nod is a pocket device that puts you back in control, wherever you are.**
+**nod is a small, beautifully built device with one job: put your AI one press away.**
 
-When an agent wants to do something that matters, nod buzzes. It shows you, in plain words, exactly what is about to happen. One key approves. One key stops it. Your agents keep moving and you stay in charge, from the sofa, the gym, the train or the other side of the world.
+Hold a key and talk. nod listens, thinks and answers out loud. Capture an idea before it disappears. Ask a question mid-conversation. Tell your AI to get something done and get on with your day. No feeds, no apps, no rabbit holes. Just you and an assistant that actually helps.
 
 ### What nod does
 
-- **Approve from anywhere.** Agent requests reach you over your own private, encrypted network, not just across the room. No answer means no action: nod never approves anything by itself.
-- **See what matters at a glance.** Which agents are running, which are waiting on you, what they just did and what they cost today.
-- **Talk to your AI.** Hold a key, speak, hear the answer. Ask a question, capture an idea, or tell an agent what to do next.
-- **One-press actions.** A programmable deck for the things you do every day: launch a task, run a deploy, lock your PC, start a focus session, trigger a workflow.
-- **Built to keep you going.** XP, streaks and ranks turn approvals, focus sessions and finished tasks into a game you actually want to keep playing.
-- **Yours, not ours.** Open source, works with free AI models, runs through a small hub on your own computer. No subscription and no cloud account needed.
+- **Talk, don't type.** Hold to speak, release to hear the answer. Fast, natural, hands mostly free.
+- **Never lose a thought.** Voice notes become clean notes, tasks and reminders automatically.
+- **Your day, at a glance.** What's next, what's waiting on you, and what got done today.
+- **One-press actions.** A programmable deck for the things you do every day: start a focus session, message someone, control your computer, run a routine, trigger an automation.
+- **Stay in charge of your AI.** When an AI agent wants to do something that matters, like sending, buying, deleting or deploying, nod shows you exactly what and waits for your nod. Nothing happens without you.
+- **Built to keep you going.** XP, streaks and ranks turn focus, follow-through and finished tasks into a game you want to keep playing.
+- **Yours, not ours.** Open source. Works with free AI models. Your data goes through a small hub on your own computer. No subscription required.
 
 ### Who it's for
 
-- **Developers** running Claude Code, Codex, Cursor, Gemini CLI or any agent that asks for permission.
-- **Founders and solo builders** who run AI to do the work of a team and can't sit at a desk all day.
-- **Automators** with n8n, Make or Zapier flows that should check with a human before they act.
-- **Makers and tinkerers** who want a hackable, beautifully built device they can bend to their own workflow.
+- **Busy people** who want the power of AI without living on their phone.
+- **Students and creatives** capturing ideas, studying and staying on track.
+- **Founders, freelancers and small businesses** using AI to do the work of a team.
+- **Developers and automators** who need a human-in-the-loop for their AI agents and workflows.
+- **Makers** who want a hackable device they can shape around their own life.
 
 ### Why a device and not an app?
 
-A phone is where focus goes to die. nod does one job: it keeps your agents moving and keeps you in charge, without pulling you into a feed. A real key is also a safety feature. It is deliberate and hard to press by accident, and it is always within reach.
+Your phone is built to grab your attention. nod is built to give it back. One device, one purpose, a real key you can press without looking, and an assistant that's there the moment you need it and quiet when you don't.
 
 > **Status: early build.** nod is being developed in the open. The first version runs on the M5Stack Cardputer ADV (ESP32-S3) and a custom device is in design. Star or watch the repo to follow along and hear about the launch first.
 
-## How it works
+## How it works (agent approvals, first feature)
 
 ```
 Claude Code ──permission hook──▶ hub on your PC ◀──Wi-Fi / Tailscale──▶ nod device
