@@ -1,0 +1,8 @@
+nod includes code adapted from claude-desktop-buddy:
+  https://github.com/anthropics/claude-desktop-buddy
+  Copyright 2026 Anthropic, PBC
+  Licensed under the MIT License.
+
+Adapted files: firmware/draft/buddy/ble_link.cpp, firmware/draft/buddy/ble_link.h
+(change list in ble_link.h). Protocol handling in firmware/draft/buddy/buddy.cpp
+follows the same reference.
