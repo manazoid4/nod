@@ -2,11 +2,35 @@
 
 **Your AI agent asks. You nod.**
 
-nod turns a pocket device into a remote control for AI coding agents. When Claude Code wants to run a command or write a file, your device buzzes, shows exactly what it wants to do, and you press **Y** or **N**. It works from anywhere, not just within Bluetooth range of your desk.
+### The physical control for the age of AI agents.
 
-It is also a personal action deck: big, game-like tiles for agent control, push-to-talk voice and PC macros, with XP, streaks and ranks.
+AI agents now write code, send emails, move files, run workflows and spend money while you are somewhere else. They work fast, but they still need a human to say *yes*. Today that means being chained to a laptop, alt-tabbing back to a terminal, or approving blind from a phone notification buried under everything else.
 
-> Status: **early build.** The plan and research are done. The firmware draft has not been compiled yet. Watch the repo for the first working release.
+**nod is a pocket device that puts you back in control, wherever you are.**
+
+When an agent wants to do something that matters, nod buzzes. It shows you, in plain words, exactly what is about to happen. One key approves. One key stops it. Your agents keep moving and you stay in charge, from the sofa, the gym, the train or the other side of the world.
+
+### What nod does
+
+- **Approve from anywhere.** Agent requests reach you over your own private, encrypted network, not just across the room. No answer means no action: nod never approves anything by itself.
+- **See what matters at a glance.** Which agents are running, which are waiting on you, what they just did and what they cost today.
+- **Talk to your AI.** Hold a key, speak, hear the answer. Ask a question, capture an idea, or tell an agent what to do next.
+- **One-press actions.** A programmable deck for the things you do every day: launch a task, run a deploy, lock your PC, start a focus session, trigger a workflow.
+- **Built to keep you going.** XP, streaks and ranks turn approvals, focus sessions and finished tasks into a game you actually want to keep playing.
+- **Yours, not ours.** Open source, works with free AI models, runs through a small hub on your own computer. No subscription and no cloud account needed.
+
+### Who it's for
+
+- **Developers** running Claude Code, Codex, Cursor, Gemini CLI or any agent that asks for permission.
+- **Founders and solo builders** who run AI to do the work of a team and can't sit at a desk all day.
+- **Automators** with n8n, Make or Zapier flows that should check with a human before they act.
+- **Makers and tinkerers** who want a hackable, beautifully built device they can bend to their own workflow.
+
+### Why a device and not an app?
+
+A phone is where focus goes to die. nod does one job: it keeps your agents moving and keeps you in charge, without pulling you into a feed. A real key is also a safety feature. It is deliberate and hard to press by accident, and it is always within reach.
+
+> **Status: early build.** nod is being developed in the open. The first version runs on the M5Stack Cardputer ADV (ESP32-S3) and a custom device is in design. Star or watch the repo to follow along and hear about the launch first.
 
 ## How it works
 
