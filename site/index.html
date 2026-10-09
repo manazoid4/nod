@@ -1,80 +1,131 @@
 <!doctype html>
 <html lang="en-GB">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#09110f"><meta name="description" content="nod is an open-source pocket control surface for AI. Talk, capture ideas and approve important agent actions from a dedicated device. In development.">
-<meta property="og:title" content="nod — one press closer to your AI"><meta property="og:description" content="A focused pocket device for talking, capturing and staying in control of your AI. Prototype in development.">
-<title>nod — one press closer to your AI</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css">
-<script defer src="/script.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f7f8f3">
+  <meta name="description" content="NOD is a pocket companion for your AI: talk, capture ideas and approve actions with a press. An open-source prototype in development.">
+  <meta property="og:title" content="NOD — Your AI. One press away.">
+  <meta property="og:description" content="A focused pocket companion for talking to your AI and staying in control. Follow the open prototype.">
+  <meta property="og:type" content="website">
+  <title>NOD — Your AI. One press away.</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/script.js"></script>
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
-<div class="site-shell">
-<header class="topbar wrap">
-  <a class="brand" href="/" aria-label="nod home"><span class="brand-mark" aria-hidden="true"><span></span></span><span>nod<span class="brand-dot">.</span></span></a>
-  <nav class="navigation" aria-label="Main navigation"><a href="#how">How it works</a><a href="#proof">Progress</a><a href="/readiness/">Readiness</a><a class="nav-action" href="#updates">Follow the build <span aria-hidden="true">↗</span></a></nav>
-</header>
-<main id="main">
-<section class="hero wrap">
-  <div class="hero-copy reveal">
-    <p class="eyebrow"><span class="pulse" aria-hidden="true"></span> IN DEVELOPMENT · OPEN SOURCE</p>
-    <h1>Less screen.<br><em>More say.</em></h1>
-    <p class="lead">A little device that puts your AI one press away. Talk to your computer, catch an idea, and approve what your agents do—without getting pulled into another app.</p>
-    <div class="hero-actions"><a class="button primary" href="#updates">Follow the launch <span aria-hidden="true">↗</span></a><a class="button secondary" href="#experience">Explore the idea <span aria-hidden="true">↓</span></a></div>
-    <p class="fineprint">Prototype on M5Stack Cardputer ADV. No Kickstarter campaign or shipping date announced.</p>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="header">
+  <div class="container header-inner">
+    <a class="logo" href="/" aria-label="NOD home"><span class="logo-symbol" aria-hidden="true"><i></i></span>nod<span class="logo-period">.</span></a>
+    <nav class="nav" aria-label="Main navigation">
+      <a href="#why">The idea</a>
+      <a href="#how">How it works</a>
+      <a href="#status">Build status</a>
+    </nav>
+    <a class="header-link" href="#follow">Follow the build <span aria-hidden="true">↗</span></a>
   </div>
-  <div class="hero-art reveal">
-    <div class="halo halo-one"></div><div class="halo halo-two"></div><div class="art-floor"></div>
-    <div class="device-stage" aria-label="Illustrative interface concept on a small keyboard device, not a photo of finished hardware">
-      <div class="device-edge">
-        <div class="device-case">
-          <div class="device-top"><span class="device-label">nod // concept</span><span class="device-led"></span></div>
-          <div class="device-screen"><div class="screen-top"><span>● CONNECTED</span><span>02:14</span></div><div class="screen-title" id="screen-title">YOUR AI. ONE PRESS.</div><div class="screen-copy" id="screen-copy">Ready when you are.</div><div class="screen-bottom"><span id="screen-left">HOLD TO TALK</span><span id="screen-right">NOD / 01</span></div></div>
-          <div class="mini-keyboard" aria-hidden="true">
-            <div class="key-row"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-            <div class="key-row"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-            <div class="key-row"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-            <div class="key-row"><i></i><i></i><i></i><i></i><i class="wide"></i><i></i><i></i><i></i><i></i></div>
+</header>
+
+<main id="main">
+  <section class="hero container">
+    <div class="hero-text">
+      <div class="kicker"><span class="status-light" aria-hidden="true"></span> OPEN-SOURCE PROTOTYPE <span class="kicker-divider">/</span> IN DEVELOPMENT</div>
+      <h1>Your AI.<br><span>One press away.</span></h1>
+      <p class="hero-description">A little device for big ideas. Ask your AI, save a thought or approve your next move—without disappearing into your phone.</p>
+      <div class="actions">
+        <a class="button button-dark" href="#preview">Explore the concept <span aria-hidden="true">↗</span></a>
+        <a class="button button-light" href="#follow">Get launch updates <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="hero-subnote">Built around the M5Stack Cardputer ADV. A connected PC handles the heavier work.</div>
+    </div>
+    <div class="hero-preview" id="preview">
+      <div class="preview-caption"><span>01 — THE INTERACTION</span><span class="preview-concept">INTERFACE CONCEPT, NOT FINAL HARDWARE</span></div>
+      <div class="preview-surface">
+        <div class="device-display" aria-label="Illustrative screen interface for NOD">
+          <div class="device-toolbar"><span class="display-wordmark">nod<span>.</span></span><span class="display-connect"><i aria-hidden="true"></i> READY</span></div>
+          <div class="device-content" aria-live="polite" aria-atomic="true">
+            <div class="device-category" id="display-label">01 / ASK</div>
+            <div class="device-heading" id="display-heading">What's next?</div>
+            <div class="device-description" id="display-description">Get a quick answer from your connected AI.</div>
           </div>
+          <div class="device-bottom"><span id="display-action">HOLD TO SPEAK</span><div class="equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><span>NOD / 01</span></div>
         </div>
+        <div class="device-base" aria-hidden="true"><div class="device-controls"><i></i><i></i><i class="key-wide"></i><i></i><i></i></div></div>
+      </div>
+      <div class="preview-tabs" role="tablist" aria-label="Explore NOD's three core uses">
+        <button type="button" class="preview-tab active" role="tab" aria-selected="true" aria-controls="preview-detail" id="tab-ask" data-preview="ask"><span>01</span> Ask</button>
+        <button type="button" class="preview-tab" role="tab" aria-selected="false" aria-controls="preview-detail" id="tab-capture" tabindex="-1" data-preview="capture"><span>02</span> Capture</button>
+        <button type="button" class="preview-tab" role="tab" aria-selected="false" aria-controls="preview-detail" id="tab-approve" tabindex="-1" data-preview="approve"><span>03</span> Approve</button>
+      </div>
+      <div class="preview-detail" id="preview-detail" role="tabpanel" aria-labelledby="tab-ask" tabindex="0"><span class="detail-mark" aria-hidden="true">↳</span><p id="preview-copy">Hold a key, ask a question, and hear or read a reply from the AI connected to your computer.</p></div>
+    </div>
+  </section>
+
+  <section class="use-cases section" id="why">
+    <div class="container">
+      <div class="section-top"><span class="section-number">01 / WHY NOD</span><h2>Less switching.<br>More doing.</h2><p>Three moments where a dedicated button makes more sense than another app.</p></div>
+      <div class="features">
+        <article class="feature">
+          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 42 42" fill="none"><path d="M12 22v-4a9 9 0 0 1 18 0v4a9 9 0 0 1-18 0Z" stroke="currentColor" stroke-width="1.8"/><path d="M7 21v2a14 14 0 0 0 28 0v-2M21 37v-5M15 37h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <span class="feature-num">01</span>
+          <h3>Ask aloud.</h3>
+          <p>Get the answer you need, without opening a chat window.</p>
+        </article>
+        <article class="feature">
+          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 42 42" fill="none"><rect x="9" y="7" width="24" height="28" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M14 16h14M14 22h14M14 28h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <span class="feature-num">02</span>
+          <h3>Catch a thought.</h3>
+          <p>Capture an idea while it’s fresh. Sort it out later.</p>
+        </article>
+        <article class="feature">
+          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 42 42" fill="none"><rect x="7" y="7" width="28" height="28" rx="6" stroke="currentColor" stroke-width="1.8"/><path d="m14 21 5 5 10-11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="feature-num">03</span>
+          <h3>Stay in control.</h3>
+          <p>Review an AI agent’s request before anything important happens.</p>
+        </article>
+      </div>
+      <p class="footnote">These are intended NOD workflows, not a claim that all three are currently verified on NOD hardware.</p>
+    </div>
+  </section>
+
+  <section class="connect section" id="how">
+    <div class="container connect-layout">
+      <div><span class="section-number light-number">02 / HOW IT WORKS</span><h2>Small device.<br><span>Big capability.</span></h2><p>NOD is the interface. Your computer is the engine. Connect it to the AI tools and workflows you already use.</p><p class="connect-note">A computer, local connection and setup are required. Some external AI services may charge separately.</p></div>
+      <div class="flow" aria-label="NOD architecture: physical press, companion PC, connected AI tools">
+        <div class="flow-row"><span class="flow-num">01</span><div><strong>You press NOD</strong><small>Speak, capture or make a decision.</small></div><span class="flow-shape">●</span></div>
+        <div class="flow-arrow" aria-hidden="true">↓</div>
+        <div class="flow-row"><span class="flow-num">02</span><div><strong>Your computer hub</strong><small>Handles the work over a private connection.</small></div><span class="flow-shape">▣</span></div>
+        <div class="flow-arrow" aria-hidden="true">↓</div>
+        <div class="flow-row"><span class="flow-num">03</span><div><strong>Your AI and tools</strong><small>Return an answer or request permission.</small></div><span class="flow-shape">✳</span></div>
       </div>
     </div>
-    <div class="art-label"><span class="dot"></span> INTERACTIVE INTERFACE ILLUSTRATION · NOT A PRODUCT PHOTO</div>
-  </div>
-</section>
-<section class="manifesto wrap reveal"><span class="mono">THE IDEA / 001</span><p>Phones have a thousand ways to steal your attention.<br><strong>nod has three ways to give it back.</strong></p></section>
-<section id="experience" class="experience wrap section-pad">
- <div class="section-heading reveal"><p class="eyebrow">THREE THINGS. DONE WELL.</p><h2>What would you<br><em>do with one press?</em></h2><p>A focused first experience—not a promise to replace everything on your phone.</p></div>
- <div class="experience-layout">
-   <div class="mode-list" role="tablist" aria-label="Explore NOD scenarios">
-    <button type="button" class="mode active" role="tab" id="tab-talk" aria-selected="true" aria-controls="scenario-panel" data-mode="talk"><span class="mode-index">01</span><span><strong>Talk</strong><small>Ask your computer, aloud.</small></span><span class="arrow">↗</span></button>
-    <button type="button" class="mode" role="tab" id="tab-capture" aria-selected="false" aria-controls="scenario-panel" data-mode="capture"><span class="mode-index">02</span><span><strong>Capture</strong><small>Keep the thought before it disappears.</small></span><span class="arrow">↗</span></button>
-    <button type="button" class="mode" role="tab" id="tab-approve" aria-selected="false" aria-controls="scenario-panel" data-mode="approve"><span class="mode-index">03</span><span><strong>Approve</strong><small>Stay in charge of important actions.</small></span><span class="arrow">↗</span></button>
-   </div>
-   <div class="scenario" id="scenario-panel" role="tabpanel" aria-labelledby="tab-talk" tabindex="0">
-      <div class="scenario-bar"><span><i class="live-dot"></i> INTERACTION PREVIEW</span><span id="scenario-status">CONCEPT FLOW</span></div>
-      <div class="dialog-bubble user-bubble"><span>YOU</span><p id="scenario-user">“What's the next task on my project?”</p></div>
-      <div class="dialog-bubble nod-bubble"><span>NOD → PC HUB</span><p id="scenario-answer">Your computer looks up the project and returns a concise answer.</p></div>
-      <div class="scenario-foot"><span id="scenario-tag">Uses the companion hub</span><span>DEMONSTRATION OF INTENDED UX</span></div>
-   </div>
- </div>
- <p class="section-note reveal">NOD's integration is still being built. These are illustrative scenarios, not live product demonstrations. <a href="/readiness/">See what is verified →</a></p>
-</section>
-<section id="how" class="how-block section-pad"><div class="wrap"><div class="section-heading reveal"><p class="eyebrow">SMALL DEVICE. YOUR COMPUTER DOES THE HEAVY LIFTING.</p><h2>How nod<br><em>fits together.</em></h2><p>Designed to connect to a companion hub running on your computer. It's not a standalone cloud computer in your pocket.</p></div>
-<div class="architecture reveal"><div class="architecture-node"><span class="node-tag">01 / YOU</span><span class="node-icon">↳</span><h3>Press & speak</h3><p>A simple dedicated interface for voice and decisions.</p></div><span class="connector" aria-hidden="true"><span>Wi-Fi</span>→</span><div class="architecture-node center-node"><span class="node-tag">02 / NOD HUB</span><span class="node-icon">⌘</span><h3>Your computer</h3><p>Your own PC runs the connected services and heavier work.</p></div><span class="connector" aria-hidden="true"><span>configured tools</span>→</span><div class="architecture-node"><span class="node-tag">03 / YOUR TOOLS</span><span class="node-icon">✳</span><h3>AI & agents</h3><p>Configured models and tools respond. Sensitive actions need approval.</p></div></div>
-<div class="architecture-note"><span>BUILD PRINCIPLE</span><p>Useful without a locked-in NOD subscription; some AI providers and remote connections can have separate costs. A paired PC, network and configuration are required.</p></div>
-</div></section>
-<section id="proof" class="proof wrap section-pad">
-<div class="section-heading reveal"><p class="eyebrow">BUILDING IN PUBLIC</p><h2>Show the work.<br><em>Not just the promise.</em></h2><p>Here's the difference between the existing MAZ Pocket foundation and what NOD still needs to prove.</p></div>
-<div class="proof-grid reveal">
-<div class="proof-card verified"><span class="status-tag"><span></span> DOCUMENTED AS VERIFIED IN ROADMAP</span><h3>Connected prototype foundation</h3><p>MAZ Pocket documents working hub answers, Wi-Fi synchronisation and firmware updates on Cardputer ADV.</p><a href="https://github.com/manazoid4/nod/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener noreferrer">Read the source ↗</a></div>
-<div class="proof-card in-progress"><span class="status-tag"><span></span> IN DEVELOPMENT</span><h3>Natural voice and capture</h3><p>End-to-end hold-to-talk, spoken responses, brain dumps and practical task capture still need recorded hardware acceptance.</p><a href="https://github.com/manazoid4/maz-pocket" target="_blank" rel="noopener noreferrer">Browse prototype repo ↗</a></div>
-<div class="proof-card planned"><span class="status-tag"><span></span> NOT YET VERIFIED</span><h3>Remote agent approval</h3><p>Hook, hub and physical Y/N approval need a repeatable security-reviewed demonstration. The NOD firmware draft does not build independently yet.</p><a href="/readiness/">See launch gates ↗</a></div>
-</div>
-</section>
-<section class="principles section-pad"><div class="wrap principles-inner"><div class="reveal"><p class="eyebrow">BUILT WITH RESTRAINT</p><h2>Thoughtful hardware.<br><em>Honest software.</em></h2></div><div class="principle-list reveal"><div><span>01</span><p><strong>You make the final call.</strong><br>Risky actions should be presented clearly and default to no approval.</p></div><div><span>02</span><p><strong>Not another subscription trap.</strong><br>Open-source software and user-controlled model choices are the intent.</p></div><div><span>03</span><p><strong>One dependable thing beats twenty demos.</strong><br>We'll show working physical prototypes before a hardware campaign.</p></div></div></div></section>
-<section id="updates" class="updates wrap section-pad reveal"><div class="updates-box"><div><p class="eyebrow">FOLLOW THE BUILD</p><h2>Be here when<br><em>nod is ready.</em></h2><p>We're documenting progress towards a possible Kickstarter. No pledges, pricing or shipping promises yet.</p><div class="hero-actions"><a class="button primary" href="mailto:info@mazworks.uk?subject=nod%20launch%20updates&body=Hi%2C%20please%20let%20me%20know%20when%20nod%20launch%20updates%20are%20available.">Request launch updates ↗</a><a class="button secondary" href="https://github.com/manazoid4/nod" target="_blank" rel="noopener noreferrer">Watch on GitHub ↗</a></div><p class="fineprint">The email button opens your email app; it is not an automatic mailing-list signup.</p></div><div class="updates-aside"><span class="brand-mark large" aria-hidden="true"><span></span></span><span>NOD / BUILD 001</span><p>Ask. Listen. Nod.</p></div></div></section>
+  </section>
+
+  <section class="progress section" id="status">
+    <div class="container progress-layout">
+      <div class="progress-intro"><span class="section-number">03 / BUILDING IN PUBLIC</span><h2>Proof over<br>promises.</h2><p>NOD is at prototype stage. Here's what we know—and what still needs real-world testing.</p><a href="/readiness/" class="text-link">See the full readiness audit <span aria-hidden="true">↗</span></a></div>
+      <div class="milestones">
+        <div class="milestone"><span class="milestone-icon complete" aria-label="Documented as verified">✓</span><div><strong>Connected foundation</strong><p>Wi-Fi, a companion hub and firmware updates are documented as verified in the MAZ Pocket prototype.</p></div><span class="milestone-state">DOCUMENTED</span></div>
+        <div class="milestone"><span class="milestone-icon developing" aria-label="In development">◌</span><div><strong>Voice and capture</strong><p>End-to-end physical testing and a simpler first-use experience are still in progress.</p></div><span class="milestone-state">IN PROGRESS</span></div>
+        <div class="milestone"><span class="milestone-icon upcoming" aria-label="Not yet verified">○</span><div><strong>Agent approvals</strong><p>The complete remote approval loop still needs repeatable device and security tests.</p></div><span class="milestone-state">TO VERIFY</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="follow section" id="follow">
+    <div class="container">
+      <div class="follow-panel">
+        <div><span class="section-number">THE NEXT CHAPTER</span><h2>Good things<br>take making.</h2><p>We're building NOD openly, one tested feature at a time. Follow the progress towards a possible Kickstarter launch.</p><div class="actions"><a class="button button-dark" href="mailto:info@mazworks.uk?subject=NOD%20launch%20updates&body=Hi%2C%20please%20keep%20me%20updated%20about%20NOD.">Ask for launch updates <span aria-hidden="true">↗</span></a><a class="button button-outline" href="https://github.com/manazoid4/nod" target="_blank" rel="noopener noreferrer">Watch on GitHub <span aria-hidden="true">↗</span></a></div><p class="small-disclosure">Email link opens your email app. This is not an automatic mailing-list signup. No launch date or reward price is confirmed.</p></div>
+        <div class="follow-mark" aria-hidden="true"><div class="mark-ring"><span></span></div><span>NOD — IN THE MAKING</span></div>
+      </div>
+    </div>
+  </section>
 </main>
-<footer class="footer wrap"><div><a class="brand" href="/">nod<span class="brand-dot">.</span></a><p>Independent, open-source concept from MAZ Works.</p></div><div class="footer-links"><a href="https://github.com/manazoid4/nod" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a href="/readiness/">Kickstarter readiness</a><a href="mailto:info@mazworks.uk">Contact</a></div><span class="footer-disclaimer">Prototype / pre-launch · Not affiliated with or endorsed by Anthropic or M5Stack.</span></footer>
-</div>
-</body></html>
+<footer class="footer container">
+  <div><a class="logo" href="/">nod<span class="logo-period">.</span></a><p>Independent open-source project by MazWorks.</p></div>
+  <div class="footer-links"><a href="/readiness/">Kickstarter readiness</a><a href="https://github.com/manazoid4/nod" target="_blank" rel="noopener noreferrer">GitHub</a><a href="mailto:info@mazworks.uk">Contact</a></div>
+  <p class="legal">Prototype in development · Not affiliated with or endorsed by Anthropic or M5Stack.</p>
+</footer>
+</body>
+</html>
