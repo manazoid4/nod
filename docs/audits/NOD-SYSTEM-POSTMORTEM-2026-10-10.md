@@ -14,7 +14,7 @@ The most consequential failure mode was **mistaking successful Git/Vercel publis
 
 **Round C — engineering/release:** A static site used Vercel Git integration but lacked a dedicated regression suite, code-level link verification, meaningful security headers, and discoverability metadata for the roadmap. Earlier publishing relied on “READY” deployment status as sufficient QA. **Patched:** dependency-free Node site tests, GitHub Actions quality gate, CSP/security/permissions headers, verified-route checks, sitemap and canonical metadata. **Still open:** production synthetic browser checks across target screen sizes and an automatically run actual axe/Lighthouse audit; independent external URL loading was blocked in this workspace.
 
-**Round D — threat model:** `maz-pocket/host/mazhost/buddy.py` granted `allow_all` persistently per session; other requests could inherit authority; expired requests stayed in some pending lists and late decisions were accepted. The 240×135 approval UI contained a one-press `A always` shortcut, and action summary truncation limited informed approval. `agent_runner.py` may launch Claude with `--dangerously-skip-permissions`, while a working directory does not sandbox OS file/network access. **Patched in separate PR #81 (not a site change):** default to one-request approvals, refuse session-wide authority, use monotonic deadline checks, reject approvals after expiry, remove the `A` shortcut and add tests. **Still open:** sandboxed agent execution, detailed hardware approval UX, full security review of authority tokens, build flashing and repeated on-device deny/allow tests. Do not treat #81 as an end-to-end approval security certification.
+**Round D — threat model:** `maz-pocket/host/mazhost/buddy.py` granted `allow_all` persistently per session; other requests could inherit authority; expired requests stayed in some pending lists and late decisions were accepted. The 240×135 approval UI contained a one-press `A always` shortcut, and action summary truncation limited informed approval. `agent_runner.py` may launch Claude with `--dangerously-skip-permissions`, while a working directory does not sandbox OS file/network access. **Patched and merged in separate PR #81 (not a site change):** default to one-request approvals, refuse session-wide authority, use monotonic deadline checks, reject approvals after expiry, remove the `A` shortcut and add tests. **Still open:** sandboxed agent execution, detailed hardware approval UX, full security review of authority tokens, build flashing and repeated on-device deny/allow tests. Do not treat #81 as an end-to-end approval security certification.
 
 **Round E — content/platform compliance:** Instagram Saved JSON can contain pointers rather than source video bytes. Video analysis requires actual legitimately accessible audio/frames and original-source evidence. Creators' original 3D models may be absent, paid or separately licensed. **Site correctly says proposals**, but a buyer can still overestimate scope. **Patched:** prominent future-only and research links, explicit concept labelling. **Still open:** real permitted-video acquisition, accurate frame/transcript analysis, source-grounded match ranking and confirmation of rights; never guarantee arbitrary saved Reel access.
 
@@ -26,8 +26,8 @@ The most consequential failure mode was **mistaking successful Git/Vercel publis
 
 | ID | Severity | Problem | State |
 |---|---|---|---|
-| F01 | Critical | Session-wide and late approvals | Patched in MAZ Pocket PR #81, awaiting reviewed CI/merge, no physical proof |
-| F02 | Critical | Unconfined agent execution with permissions bypass | OPEN — separate isolation redesign needed |
+| F01 | Critical | Session-wide and late approvals | PR #81 MERGED into `deploy/local`, nod CI green; installed PC and Cardputer not physically updated/verified |
+| F02 | Critical | Unconfined agent execution with permissions bypass | PR #82 adds fail-closed mitigation (CI review ongoing), full OS sandbox still OPEN |
 | F03 | High | Approval summary clips detail on 240×135 display | OPEN — design review + firmware hardware acceptance |
 | F04 | High | Mock READY display suggests a connected product | FIXED on site branch |
 | F05 | High | Mobile page navigation disappears | FIXED on site branch |
@@ -69,3 +69,9 @@ The most consequential failure mode was **mistaking successful Git/Vercel publis
 - This document is the release post-mortem and a handoff to the next agent; every stated FIXED item is subject to PR merge/CI/production confirmation and should be updated as results arrive.
 
 **Evidence:** GitHub `manazoid4/nod` PR #8 (prior production update); this site-hardening PR; `manazoid4/maz-pocket` PR #81; OctoPrint API file and job operations documentation; Unified Memory 21-deliverable NOD audit.
+
+## Verified release addendum (10 October)
+- `manazoid4/nod` site hardening PR #9 merged at `9df6028133f510765afc2957fb6cd6fc65dfd844`. New `NOD Site Quality` GitHub Actions run 38050035925: **8/8 static tests passed**. Vercel production deployment `dpl_4Ye8xMmbPQSMzVTm9HbiRr6xSVxf` READY for the exact merge commit; project SSO is set to preview-only. Public anonymous browser fetch was unavailable to this audit.
+- `manazoid4/maz-pocket` approval fix PR #81 merged at `f6957a887a6334afaadf18d0c3b460c5be44fd31`. nod CI run 38049932894 passed host tests and firmware build. No actual Windows Core restart or Cardputer flash is implied.
+- Agent-runner isolation mitigation PR #82 undergoing CI after a test harness API-name correction (not yet installed). Distinguish this mitigation from a future properly sandboxed project runner.
+- Release verdict: **web content and infrastructure improved; product feature and crowdfunding readiness NOT CLEARED**. Outstanding physical tests, true opt-in signup, video-content acquisition and 3D print proof remain blocking.
