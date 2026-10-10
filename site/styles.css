@@ -285,3 +285,6 @@ h2{font-size:clamp(37px,4.15vw,56px);line-height:1.08;letter-spacing:-2.6px;marg
 @media(max-width:720px){.header-inner{position:relative;gap:12px}.mobile-menu{display:block;flex:none}.header-link{padding:11px 12px;min-height:44px;display:inline-flex;align-items:center}.hero-shortcuts{gap:10px}}
 @media(max-width:370px){.header-link{font-size:11px}.mobile-menu summary{padding:9px 10px}}
 @media(prefers-reduced-motion:reduce){.button{transition:none}.button:hover{transform:none}html{scroll-behavior:auto}}
+
+/* Privacy statement obeys our no-inline-style Content Security Policy. */
+.privacy-layout{max-width:900px}.privacy-heading{font-size:clamp(48px,6vw,76px);letter-spacing:-3px;line-height:1.1;margin:25px 0}.privacy-lead{font-size:18px;line-height:1.75;max-width:690px;color:#4b604e}.privacy-subheading{margin:48px 0 14px;font-size:29px}.privacy-body{line-height:1.8;color:#4b604e}.privacy-meta{font-size:12px;color:#455a49;margin-top:45px}
