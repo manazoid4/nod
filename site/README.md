@@ -28,3 +28,9 @@ The homepage contains a **concept-only** video learning and Reel-to-Print story.
 - Test 360px / 390px / 768px / 1280px. No external image/fonts or third-party JS dependencies.
 - Mailto launches email, **not** a fictitious signup; future Kickstarter waitlist requires actual backend, privacy policy and verified consent.
 - Check Vercel production deployment SHA and custom-domain visitor accessibility separately (team SSO may protect vercel.app subdomains).
+
+## 10 October multipass improvements
+- Site-wide native mobile navigation (works with keyboard even when JS is disabled).
+- Concept screen now says CONCEPT, not falsely READY.
+- Primary updates CTA explicitly opens email rather than claiming a signup service.
+- Canonical URL metadata, colour contrast and 21-item roadmap proof labels strengthened.

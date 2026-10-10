@@ -21,3 +21,11 @@
 @media(max-width:950px){.road-hero-inner{grid-template-columns:1.2fr .8fr;gap:25px}.road-large span{font-size:100px}.phase-heading,.work-row{grid-template-columns:100px minmax(0,1fr)}.phase-count,.work-status{display:none}.proof-layout{gap:35px}}
 @media(max-width:720px){.road-hero-inner{grid-template-columns:1fr;min-height:0;padding-top:60px;padding-bottom:60px;gap:28px}.road-hero h1{font-size:clamp(50px,10vw,80px);letter-spacing:-3px}.road-side{display:grid;grid-template-columns:1fr .5fr;gap:16px;padding:20px}.road-large{border-bottom:0;padding:0}.road-large span{font-size:78px;letter-spacing:-5px}.road-small{flex-direction:column;justify-content:flex-end}.road-side p{grid-column:1/-1;margin:0}.road-baseline{grid-template-columns:1fr;padding-top:28px;padding-bottom:35px;gap:5px}.road-baseline>div{padding:15px 16px}.road-controls{padding-top:55px}.road-controls-intro{display:block}.road-controls-intro>p{margin-bottom:23px}.road-controls h2{margin-bottom:14px}.road-filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:12px}.road-filter{flex:none;white-space:nowrap}.roadmap-stages{padding-top:15px;padding-bottom:65px}.phase-heading,.work-row{grid-template-columns:48px minmax(0,1fr);gap:15px}.phase-heading{margin-bottom:19px}.phase-number{font-size:9px}.phase-heading h2{font-size:35px}.work-row{padding:20px 0}.work-id{font-size:23px}.work-copy h3{font-size:18px}.work-copy>p{font-size:13px}.work-evidence{gap:5px}.work-evidence-label{width:100%}.road-proof{padding:65px 0}.proof-layout{grid-template-columns:1fr;gap:20px}.road-close{padding-top:68px;padding-bottom:75px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+/* Accessibility review: raise contrast on formerly low-contrast 10-12px copy */
+.road-hero h1 em{color:#4f6c50}.road-kicker{color:#315e3b}
+.road-large small,.road-meta,.phase-number,.work-evidence-label{color:#365e3e}
+.road-side p,.road-baseline p,.phase-heading p,.work-copy>p,.road-close>p{color:#4b604e}
+.work-id{color:#4b7551}.work-status{color:#476849;font-size:11px}
+.road-count{color:#526957;font-size:12px}
+.road-filter[aria-pressed="true"]{background:#1d3b28;color:#fff}
+@media(max-width:720px){.road-meta,.phase-number,.work-evidence-label{font-size:11px}.road-filter{font-size:13px}}
