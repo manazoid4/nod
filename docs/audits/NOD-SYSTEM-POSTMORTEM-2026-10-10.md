@@ -53,6 +53,18 @@ The most consequential failure mode was **mistaking successful Git/Vercel publis
 4. **Why was the roadmap not enough?** Twenty-one commitments represented planning breadth, not tested outcomes or active ownership.
 5. **Why is this commercially risky?** A beautifully presented concept can attract interest while setting promises the prototype and manufacturing plan cannot yet fulfil.
 
+## Market and competitive review (external-source pass, 10 October)
+
+**Comparison baseline:** M5Stack's CardputerZero maker-computer campaign concluded 3 July 2026 with 13,644 backers and approximately HK$ 14.96m pledged (https://www.kickstarter.com/projects/m5stack/cardputerzero). This proves that maker-sized computing can attract backers, **not** that an NOD-branded Cardputer or thin AI wrapper is a new/viable product. Their product comes from the original hardware maker; NOD's current real device is a third-party M5Stack Cardputer ADV with connected-PC dependency. Claiming original NOD-designed hardware would be misleading without a distinct real prototype and design/production rights.
+
+**Failure precedent:** A 2024 independent Rabbit R1 review criticized limited useful integrations at launch, unreliable basic responses, privacy concerns and having to return to a phone to finish tasks (https://www.wired.com/review/rabbit-r1/). NOD must avoid an impressive concept funnel around non-working workflows, and demonstrate one useful, repeatable loop before fundraising.
+
+**Applicable campaign constraints:** Kickstarter requires original/new reward output, rights to used materials, honest non-simulated hardware/software integration, and disclosure of AI content/data sources/consent and credit. See https://www.kickstarter.com/rules and https://updates.kickstarter.com/kickstarter-project-guidelines-for-ai-generated-content-and-ai-technology/ . Do not treat licences for *viewing* Instagram content as licences to redistribute its video or creator-linked 3D designs.
+
+**Commercial action:** Test whether prospective backers prefer (A) original NOD companion software and hardware integration kit, (B) genuinely original NOD hardware, or (C) simply a phone/PC app. Ask 10 potential customers to complete a real task and compare against phone usage; request actual waitlist opt-in and target price willingness only after a live prototype. Differentiate with `saved video → source-backed answer → approved tangible result`, not generic AI voice. No invented conversion figures, revenue projections or presale date.
+
+| F19 | High | Competes with established Cardputer product; no independently demonstrated new hardware value proposition | OPEN — buyer studies, real task differentiation and distinct reward required |
+
 ## Guardrails and next execution batch
 
 - **Release gate A (site):** Node static suite green in GitHub Actions; Vercel linked production SHA READY; external browser/mobile/keyboard smoke tests; no false signup/working feature/connected-device claims.
