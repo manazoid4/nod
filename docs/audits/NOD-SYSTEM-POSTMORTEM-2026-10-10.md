@@ -27,7 +27,7 @@ The most consequential failure mode was **mistaking successful Git/Vercel publis
 | ID | Severity | Problem | State |
 |---|---|---|---|
 | F01 | Critical | Session-wide and late approvals | PR #81 MERGED into `deploy/local`, nod CI green; installed PC and Cardputer not physically updated/verified |
-| F02 | Critical | Unconfined agent execution with permissions bypass | PR #82 adds fail-closed mitigation (CI review ongoing), full OS sandbox still OPEN |
+| F02 | Critical | Unconfined agent execution with permissions bypass | PR #82 MERGED to `deploy/local` with green CI; PROJECT FULL unattended work blocked, genuine OS sandbox still OPEN |
 | F03 | High | Approval summary clips detail on 240×135 display | OPEN — design review + firmware hardware acceptance |
 | F04 | High | Mock READY display suggests a connected product | FIXED on site branch |
 | F05 | High | Mobile page navigation disappears | FIXED on site branch |
@@ -44,6 +44,7 @@ The most consequential failure mode was **mistaking successful Git/Vercel publis
 | F16 | Medium | Duplicate product truth across NOD site/MAZ Pocket/unified memory | OPEN — proof ledger and ownership needed |
 | F17 | Medium | No end-to-end external visitor/browser verification | OPEN — Vercel READY does not prove browser accessibility |
 | F18 | Medium | Unmeasured voice speed, value and new-user setup success | OPEN — 5-user trial / real timing benchmark |
+| F19 | High | Competes with established Cardputer product; no independently demonstrated new hardware value proposition | OPEN — buyer studies, real task differentiation and distinct reward required |
 
 ## Root cause and 5-whys
 
@@ -62,8 +63,6 @@ The most consequential failure mode was **mistaking successful Git/Vercel publis
 **Applicable campaign constraints:** Kickstarter requires original/new reward output, rights to used materials, honest non-simulated hardware/software integration, and disclosure of AI content/data sources/consent and credit. See https://www.kickstarter.com/rules and https://updates.kickstarter.com/kickstarter-project-guidelines-for-ai-generated-content-and-ai-technology/ . Do not treat licences for *viewing* Instagram content as licences to redistribute its video or creator-linked 3D designs.
 
 **Commercial action:** Test whether prospective backers prefer (A) original NOD companion software and hardware integration kit, (B) genuinely original NOD hardware, or (C) simply a phone/PC app. Ask 10 potential customers to complete a real task and compare against phone usage; request actual waitlist opt-in and target price willingness only after a live prototype. Differentiate with `saved video → source-backed answer → approved tangible result`, not generic AI voice. No invented conversion figures, revenue projections or presale date.
-
-| F19 | High | Competes with established Cardputer product; no independently demonstrated new hardware value proposition | OPEN — buyer studies, real task differentiation and distinct reward required |
 
 ## Guardrails and next execution batch
 
@@ -87,3 +86,7 @@ The most consequential failure mode was **mistaking successful Git/Vercel publis
 - `manazoid4/maz-pocket` approval fix PR #81 merged at `f6957a887a6334afaadf18d0c3b460c5be44fd31`. nod CI run 38049932894 passed host tests and firmware build. No actual Windows Core restart or Cardputer flash is implied.
 - Agent-runner isolation mitigation PR #82 undergoing CI after a test harness API-name correction (not yet installed). Distinguish this mitigation from a future properly sandboxed project runner.
 - Release verdict: **web content and infrastructure improved; product feature and crowdfunding readiness NOT CLEARED**. Outstanding physical tests, true opt-in signup, video-content acquisition and 3D print proof remain blocking.
+
+### Second security mitigation verified
+- `maz-pocket` PR #82 merged at `9eb4e1dc22ccf4b3a293aac016aa3c7ff36615cf` after its initial CI failure (test called nonexistent `start_job` API) was caught, corrected to `start`, and the full nod CI run 38050348566 passed. For now PROJECT FULL coding-agent jobs fail closed rather than run unconfined. This intentionally removes part of unattended agent functionality until a real sandbox can be built. Avoid promising otherwise. Explicit PC FULL is separately authorised, and the provider permission bypass is no longer added to Claude's argv.
+- Market/evidence follow-up site PR #11 merged at `ef2f0ea7f3f202b25493a323055923e3ed7acd08`, site quality tests passed, Vercel production `dpl_9vHbZbGxohGoFx9yhEyVDsY54meF` READY for that exact SHA. Readiness page now links this postmortem. Anonymous end-to-end browser smoke remains open.
