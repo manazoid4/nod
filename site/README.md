@@ -7,6 +7,7 @@ Create a Vercel project connected to `manazoid4/nod` with **Root Directory** `si
 ## Routes
 - `/` — early NOD interest page with three core interface scenarios, two interactive **non-functional proposed-workflow** illustrations (saved-video knowledge / Reel-to-Print), transparent limitations, FAQ and source links.
 - `/readiness/` — noindex founder audit and launch gates. Public URL, not a private portal.
+- `/roadmap/` — public, interactive four-stage roadmap displaying 21 proposed delivery packages and proof criteria, with no private-security exploit details or fake shipped-feature statuses.
 
 ## Before a Kickstarter campaign
 1. Replace illustrative keyboard UI with **actual photographed prototype** and test video. Kickstarter design-tech rules require clear real prototype demonstration, not CGI of missing functions.
