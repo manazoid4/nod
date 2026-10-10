@@ -60,3 +60,76 @@
     });
   });
 })();
+
+/* Proposed experience switcher. This is a concept illustration, not a live API. */
+(() => {
+  const concepts = {
+    learn: {
+      overline: "CONCEPT 01 / YOUR VIDEO LIBRARY",
+      heading: "Your saved videos.<br><em>Finally useful.</em>",
+      text: "Instead of just saving a Reel, imagine searching what was said, shown and demonstrated—then asking NOD to turn the best parts into a useful brief.",
+      steps: ["Import an accessible video", "Understand speech, scenes and text", "Ask NOD, with original sources"],
+      badge: "KNOWLEDGE CARD", title: "A lesson worth keeping.",
+      line1: "What was shown, explained and why it matters",
+      line2: "Original video + timestamps retained", action: "ASK NOD ABOUT THIS"
+    },
+    make: {
+      overline: "CONCEPT 02 / REEL TO 3D PRINT",
+      heading: "Find the file.<br><em>Make the thing.</em>",
+      text: "Spot a useful 3D print in a video. NOD could search for a legitimately shared STL/3MF, verify the match, prepare a slice and let you choose when to print.",
+      steps: ["Identify the creator and candidate model", "Confirm file, licence and printer profile", "Preview the slice and approve the start"],
+      badge: "PRINT PREPARATION", title: "Matched model found?",
+      line1: "Verify original STL/3MF against the video",
+      line2: "Printer check + slice preview before start", action: "REVIEW MODEL & PRINT"
+    }
+  };
+  const buttons = Array.from(document.querySelectorAll("[data-future]"));
+  const panel = document.getElementById("future-panel");
+  const targets = {
+    overline: document.getElementById("future-overline"),
+    heading: document.getElementById("future-heading"),
+    text: document.getElementById("future-text"),
+    steps: document.getElementById("future-steps"),
+    badge: document.getElementById("future-art-badge"),
+    title: document.getElementById("future-art-title"),
+    line1: document.getElementById("future-art-line1"),
+    line2: document.getElementById("future-art-line2"),
+    action: document.getElementById("future-art-action")
+  };
+  function setConcept(name) {
+    const item = concepts[name];
+    if (!item || !panel || Object.values(targets).some(x => !x)) return;
+    targets.overline.textContent = item.overline;
+    targets.heading.innerHTML = item.heading; // static authored strings only, never user HTML
+    targets.text.textContent = item.text;
+    targets.steps.replaceChildren(...item.steps.map((step, i) => {
+      const li = document.createElement("li");
+      const number = document.createElement("span");
+      number.textContent = String(i + 1).padStart(2, "0");
+      li.append(number, document.createTextNode(step));
+      return li;
+    }));
+    ["badge","title","line1","line2","action"].forEach(key => { targets[key].textContent = item[key]; });
+    buttons.forEach(button => {
+      const active = button.dataset.future === name;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
+    });
+    panel.setAttribute("aria-labelledby", "future-tab-" + name);
+  }
+  buttons.forEach((button, i) => {
+    button.addEventListener("click", () => setConcept(button.dataset.future));
+    button.addEventListener("keydown", ev => {
+      let next = i;
+      if (ev.key === "ArrowRight" || ev.key === "ArrowDown") next = (i + 1) % buttons.length;
+      else if (ev.key === "ArrowLeft" || ev.key === "ArrowUp") next = (i - 1 + buttons.length) % buttons.length;
+      else if (ev.key === "Home") next = 0;
+      else if (ev.key === "End") next = buttons.length - 1;
+      else return;
+      ev.preventDefault();
+      setConcept(buttons[next].dataset.future);
+      buttons[next].focus();
+    });
+  });
+})();
