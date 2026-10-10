@@ -267,3 +267,21 @@ h2{font-size:clamp(37px,4.15vw,56px);line-height:1.08;letter-spacing:-2.6px;marg
 .print-bottom{flex-direction:column;align-items:flex-start;gap:20px}.reality h2{font-size:43px}
 }
 @media(max-width:400px){.future-select{flex-wrap:wrap}.future-select-number{width:100%}.future-select>span:nth-child(2){font-size:12px}.future-panel h3{font-size:33px}.vault-art-note{grid-template-columns:95px 1fr}.print-pipeline{grid-template-columns:1fr}.print-step{min-height:0}.print-glyph{margin:12px 0 9px}.future-panel-art{padding:16px}.reel-grid{gap:5px}}
+
+/* Multipass audit: native keyboard-operable mobile nav, source honesty, legibility. */
+.mobile-menu{display:none}
+.mobile-menu summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;border:1px solid #b4c5b3;border-radius:9px;min-height:44px;padding:10px 13px;color:#27432e;background:#f4f8f1}
+.mobile-menu summary::-webkit-details-marker{display:none}
+.mobile-menu summary span{font-size:16px}
+.mobile-menu[open] summary{background:#e5eee0}
+.mobile-menu-links{position:absolute;z-index:50;top:calc(100% + 7px);right:0;width:min(290px,calc(100vw - 32px));background:#fff;border:1px solid #cddcc9;border-radius:12px;box-shadow:0 18px 35px #1b392327;padding:9px;display:flex;flex-direction:column;gap:2px}
+.mobile-menu-links a{font-size:14px;font-weight:750;line-height:1.5;color:#28462e;padding:13px 12px;border-radius:8px;white-space:normal}
+.mobile-menu-links a:hover,.mobile-menu-links a:focus-visible{background:#e9f1e3}
+.hero-shortcuts{display:flex;align-items:center;flex-wrap:wrap;gap:13px;margin-top:14px;font-size:12px}
+.hero-shortcuts a{font-weight:800;color:#2c6240;border-bottom:1px solid #9ebb9e;padding-bottom:4px}
+.hero-shortcuts span{font-size:11px;color:#546858}
+.hero-subnote,.footnote{color:#4b614e}
+.future-disclosure{color:#4a5d4e}.result-mini{color:#455f49}
+@media(max-width:720px){.header-inner{position:relative;gap:12px}.mobile-menu{display:block;flex:none}.header-link{padding:11px 12px;min-height:44px;display:inline-flex;align-items:center}.hero-shortcuts{gap:10px}}
+@media(max-width:370px){.header-link{font-size:11px}.mobile-menu summary{padding:9px 10px}}
+@media(prefers-reduced-motion:reduce){.button{transition:none}.button:hover{transform:none}html{scroll-behavior:auto}}
