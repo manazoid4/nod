@@ -17,6 +17,7 @@ Only items marked **Verified** have been tested end to end. Everything else is i
 - Confirmed PC actions (the AI proposes, you press Enter).
 - Phone-approved, time-limited PC control.
 - Agent alerts: done ping and usage warnings. Built, awaiting live device test.
+- Being added now: Halt (one key stops every approval request across all agents), Quiet mode (mute the chirps, keep the ones that need you) and a Today screen (what your agents did today).
 
 ## Next
 1. Fast cloud speech-to-text.
