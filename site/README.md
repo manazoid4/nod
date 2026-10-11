@@ -16,4 +16,4 @@ Create a Vercel project connected to `manazoid4/nod` with **Root Directory** `si
 5. Check page content for claims before copying sections into Kickstarter's editor.
 
 ## Validation
-No build needed. Open `site/index.html`, test mode-switch controls with keyboard, mobile at 360px and reduced-motion preferences. Check internal links, semantic landmarks and no JS errors.
+No build needed. Open `site/index.html`, test the approval illustration buttons with keyboard, mobile at 360px and reduced-motion preferences. Check internal links, semantic landmarks and no JS errors.
