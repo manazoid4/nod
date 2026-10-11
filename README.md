@@ -17,6 +17,7 @@ Hold a key and talk. nod listens, thinks and answers out loud. Capture an idea b
 - **Your day, at a glance.** What's next, what's waiting on you, and what got done today.
 - **One-press actions.** A programmable deck for the things you do every day: start a focus session, message someone, control your computer, run a routine, trigger an automation.
 - **Stay in charge of your AI.** When an AI agent wants to do something that matters, like sending, buying, deleting or deploying, nod shows you exactly what and waits for your nod. Nothing happens without you.
+- **Know when it is done.** Agent alerts: nod buzzes and chirps when your AI agent finishes a task, and warns you when a usage limit is nearly used up. Built, awaiting live device test.
 - **Built to keep you going.** XP, streaks and ranks turn focus, follow-through and finished tasks into a game you want to keep playing.
 - **Yours, not ours.** Open source. Works with free AI models. Your data goes through a small hub on your own computer. No subscription required.
 

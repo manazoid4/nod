@@ -16,6 +16,7 @@ Only items marked **Verified** have been tested end to end. Everything else is i
 - Agent status on the device.
 - Confirmed PC actions (the AI proposes, you press Enter).
 - Phone-approved, time-limited PC control.
+- Agent alerts: done ping and usage warnings. Built, awaiting live device test.
 
 ## Next
 1. Fast cloud speech-to-text.
