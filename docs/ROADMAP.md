@@ -21,7 +21,7 @@ Only items marked **Verified** have been tested end to end. Everything else is i
 ## Next
 1. Fast cloud speech-to-text.
 2. Natural voice replies.
-3. Approve AI agent actions from anywhere, with status light and buzz.
+3. Approve AI agent actions from anywhere (first hook: Claude Code; open contract for other agents), with status light and buzz.
 4. Live agent lights: idle, thinking, done, needs you, error.
 5. Voice to task: notes, tasks and reminders.
 6. Action keys with Work, Home and Focus layers.
