@@ -57,7 +57,7 @@ if "MAZCOREPAIR\\t" not in control:
 portal = (ROOT / "src" / "net" / "portal_v3.cpp").read_text(encoding="utf-8-sig")
 if "Update.h" in portal or "esp_ota" in portal.lower():
     raise SystemExit("portal must stage firmware only; direct self-OTA is not allowed")
-if "PROMPT DECK" not in portal or "CALL MAZ" not in portal:
+if "PROMPT DECK" not in portal or "CALL NOD" not in portal:
     raise SystemExit("v0.8 phone-first portal is missing clear product actions")
 
 launcher = (ROOT / "src" / "core" / "launcher.cpp").read_text(encoding="utf-8-sig")
