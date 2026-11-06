@@ -1,3 +1,7 @@
+> **HISTORICAL PHASE DOCUMENT — DO NOT LAUNCH AS SEPARATE CLAUDE BATCH.** The owner merged Nod build, test, prototype and Kickstarter preparation into [one continuous task](NOD-SINGLE-RUN-CONSUMER-FUNDING.md). The private full Sonnet prompt also contains a separate $5 Hermes Job Hunter track. Keep legacy feature preservation and existing security gates.
+
+---
+
 # Claude Batch 2 — 3D-Printed NOD + Brag + Kickstarter (2026-11-06)
 
 This file supersedes its earlier $5/Hermes/custom-hardware version. **Read and execute the full canonical prompt:** [CLAUDE-NOD-10USD-MASTER-EXECUTION.md](CLAUDE-NOD-10USD-MASTER-EXECUTION.md), especially MISSION, ORCHESTRATION, BATCH 2, FILES/COMMITS and FINAL REPORT. Begin with the Batch 1 verified handoff.
