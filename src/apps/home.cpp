@@ -23,8 +23,8 @@ namespace {
 
 class HomeApp : public App {
 public:
-    const char* id() const override { return "home"; }
-    const char* title() const override { return "MAZ Pocket"; }
+    const char* id() const override { return "more"; }
+    const char* title() const override { return "More"; }
     const char* hints() const override { return _hints.c_str(); }
 
     void onEnter() override {
@@ -128,7 +128,7 @@ private:
         size_t n = 0;
         const Descriptor* t = apps::table(n);
         for (size_t i = 0; i < n; ++i)
-            if (t[i].onHome && strcmp(t[i].id, "home")) _primary.push_back(&t[i]);
+            if (t[i].onHome && strcmp(t[i].id, "home") && strcmp(t[i].id, "more")) _primary.push_back(&t[i]);
         if (_sel >= static_cast<int>(_primary.size())) _sel = 0;
     }
 
@@ -186,7 +186,7 @@ private:
 
 }  // namespace
 
-App* makeHome() { return new HomeApp(); }
+App* makeMore() { return new HomeApp(); }
 
 }  // namespace apps
 }  // namespace maz

@@ -62,6 +62,12 @@ int main() {
             }
         }
     }
+    // firmware body area on the stock panel: y 15..121 (status 15, hints 14)
+    { Rect g[CARD_COUNT]; computeGrid({0, 15, 240, 106}, g);
+      for (int i = 0; i < CARD_COUNT; i++) {
+        CHECK(g[i].y >= 15 && g[i].y + g[i].h <= 121 && g[i].x + g[i].w <= 240);
+        CHECK(g[i].w >= 100 && g[i].h >= 40);
+      } }
     CHECK(moveSelection(CARD_SUBTITLES, 'R') == CARD_ROUTINES);
     CHECK(moveSelection(CARD_ROUTINES, 'D') == CARD_MORE);
     CHECK(moveSelection(CARD_SUBTITLES, 'L') == CARD_SUBTITLES);
