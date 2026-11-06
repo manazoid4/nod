@@ -1,0 +1,24 @@
+# Nod — One Continuous Consumer MVP-to-Kickstarter Execution
+**Owner decision: 6 November 2026.** Replaces earlier two-Claude-batch workflow for Nod. This is a task contract, not completed implementation.
+
+## Product and current foundation
+Make Nod for nontechnical people: obvious one-touch actions via Cardputer ADV, accessible and easy click/drop computer setup, real savings of time and optional use of free/local tools without **mandatory Nod subscription** for supported local features. Paired Windows laptop/MAZ Core does heavy work. Do not market universal free AI or standalone operation.
+
+Audit live https://github.com/manazoid4/nod and https://github.com/manazoid4/maz-pocket, including physical acceptance runbook and independent Kickstarter audit. Reuse current MAZ Pocket firmware/MAZ Core code; preserve existing CALL MAZ (speech and audio), CAPTURE (brain dump, voice recorder, Teach Demo), AGENTS (status, PLAN, CREW, RETRO), CONTROL (Wi-Fi, PC controls, phone scoped grants), MEMORY (results, prompts), FOCUS (timers/tasks), local Ollama/llama.cpp, web portal and M5Launcher-safe installation/recovery. A simplified 3-item main menu may expose advanced tools under MORE, not remove them.
+
+## One uninterrupted execution
+**Subtitles:** For supported local media played on a laptop connected to a TV: one press starts matching legally usable SRT or local generation with faster-whisper/whisper.cpp, then loads in supported player, showing accurate status/error/latency. No misleading Netflix/Disney+/YouTube universal claims or DRM bypass.
+**Routines:** Friendly pick/preview/assign click/drop UI to make accessible no-code household PC/TV/focus/media workflows, safe action allow-list and undo/confirmation.
+**Save:** one-touch voice-to-note/task or reversible file tidy, proven end to end.
+**Testing:** local private supervised device browser/terminal test runner with owner's real physical Cardputer results; user confirms PASS/FAIL with firmware/core SHA. No Hermes/Telegram for Nod. Retest old N-1 stale approval and N-2 offline-status risks; zero unauthorized actions; follow full audit safety gates. Never flash app-only firmware at 0x0; preserve M5Launcher slots and rollback.
+**Physical:** owner has 3D printer; create measured editable CAD/STL of attractive reversible Nod case around current Cardputer. Verify actual fit, buttons, mic/speaker, charging/heat, ports and antenna; no custom PCB, tooling or large manufacturing order.
+**Video:** owner sends genuine ~10s phone clips + an uncut functional demo after real workflows work; check latent-spaces/brag, Brag-slim/Hyperframes/FFmpeg, costs and supported media; produce honest launch teaser and captions, not fabricated demos.
+**Growth:** keep Nod website, verified opt-in waitlist, privacy, consumer FAQ and value-first Maz Works-style LinkedIn/short-video drafts, prepared for approval, not auto-posted.
+**Kickstarter:** Kode Dot is an inspiration, not guaranteed success. Build honest campaign story, authentic working prototype footage, reward economics from actual Cardputer/shell costs + two supplier quotes, shipping/taxes/fees/returns/compliance, UK consumer radio/battery/WEEE considerations, downside scenarios and seven readiness gates. No live Kickstarter, sales commitments or public posting without owner approval.
+
+## Orchestration, cost and boundaries
+Claude Sonnet 5.5 has ~20% usage remaining; act as a thin lead orchestrator using productive, scoped independent free-model workers on approved Groq and NVIDIA provider connections (previously available in Hermes settings), OpenRouter :free and local Ollama, with cheap paid OpenRouter only when justified. Reuse Hermes provider configuration *read-only*, not Hermes bots/jobs for Nod. **Nod paid OpenRouter cap = $10**, not a spending target. Track real billed spend and free quotas, never expose secrets and avoid parallel conflicting branches.
+
+This one-run Nod workstream may be supervised in parallel with the owner's separate, private $5 Job Hunter project, but the budgets, source code and test permissions do NOT mix. Work independently until real owner physical testing is required, then give one clear next action. Record tests/commits and update private unified memory with evidence. This document supersedes earlier two-batch references for execution; old files are historical.
+
+**Done:** proven Cardputer/PC consumer workflows; legacy features preserved; owner-tested 3D shell if physically printed; honest footage if owner supplies it; tested opt-in site; complete realistic Kickstarter draft; explicit blocked launch gates; reproducible build/tests and exact commits.
