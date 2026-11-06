@@ -1,3 +1,7 @@
+> **UPDATED EXECUTION ROUTE (6 Nov 2026):** Nod is now ONE continuous project, not two separate Claude batches. Follow [NOD SINGLE-RUN task](NOD-SINGLE-RUN-CONSUMER-FUNDING.md) and the owner's private combined Sonnet 5.5 orchestration document in the Hermes Job Hunter repository. Preserve this file as detailed historical feature/safety scope. The $10 Nod ceiling still applies. Hermes is used solely for the independent $5 Job Hunter workstream, not Nod. No custom PCB.
+
+---
+
 # NOD — CLAUDE MASTER EXECUTION PROMPT
 ## $10 OpenRouter and free models — thin Claude orchestrator — consumer MVP and Kickstarter
 Revised 2026-11-06. Supersedes prior $5 and Hermes-centred prompts. This is an execution instruction, not proof of implementation.
