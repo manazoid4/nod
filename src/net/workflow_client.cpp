@@ -66,7 +66,7 @@ bool openHttp(HTTPClient& http, WiFiClient& plain, WiFiClientSecure& secure,
     if (!begun) return false;
     http.setConnectTimeout(remote ? 6500 : 1800);
     // Arduino HTTPClient stores timeout as uint16_t. Keep this below 65.5s;
-    // longer work belongs in MAZ Core jobs rather than one handheld request.
+    // longer work belongs in Nod Core jobs rather than one handheld request.
     http.setTimeout(60000);
     http.addHeader("Authorization", ("Bearer " + Cfg.hostToken).c_str());
     return true;

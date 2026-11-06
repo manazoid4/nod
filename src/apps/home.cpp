@@ -165,12 +165,12 @@ private:
         g.setFont(&fonts::Font0);
         g.setTextDatum(top_left);
         g.setTextColor(ACCENT, BG);
-        g.drawString("MAZ TERMINAL / 2026", PAD, BODY_Y + 5);
+        g.drawString("NOD TERMINAL / 2026", PAD, BODY_Y + 5);
         g.setTextColor(TEXT, BG);
         g.drawString("UPLINK....OK", PAD, BODY_Y + 21);
         g.drawString("MEMORY....OK", PAD, BODY_Y + 34);
         g.drawString("AGENTS....?", PAD, BODY_Y + 47);
-        g.drawString("HUMAN.....MAZ", PAD, BODY_Y + 60);
+        g.drawString("HUMAN.....NOD", PAD, BODY_Y + 60);
         g.setTextColor(ACCENT2, BG);
         g.drawString("> THE FUTURE WAS SUPPOSED", PAD, BODY_Y + 80);
         g.drawString("  TO LOOK LIKE THIS.", PAD, BODY_Y + 94);

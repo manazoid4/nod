@@ -54,7 +54,7 @@ CoreStatus coreStatus() {
     CoreStatus out;
     HTTPClient http;
     if (!coreBegin(http, "/core/status")) {
-        out.error = "MAZ Core not paired / Wi-Fi offline";
+        out.error = "Nod Core not paired / Wi-Fi offline";
         return out;
     }
     const int status = http.GET();
@@ -62,7 +62,7 @@ CoreStatus coreStatus() {
     http.end();
     if (status <= 0) {
         Sys.hostOnline = false;
-        out.error = "MAZ Core unreachable";
+        out.error = "Nod Core unreachable";
         return out;
     }
     JsonDocument doc;
@@ -84,7 +84,7 @@ std::vector<CoreProject> coreProjects(std::string& error) {
     error.clear();
     HTTPClient http;
     if (!coreBegin(http, "/core/projects")) {
-        error = "MAZ Core not paired / Wi-Fi offline";
+        error = "Nod Core not paired / Wi-Fi offline";
         return out;
     }
     const int status = http.GET();
@@ -92,7 +92,7 @@ std::vector<CoreProject> coreProjects(std::string& error) {
     http.end();
     if (status <= 0) {
         Sys.hostOnline = false;
-        error = "MAZ Core unreachable";
+        error = "Nod Core unreachable";
         return out;
     }
     JsonDocument doc;
@@ -117,7 +117,7 @@ Reply coreAction(const std::string& action, const std::string& project) {
     Reply out;
     HTTPClient http;
     if (!coreBegin(http, "/core/action")) {
-        out.error = "MAZ Core not paired / Wi-Fi offline";
+        out.error = "Nod Core not paired / Wi-Fi offline";
         return out;
     }
     http.addHeader("Content-Type", "application/json");
@@ -132,7 +132,7 @@ Reply coreAction(const std::string& action, const std::string& project) {
     out.status = status;
     if (status <= 0) {
         Sys.hostOnline = false;
-        out.error = "MAZ Core unreachable";
+        out.error = "Nod Core unreachable";
         return out;
     }
     JsonDocument doc;
@@ -156,7 +156,7 @@ CoreJob coreStartJob(const std::string& action, const std::string& project) {
     CoreJob out;
     HTTPClient http;
     if (!coreBegin(http, "/core/job")) {
-        out.error = "MAZ Core not paired / Wi-Fi offline";
+        out.error = "Nod Core not paired / Wi-Fi offline";
         return out;
     }
     http.addHeader("Content-Type", "application/json");
@@ -170,7 +170,7 @@ CoreJob coreStartJob(const std::string& action, const std::string& project) {
     http.end();
     if (status <= 0) {
         Sys.hostOnline = false;
-        out.error = "MAZ Core unreachable";
+        out.error = "Nod Core unreachable";
         return out;
     }
     Sys.hostOnline = status >= 200 && status < 300;
@@ -182,7 +182,7 @@ CoreJob coreJob(const std::string& id) {
     if (id.empty()) { out.error = "job id missing"; return out; }
     HTTPClient http;
     if (!coreBegin(http, "/core/job/" + id)) {
-        out.error = "MAZ Core not paired / Wi-Fi offline";
+        out.error = "Nod Core not paired / Wi-Fi offline";
         return out;
     }
     const int status = http.GET();
@@ -190,7 +190,7 @@ CoreJob coreJob(const std::string& id) {
     http.end();
     if (status <= 0) {
         Sys.hostOnline = false;
-        out.error = "MAZ Core unreachable";
+        out.error = "Nod Core unreachable";
         return out;
     }
     Sys.hostOnline = status >= 200 && status < 300;

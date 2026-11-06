@@ -1,4 +1,4 @@
-// MAZ Pocket — firmware entry point for the M5Stack Cardputer ADV.
+// Nod — firmware entry point for the M5Stack Cardputer ADV.
 #include <M5Unified.h>
 #include <sys/time.h>
 #include <time.h>
@@ -66,14 +66,14 @@ void setup() {
         Serial.println("[boot] shell failed: out of memory");
         M5.Display.fillScreen(TFT_BLACK);
         M5.Display.setTextColor(TFT_RED);
-        M5.Display.drawString("MAZ Pocket: out of memory", 10, 60);
+        M5.Display.drawString("Nod: out of memory", 10, 60);
         return;
     }
     Serial.println("[boot] shell");
 
     health::begin();
 
-    Serial.printf("MAZ Pocket %s READY board=%d keyboard=%s storage=%s\n",
+    Serial.printf("Nod %s READY board=%d keyboard=%s storage=%s\n",
                   MAZ_POCKET_VERSION, (int)M5.getBoard(),
                   KB.ok() ? "ok" : "missing", store::backendName());
 

@@ -89,12 +89,12 @@ void drawShortText(M5Canvas& g, const std::string& text, int y, int lines = 4) {
 class CallApp : public App {
 public:
     const char* id() const override { return "talk"; }
-    const char* title() const override { return "MAZ Talk"; }
+    const char* title() const override { return "Nod Talk"; }
 
     const char* hints() const override {
         if (voice::state() == voice::State::Listening)
             return "release SPACE to stop";
-        if (_sending) return "sending to MAZ Host...";
+        if (_sending) return "sending to Nod Host...";
         if (!_reply.empty()) return "SPACE ask again   A route   I inbox";
         if (_haveTake) return "ENTER send   P play   S save raw";
         return "hold SPACE to talk   ESC back";
@@ -163,7 +163,7 @@ public:
             if (result.ok) {
                 _reply = result.text;
                 store::Record item;
-                item.kind = "inbox"; item.status = "open"; item.title = "MAZ answer";
+                item.kind = "inbox"; item.status = "open"; item.title = "Nod answer";
                 item.body = _reply; item.source = result.provider; item.ref = _takePath;
                 store::addRecord(item);
                 if (!result.reminderTitle.empty() && result.reminderDelay) {
@@ -194,8 +194,8 @@ public:
 
     void render(M5Canvas& g) override {
         g.fillScreen(BG);
-        ui::header(g, "MAZ Talk",
-                   Sys.hostOnline ? "MAZ HOST ONLINE" : "MAZ HOST OFFLINE");
+        ui::header(g, "Nod Talk",
+                   Sys.hostOnline ? "NOD HOST ONLINE" : "NOD HOST OFFLINE");
 
         if (!_reply.empty() && voice::state() != voice::State::Listening) {
             g.setFont(&fonts::Font0);

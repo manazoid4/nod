@@ -1,4 +1,4 @@
-// CALL MAZ — hold-to-talk voice conversation with spoken reply playback.
+// CALL NOD — hold-to-talk voice conversation with spoken reply playback.
 #include <algorithm>
 #include <array>
 #include <string>
@@ -55,13 +55,13 @@ const char* controlLabel(const std::string& action) {
 class CommApp : public App {
 public:
     const char* id() const override { return "talk"; }
-    const char* title() const override { return "CALL MAZ"; }
+    const char* title() const override { return "CALL NOD"; }
 
     const char* hints() const override {
         if (_controlMode) return "< > choose   ENTER send   C back";
         if (voice::state() == voice::State::Listening)
             return field::contextArmed() ? "release SPACE to ask about screen" : "release SPACE to send";
-        if (host_worker::busy()) return "MAZ thinking on PC   ESC safe";
+        if (host_worker::busy()) return "Nod thinking on PC   ESC safe";
         if (voice::isPlaying()) return "SPACE stop voice   P replay";
         if (!_reply.empty()) return "P replay   V voice ON/OFF   A AI   N new";
         return "hold SPACE to call   A change AI   V voice";
@@ -111,7 +111,7 @@ public:
             if (voice::isPlaying()) voice::stopPlayback();
             consumeWorkerResult();
             if (host_worker::busy()) {
-                notify::post(Note::Info, "MAZ still thinking", "result will wait for you");
+                notify::post(Note::Info, "Nod still thinking", "result will wait for you");
                 return true;
             }
             if (voice::state() != voice::State::Listening) beginTake();
@@ -150,7 +150,7 @@ public:
             Cfg.ttsEnabled = !Cfg.ttsEnabled;
             Cfg.save();
             if (!Cfg.ttsEnabled) voice::stopPlayback();
-            notify::post(Note::Info, "Voice replies", Cfg.ttsEnabled ? "ON - MAZ will speak" : "OFF - text only");
+            notify::post(Note::Info, "Voice replies", Cfg.ttsEnabled ? "ON - Nod will speak" : "OFF - text only");
             invalidate();
             return true;
         }
@@ -172,14 +172,14 @@ public:
     }
 
     std::string contextSnapshot() const override {
-        if (!_reply.empty()) return "Call MAZ last reply: " + _reply.substr(0, 180);
-        return field::contextArmed() ? "Call MAZ preparing screen question" : "Call MAZ voice line";
+        if (!_reply.empty()) return "Call Nod last reply: " + _reply.substr(0, 180);
+        return field::contextArmed() ? "Call Nod preparing screen question" : "Call Nod voice line";
     }
 
     void render(M5Canvas& g) override {
         g.fillScreen(BG);
         if (_controlMode) { renderControl(g); return; }
-        ui::header(g, field::contextArmed() ? "ASK SCREEN" : "CALL MAZ", routeName());
+        ui::header(g, field::contextArmed() ? "ASK SCREEN" : "CALL NOD", routeName());
 
         if (voice::state() == voice::State::Listening) {
             ui::panel(g, 71, BODY_Y + 19, 98, 52);
@@ -195,14 +195,14 @@ public:
         }
 
         if (host_worker::busy() || _sending) {
-            retroPhone(g, host_worker::state() == host_worker::State::Queued ? "QUEUED" : "MAZ THINKING", WARN);
+            retroPhone(g, host_worker::state() == host_worker::State::Queued ? "QUEUED" : "NOD THINKING", WARN);
             return;
         }
-        if (voice::isPlaying()) { retroPhone(g, "MAZ SPEAKING", OK); return; }
+        if (voice::isPlaying()) { retroPhone(g, "NOD SPEAKING", OK); return; }
         if (!_reply.empty()) {
             g.setFont(&fonts::Font0);
             g.setTextColor(ACCENT, BG);
-            std::string meta = std::string("MAZ> ") + routeName();
+            std::string meta = std::string("NOD> ") + routeName();
             if (Cfg.ttsEnabled) meta += " / VOICE";
             g.drawString(meta.c_str(), PAD, BODY_Y + 18);
             drawCommWrapped(g, _reply, BODY_Y + 34, _scroll);
@@ -346,7 +346,7 @@ private:
 
         if (!result.reply.ok) {
             queueRaw(result.wavPath, result.reply.error.empty() ? "PC unavailable" : result.reply.error, result.context);
-            notify::post(Note::Warn, "MAZ unavailable", "voice call kept in outbox");
+            notify::post(Note::Warn, "Nod unavailable", "voice call kept in outbox");
             invalidate();
             return;
         }
@@ -356,7 +356,7 @@ private:
         store::Record answer;
         answer.kind = "inbox";
         answer.status = "open";
-        answer.title = result.context.empty() ? "CALL MAZ" : "ASK SCREEN";
+        answer.title = result.context.empty() ? "CALL NOD" : "ASK SCREEN";
         answer.body = result.reply.text;
         answer.source = result.reply.provider;
         answer.ref = result.wavPath;
@@ -378,8 +378,8 @@ private:
             voice::play(_speechPath);
         }
         sfx::confirm();
-        notify::post(Note::Success, result.context.empty() ? "MAZ answered" : "Screen answer ready",
-                     result.reply.provider.empty() ? "MAZ Core" : result.reply.provider);
+        notify::post(Note::Success, result.context.empty() ? "Nod answered" : "Screen answer ready",
+                     result.reply.provider.empty() ? "Nod Core" : result.reply.provider);
         invalidate();
     }
 
@@ -389,7 +389,7 @@ private:
         store::Record queued;
         queued.kind = "outbox";
         queued.status = "queued";
-        queued.title = context.empty() ? "Call MAZ voice turn" : "Ask Screen voice turn";
+        queued.title = context.empty() ? "Call Nod voice turn" : "Ask Screen voice turn";
         queued.body = context.empty() ? reason : context;
         queued.source = context.empty() ? "talk" : "talk-context";
         queued.ref = path;

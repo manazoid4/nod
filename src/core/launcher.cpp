@@ -60,11 +60,11 @@ bool reboot() {
         return false;
     }
 
-    // IMPORTANT: never invalidate/erase the currently running MAZ Pocket image
+    // IMPORTANT: never invalidate/erase the currently running Nod image
     // to get back to M5Launcher. Older builds overwrote the first four bytes of
     // the running app, which made the MAZ slot disappear and forced an SD
     // reinstall every time the user entered Launcher. Select the already-valid
-    // Launcher partition as the next boot target instead; MAZ Pocket remains a
+    // Launcher partition as the next boot target instead; Nod remains a
     // valid app that M5Launcher can start again immediately.
     const esp_err_t result = esp_ota_set_boot_partition(target);
     if (result != ESP_OK) {

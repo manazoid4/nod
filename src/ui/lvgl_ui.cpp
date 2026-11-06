@@ -21,7 +21,7 @@ void drawContext(M5Canvas& g, const char* kind, const char* text) {
     g.setTextDatum(top_left);
     g.setFont(&fonts::Font0);
     g.setTextColor(ACCENT, BG);
-    g.drawString(kind ? kind : "MAZ", 7, stripY + 5);
+    g.drawString(kind ? kind : "NOD", 7, stripY + 5);
 
     g.setTextDatum(top_right);
     g.setTextColor(DIM, BG);

@@ -32,7 +32,7 @@ void wordmark(M5Canvas& g, int cx, int y, uint16_t colour) {
     g.setTextDatum(top_center);
     g.setTextColor(colour, BG);
     g.setFont(&fonts::Font4);
-    g.drawString("MAZ", cx, y);
+    g.drawString("NOD", cx, y);
     g.setFont(&fonts::Font2);
     g.setTextColor(DIM, BG);
     g.drawString("POCKET", cx, y + 26);

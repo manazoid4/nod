@@ -1,4 +1,4 @@
-// MAZ Pocket v0.3 — the two product surfaces that replace generic Talk/Nudge
+// Nod v0.3 — the two product surfaces that replace generic Talk/Nudge
 // on Home. Capture keeps its existing proven BrainDump implementation.
 #include <algorithm>
 #include <array>
@@ -437,7 +437,7 @@ private:
     void refresh() {
         _summary = host::assurance();
         if (!_summary.ok) _status = "PC OFFLINE";
-        else if (_summary.questionForMaz) _status = "NEEDS MAZ";
+        else if (_summary.questionForMaz) _status = "NEEDS NOD";
         else if (_summary.overdue) _status = std::to_string(_summary.overdue) + " OVERDUE";
         else if (_summary.needsNudge) _status = std::to_string(_summary.needsNudge) + " NUDGE DUE";
         else if (_summary.waiting) _status = std::to_string(_summary.waiting) + " WAITING";

@@ -8,7 +8,7 @@ namespace apps {
 namespace {
 const Descriptor TABLE[] = {
     {"home",       "Home",        nullptr,   "home menu now quick actions field",                    0,     false, makeHome},
-    {"talk",       "Call MAZ",    "CALL",   "call maz voice assistant conversation playback cloud local context ask", KEY_T, true,  makeComm},
+    {"talk",       "Call Nod",    "CALL",   "call nod maz voice assistant conversation playback cloud local context ask", KEY_T, true,  makeComm},
     {"capturehub", "Capture",     "CAPTURE","capture teach demo brain dump voice recorder screen workflow", KEY_B, true, makeCaptureHub},
     {"agents",     "Agents",      "AGENTS", "agents plan crew retro nudge status assurance sync",   KEY_N, true,  makeAgentsHub},
     {"desk",       "Control",     "CONTROL","control wifi pc device storage settings core laptop debug pairing phone", 0, true, makeDesk},
@@ -19,7 +19,7 @@ const Descriptor TABLE[] = {
     {"teach",      "Teach Demo",   "TEACH",  "teach demonstration screen record monitor mark workflow", 0, false, makeTeach},
     {"nudge",      "Agent Status", "STATUS", "agent status nudge assurance sync evidence",          0, false, makeAgentsV3},
     {"plan",       "Plan",        "PLAN",   "plan think before code project implementation risk authority", 0, false, makePlan},
-    {"prompts",    "Prompt Deck", "PROMPTS","prompt deck templates build bug review research maz", 0, false, makePromptDeck},
+    {"prompts",    "Prompt Deck", "PROMPTS","prompt deck templates build bug review research nod maz", 0, false, makePromptDeck},
     {"crew",       "Crew",        "CREW",   "crew agents split work claude codex hermes collision", 0, false, makeCrew},
     {"retro",      "Retro",       "RETRO",  "retro learn session improve template skill knowledge guard", 0, false, makeRetro},
 

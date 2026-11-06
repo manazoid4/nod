@@ -1,4 +1,4 @@
-// MAZ Pocket v0.3 showcase extras.
+// Nod v0.3 showcase extras.
 // Deliberately tiny and hidden from Home: one proper game and one hardware
 // demo. They exist to make the device fun to hand someone without turning the
 // product into an ESP32 junk drawer.

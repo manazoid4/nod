@@ -165,7 +165,7 @@ private:
                 break;
             case 7:
                 snprintf(buf, sizeof(buf),
-                         "MAZ Pocket v%s\nBoard    Cardputer ADV\nChip     %s "
+                         "Nod v%s\nBoard    Cardputer ADV\nChip     %s "
                          "rev%d\nCores    %d\nKeyboard %s\nUptime   %s",
                          MAZ_POCKET_VERSION, ESP.getChipModel(),
                          (int)ESP.getChipRevision(), (int)ESP.getChipCores(),
@@ -372,7 +372,7 @@ public:
                 } else {
                     Cfg.hostToken = _field.text; Cfg.firstRunComplete = true; Cfg.save();
                     _field.text.clear(); _hostSetup = 0;
-                    notify::post(Note::Success, "MAZ Host saved", Cfg.hostAddr);
+                    notify::post(Note::Success, "Nod Host saved", Cfg.hostAddr);
                 }
                 invalidate(); return true;
             }
@@ -445,7 +445,7 @@ public:
         if (e.code == KEY_H) {
             const bool ok = net::probeHost();
             notify::post(ok ? Note::Success : Note::Warn,
-                         ok ? "MAZ Host reachable" : "MAZ Host not reachable",
+                         ok ? "Nod Host reachable" : "Nod Host not reachable",
                          Cfg.hostAddr.empty() ? "not configured" : Cfg.hostAddr);
             invalidate();
             return true;
@@ -464,7 +464,7 @@ public:
         g.fillScreen(BG);
 
         if (_hostSetup) {
-            ui::header(g, "MAZ Host setup", _hostSetup == 1 ? "ADDRESS" : "TOKEN");
+            ui::header(g, "Nod Host setup", _hostSetup == 1 ? "ADDRESS" : "TOKEN");
             _field.draw(g, PAD, BODY_Y + 30, SCREEN_W - PAD * 2,
                         _hostSetup == 1 ? "192.168.1.20:8787" : "token from host setup");
             return;
@@ -506,11 +506,11 @@ public:
         row(g, y, "IP", Sys.ip.empty() ? "-" : Sys.ip.c_str(), DIM);
         y += 16;
 
-        // The MAZ Host line never lies: unconfigured is unconfigured.
+        // The Nod Host line never lies: unconfigured is unconfigured.
         const char* hostState = Cfg.hostAddr.empty()
                                     ? "NOT CONFIGURED"
                                     : (Sys.hostOnline ? "ONLINE" : "OFFLINE");
-        row(g, y, "MAZ HOST", hostState,
+        row(g, y, "NOD HOST", hostState,
             Sys.hostOnline ? OK : (Cfg.hostAddr.empty() ? DIM : WARN));
         y += 16;
         if (!Cfg.hostAddr.empty()) {
@@ -564,7 +564,7 @@ const char* HELP_LINES[] = {
     "up/down move   ENTER open",
     "D twice     delete",
     "#ABOUT",
-    "MAZ Pocket for Cardputer ADV",
+    "Nod for Cardputer ADV",
     "Bruce and Nemo stay available",
     "through M5Launcher.",
 };

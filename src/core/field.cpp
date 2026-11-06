@@ -117,7 +117,7 @@ void finishOutboxAudio(const host_worker::OutboxAudioResult& result) {
     answer.status = "open";
     answer.title = result.context.empty() ? "COMM / delayed" : "CONTEXT ASK / delayed";
     answer.body = result.reply.text;
-    answer.source = result.reply.provider.empty() ? "MAZ Core" : result.reply.provider;
+    answer.source = result.reply.provider.empty() ? "Nod Core" : result.reply.provider;
     answer.ref = result.recordId;
     store::addRecord(answer);
     saveReminderFrom(result.reply);
@@ -295,7 +295,7 @@ bool contextArmed() { return !gContext.empty(); }
 void clearContext() { gContext.clear(); }
 
 std::string nowText() {
-    if (Sys.agentQuestion) return "AGENT NEEDS MAZ";
+    if (Sys.agentQuestion) return "AGENT NEEDS NOD";
     if (Sys.outboxQueued) return "OUTBOX " + std::to_string(Sys.outboxQueued) + " WAITING";
     if (Sys.shiftRunning) return "SHIFT " + elapsed(Sys.shiftSeconds).substr(0, 5);
     if (gReminderDue) return "REMINDER DUE";

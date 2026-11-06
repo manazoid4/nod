@@ -29,7 +29,7 @@ public:
             case TeachView::Recording: return "M mark important   ENTER stop";
             case TeachView::Result: return "ENTER save transcript   N new";
             case TeachView::Error: return "R retry   ESC back";
-            default: return "MAZ Core working   ESC safe";
+            default: return "Nod Core working   ESC safe";
         }
     }
 
@@ -122,7 +122,7 @@ private:
 
     void loadDisplays() {
         if (host_worker::busy()) {
-            _view = TeachView::Error; _error = "MAZ Core is busy with another job"; invalidate(); return;
+            _view = TeachView::Error; _error = "Nod Core is busy with another job"; invalidate(); return;
         }
         if (!host_worker::submitTeach(host_worker::TeachKind::Displays)) {
             _view = TeachView::Error; _error = "Could not request PC displays"; invalidate(); return;
@@ -252,7 +252,7 @@ private:
         row.kind = "inbox";
         row.status = "open";
         row.title = "Teach demonstration";
-        row.body = _transcript.empty() ? "Screen recording saved on MAZ Core" : _transcript;
+        row.body = _transcript.empty() ? "Screen recording saved on Nod Core" : _transcript;
         row.source = "teach";
         row.ref = _session;
         if (store::addRecord(row)) notify::post(Note::Success, "Saved to Inbox", "Teach demo transcript");

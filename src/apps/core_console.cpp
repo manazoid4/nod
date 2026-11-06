@@ -22,7 +22,7 @@ constexpr int ACTION_COUNT = 5;
 class CoreConsoleApp final : public App {
 public:
     const char* id() const override { return "core"; }
-    const char* title() const override { return "MAZ CORE"; }
+    const char* title() const override { return "NOD CORE"; }
     const char* hints() const override {
         if (_view == View::Result) return "R refresh job  ESC actions";
         if (_view == View::Actions) return "ENTER run  ESC projects";
@@ -87,10 +87,10 @@ private:
 
     void renderProjects(M5Canvas& g) {
         std::string right = _status.ok ? (_status.ollama ? "AI + PC" : "PC / AI OFF") : "OFFLINE";
-        ui::header(g, "MAZ CORE", right.c_str());
+        ui::header(g, "NOD CORE", right.c_str());
         if (!_status.ok) {
             line(g, 0, _status.error.c_str(), WARN);
-            line(g, 2, "Configure CONTROL > MAZ CORE", DIM);
+            line(g, 2, "Configure CONTROL > NOD CORE", DIM);
             line(g, 3, "then press R to refresh", DIM);
             return;
         }

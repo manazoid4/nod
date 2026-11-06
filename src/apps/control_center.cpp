@@ -32,7 +32,7 @@ struct ControlItem {
 constexpr ControlItem CONTROL_ITEMS[] = {
     {"OVERVIEW",    "live state",      nullptr},
     {"WI-FI",       "scan / connect",  "network"},
-    {"MAZ CORE",    "PC / AI bridge",  nullptr},
+    {"NOD CORE",    "PC / AI bridge",  nullptr},
     {"PC COMMANDS", "media / lock",    "talk"},
     {"LIVE SCREEN", "mazpocket.local", nullptr},
     {"STORAGE",     "SD / flash",      nullptr},
@@ -135,20 +135,20 @@ private:
             return;
         }
         if (idx == 2) {
-            ui::header(g, "MAZ CORE", host::linkName());
+            ui::header(g, "NOD CORE", host::linkName());
             draw(g, 0, "Local PC brain + tools");
             draw(g, 1, "AI: LFM2.5 8B via Ollama");
             draw(g, 2, Sys.hostOnline ? "Host reachable" : "Host offline / not paired");
             std::string addr = Cfg.hostAddr.empty() ? "Host: not configured" :
                                "Host: " + Cfg.hostAddr + ":" + std::to_string(Cfg.hostPort);
             draw(g, 3, addr.c_str());
-            draw(g, 4, "Web: Maz Works Core console");
+            draw(g, 4, "Web: Nod Core console");
             return;
         }
         if (idx == 4) {
             ui::header(g, "LIVE SCREEN", "2 FPS");
             draw(g, 0, "Open mazpocket.local");
-            draw(g, 1, "Unlock with MAZ token");
+            draw(g, 1, "Unlock with Nod token");
             draw(g, 2, "LIVE SCREEN mirrors this LCD");
             draw(g, 3, "240x135 RGB565 / LAN");
             draw(g, 4, "Core can proxy it remotely");
