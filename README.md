@@ -50,6 +50,10 @@ Claude Code ──permission hook──▶ hub on your PC ◀──Wi-Fi / Tails
 
 Anthropic's open-source [Claude Desktop Buddy](https://github.com/anthropics/claude-desktop-buddy) is excellent, but it uses Bluetooth and only works with the desktop app. nod targets Claude Code, works remotely over your own private network, and adds a programmable action deck.
 
+## Device firmware and Nod Core
+
+The working Cardputer firmware and the PC-side Nod Core now live in this repo. See [docs/NOD-DEVICE-AND-CORE.md](docs/NOD-DEVICE-AND-CORE.md) for layout, verified status and what is not yet tested on hardware.
+
 ## Roadmap
 
 1. Hub endpoints and Claude Code hook

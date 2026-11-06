@@ -1,0 +1,147 @@
+# MAZ Pocket v0.8.0 — CONTROL
+
+v0.8.0 turns MAZ Pocket from a capable FIELD remote into a clearer physical interface for **voice AI, PC workflows, coding agents and phone-approved PC control**.
+
+The release keeps the six-tile Home design and renames features around what they actually do:
+
+**CALL / CAPTURE / AGENTS / CONTROL / MEMORY / FOCUS**
+
+## CALL MAZ
+
+- The old internal `COMM` experience is now explicitly **CALL MAZ**.
+- Hold Space to speak; release to send.
+- Spoken MAZ reply playback is enabled on fresh installs.
+- **P** replays the last reply.
+- **V** toggles voice replies.
+- **A** changes CLOUD / LOCAL / AUTO directly on the Cardputer.
+- Fresh v0.8 installs prefer CLOUD; existing devices keep their persisted route.
+- Context Ask remains available and informational only.
+
+## CAPTURE + Teach-by-Demonstration
+
+CAPTURE now opens a clear choice:
+
+- **TEACH DEMO** — selected PC display recording + microphone narration + MARK events.
+- **BRAIN DUMP** — voice to structured notes.
+- **VOICE RECORDER** — save audio directly.
+
+Teach Demo is host-side and explicit:
+
+1. choose a Windows display from the Cardputer;
+2. start recording;
+3. press **M** for important moments;
+4. stop from the Cardputer;
+5. MAZ Core extracts sparse scene-change frames and transcribes narration;
+6. save the result to Results Inbox.
+
+The default compatibility target is approximately **3 GB VRAM**. Recording is CPU-oriented and ECO/BALANCED faster-whisper profiles use CPU int8. ffmpeg is the capture dependency. MAZ Core auto-selects the first DirectShow microphone unless `MAZ_TEACH_AUDIO_DEVICE` is configured.
+
+## Agent workbench
+
+**AGENTS** now contains:
+
+- **AGENT STATUS** — Agent Nudge evidence.
+- **PLAN** — current-project-aware implementation planning without execution.
+- **CREW** — decomposes work across supported installed Claude/Codex/Hermes CLIs.
+- **RETRO** — proposes Template / Skill / Knowledge / Guard improvements after work.
+- **PROJECTS** — Git/build/test/project evidence.
+
+CREW planning is read-only. Actual Claude/Codex/Hermes subprocess execution requires a signed phone-approved **PROJECT FULL or broader** grant. The first implementation executes packages serially on one checkout to avoid blind file collisions.
+
+## Prompt Deck
+
+**MEMORY → PROMPT DECK** provides project-aware templates for:
+
+- bugs and diagnosis;
+- UI and feature work;
+- open-source integration;
+- refactoring and testing;
+- security/repository audits;
+- research + build;
+- MAZ Pocket capabilities;
+- agent workflow improvement.
+
+Templates keep a consistent task/context/procedure/verification/deliverable layout while the compiler injects current project + Agent Nudge evidence.
+
+## Phone-approved full PC authority
+
+MAZ Core now has an external authority broker.
+
+The model can request control but cannot approve itself. The authenticated phone page under `/control/` can approve or deny short-lived grants for:
+
+- READ ONLY;
+- PROJECT FULL;
+- PC FULL;
+- ADMIN.
+
+The phone UI also shows active grants, audit events and **REVOKE ALL CONTROL**.
+
+Signed grants are checked before arbitrary PowerShell/cmd execution and before coding-agent subprocess launches. `PC FULL` removes project confinement. `ADMIN` is a separate authorization scope; actual Windows administrator capability still depends on the Windows process/helper privileges.
+
+## Pairing + Token ID
+
+**CONTROL → PAIRING + PHONE** now shows:
+
+- a safe 12-character Token ID fingerprint;
+- the saved pairing token hidden by default;
+- **P** to reveal/hide the real token on the physical Cardputer;
+- the phone-control URL.
+
+The unauthenticated `mazpocket.local` page exposes Token ID only, not the raw secret.
+
+## `mazpocket.local` rebuilt
+
+The local Cardputer page is now designed as a phone-first control centre rather than a diagnostic dump.
+
+It surfaces:
+
+- pairing + Token ID;
+- phone approvals;
+- CALL MAZ;
+- PLAN / CREW / RETRO / Prompt Deck;
+- cloud/local/AUTO route;
+- voice playback setting;
+- Core/agent/laptop status;
+- PC quick controls;
+- live LCD;
+- connection configuration;
+- firmware staging.
+
+## M5Launcher self-deletion bug fixed
+
+Previous MAZ builds returned to M5Launcher by intentionally overwriting the first four bytes of the running MAZ app. That made the MAZ slot unbootable and caused the observed **“open Launcher → MAZ disappears → reinstall from SD”** loop.
+
+v0.8 no longer invalidates the running firmware. It selects the valid Launcher/fallback app as the next boot partition with `esp_ota_set_boot_partition()` and restarts.
+
+CI contains a dedicated regression guard that fails if destructive running-app flash writes return to this path.
+
+## Debug Capsules
+
+MAZ Core can persist a bounded, redacted debugging snapshot containing project/Git state, Core/device/system/model status, recent jobs, Agent Nudge and authority state. Credential-shaped values are removed before persistence/model use.
+
+## Installer changes
+
+`START-HERE.cmd` is explicitly opt-in:
+
+- asks before MAZ Core install/update;
+- asks before copying Cardputer firmware to SD;
+- refuses to guess if multiple removable drives are attached;
+- asks before opening the browser;
+- does not format media or directly write Cardputer flash.
+
+## Validation gate
+
+CI can prove host tests, packaging and firmware compilation, but it cannot prove physical Cardputer/M5Launcher behavior. Before calling v0.8 field-proven, validate on the actual Cardputer ADV:
+
+- CALL: 10+ voice turns, spoken playback, P replay, V toggle, A route persistence;
+- CAPTURE → TEACH DEMO: display selection, screen recording, microphone, MARK, stop/process;
+- PLAN / CREW / RETRO / Prompt Deck against a disposable project;
+- phone authority request → approve → execute → revoke;
+- Debug Capsule redaction with test-secret fixtures;
+- `mazpocket.local` on phone and desktop;
+- stage a release .bin from the portal;
+- enter M5Launcher and confirm MAZ Pocket **remains installed/launchable** without re-copying it from SD;
+- v0.7.x rollback through M5Launcher;
+- 30+ minute normal soak with no reset/watchdog.
+
+The M5Launcher persistence change is intentionally covered by source/CI regression tests, but the final proof is the physical ADV.

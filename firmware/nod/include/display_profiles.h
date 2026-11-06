@@ -19,14 +19,13 @@ struct DisplayProfile {
 };
 
 static const DisplayProfile kProfiles[] = {
-    {"cardputer-stock", "Cardputer ADV built-in 1.14in", "ST7789V2", 240, 135, 40, 52, true, false,
-     "Values from M5GFX Cardputer config; confirm on device"},
-    {"st7789-240x240", "1.3in 240x240 IPS (template)", "ST7789", 240, 240, 0, 0, true, false,
-     "Template - needs wiring + offsets tested"},
-    {"st7789-320x170", "1.9in 320x170 IPS (template)", "ST7789", 320, 170, 0, 35, true, false,
-     "Template - needs wiring + offsets tested"},
-    {"ili9341-320x240", "2.4in 320x240 (template)", "ILI9341", 320, 240, 0, 0, false, false,
-     "Template - needs wiring + offsets tested"},
+    // Size 1 - the built-in Cardputer ADV panel. Ships first.
+    {"standard", "Standard 1.14in (Cardputer ADV built-in)", "ST7789V2", 240, 135, 40, 52, true, false,
+     "Offsets from M5GFX Cardputer config; confirm on device"},
+    // Size 2 - larger pop-in panel, roughly half a Kindle (~3.5in). Exact module not chosen:
+    // 480x320 SPI ST7796/ILI9488 class. Template until a sample is bought and tested.
+    {"large", "Large 3.5in 480x320 (sample pending)", "ST7796", 480, 320, 0, 0, false, false,
+     "Template - driver, wiring and offsets to be set from the sample"},
 };
 static const int kProfileCount = sizeof(kProfiles) / sizeof(kProfiles[0]);
 
