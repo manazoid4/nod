@@ -1,5 +1,8 @@
 # Nod — one-run consumer product to Kickstarter (latest direction 6 Nov 2026)
 
+**Physical baseline confirmed by owner (6 Nov 2026):** Cardputer already boots into installed **v1.0.2** firmware. Skip basic charging, boot, home-screen and generic reinstall questions; do not downgrade/reflash for no reason. Start with feature-level real tests (CALL MAZ voice round-trip, then supported laptop-to-TV subtitles, no-code routine, capture) and debug connections only where a specific test fails. Version v1.0.2 is the owner-reported device value; do not conflate it with older MAZ Pocket source release tags.
+
+
 **Current private orchestration prompt (authoritative for both projects):** https://github.com/manazoid4/hermes-job-hunter/blob/main/docs/CLAUDE-SONNET-ONE-RUN-NOD-JOBHUNTER-2026-11.md
 
 ## Latest owner priorities
