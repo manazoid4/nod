@@ -6,3 +6,6 @@ nod includes code adapted from claude-desktop-buddy:
 Adapted files: firmware/draft/buddy/ble_link.cpp, firmware/draft/buddy/ble_link.h
 (change list in ble_link.h). Protocol handling in firmware/draft/buddy/buddy.cpp
 follows the same reference.
+
+The .claude/skills/i-have-adhd skill is from https://github.com/ayghri/i-have-adhd
+(MIT, commit 1ecea19), vendored unmodified after review.
