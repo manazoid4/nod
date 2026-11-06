@@ -1,3 +1,7 @@
+> **OBSOLETE BUDGET / TELEGRAM RULES — DO NOT FOLLOW AS CURRENT:** The owner now authorises ONE shared maximum $5 OpenRouter inference budget across Nod AND Job Hunter, with Nod first, Claude Sonnet 5.5 as thin supervisor, Groq free and OpenCode free/included models. The existing single Telegram bot should guide *Nod physical tests* while Cardputer charges and later Job Hunter questions—no competing pollers. For all current execution use [latest public Nod scope](NOD-SINGLE-RUN-CONSUMER-FUNDING.md) and the authoritative private combined prompt at https://github.com/manazoid4/hermes-job-hunter/blob/main/docs/CLAUDE-SONNET-ONE-RUN-NOD-JOBHUNTER-2026-11.md. This older $10/no-Hermes document is retained only for prior engineering context.
+
+---
+
 > **UPDATED EXECUTION ROUTE (6 Nov 2026):** Nod is now ONE continuous project, not two separate Claude batches. Follow [NOD SINGLE-RUN task](NOD-SINGLE-RUN-CONSUMER-FUNDING.md) and the owner's private combined Sonnet 5.5 orchestration document in the Hermes Job Hunter repository. Preserve this file as detailed historical feature/safety scope. The $10 Nod ceiling still applies. Hermes is used solely for the independent $5 Job Hunter workstream, not Nod. No custom PCB.
 
 ---
