@@ -1,3 +1,7 @@
+> **SUPERSEDED — DO NOT EXECUTE.** This is a historical $5/Hermes strategy. The latest owner instructions (6 November 2026) use a $10 total paid OpenRouter budget, Claude as thin orchestrator with free Groq/NVIDIA/OpenRouter/local workers, **no Hermes/Telegram test loop**, existing MAZ Pocket features preserved, a Cardputer ADV + 3D-printed shell (no custom PCB), and consumer-focused Kickstarter prelaunch. **Use [the canonical updated master prompt](CLAUDE-NOD-10USD-MASTER-EXECUTION.md), plus [Batch 1](CLAUDE-BATCH-1-CONSUMER-MVP.md) and [Batch 2](CLAUDE-BATCH-2-LAUNCH.md), instead.**
+
+---
+
 # NOD — Hermes interactive prototype and Kickstarter launch programme
 **Owner direction: 6 November 2026.** Two separately copyable Claude execution batches. This is an execution mandate, not proof of completed work.
 
