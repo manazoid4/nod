@@ -33,6 +33,8 @@ from .refine import refine
 from .security import Security
 from .sessions import SessionStore
 from .stt import SpeechToText
+from .subtitle_routes import install_subtitle_routes
+from .subtitles import SubtitleJobs, WhisperTranscriber
 from .telemetry import SystemTelemetry
 from .tts import SpeechOut
 from .version import CORE_VERSION
@@ -88,6 +90,7 @@ def create_app(
     bridge: BridgeWorker | None = None,
     beam: BeamStore | None = None,
     telemetry: SystemTelemetry | None = None,
+    subtitles: SubtitleJobs | None = None,
 ) -> FastAPI:
     cfg = settings or Settings()
     security = Security(cfg)
@@ -106,6 +109,10 @@ def create_app(
     authority = AuthorityBroker(cfg)
     elevated_executor = ElevatedExecutor(cfg, authority)
     debug_capsules = DebugCapsules(cfg)
+    subtitle_jobs = subtitles or SubtitleJobs(
+        cfg,
+        WhisperTranscriber(cfg, speech if isinstance(speech, SpeechToText) else SpeechToText(cfg)),
+    )
 
     api = FastAPI(
         title="MAZ Core",
@@ -590,6 +597,9 @@ def create_app(
             return nudge_client.nudge(session_id)
         except (RuntimeError, httpx.HTTPError) as error:
             raise HTTPException(503, str(error)) from error
+
+    # ------------------------------------------------------------ SUBTITLES
+    install_subtitle_routes(api, subtitle_jobs)
 
     if cfg.control_enabled:
         install_control_routes(
