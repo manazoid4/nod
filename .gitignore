@@ -10,3 +10,4 @@ host/.pytest_cache/
 host/**/__pycache__/
 host/.env
 *.pyc
+.claude/worktrees/
