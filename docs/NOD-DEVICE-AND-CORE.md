@@ -23,7 +23,7 @@ Layout is deliberately the same as the source repo so the release scripts and CI
 | Nod Core tests (`pytest host/tests`) | 65 pass, 1 fail: needs PowerShell `pwsh`; same failure in the original repo on Linux. Expect pass on Windows. |
 | Web flasher tests | pass |
 | `scripts/check-version.py` | pass |
-| Firmware compile, Cardputer ADV (PlatformIO) | **pass**, 1,470,509 B of the 1,572,864 B (0x180000) limit. Built with M5GFX `^0.2.26`: the pinned `0.2.26` is not resolvable from the registry in this environment. |
+| Firmware compile, Cardputer ADV (PlatformIO) | **pass**, 1,460,865 B of the 1,572,864 B (0x180000) limit, using the repo's own `platformio.ini`. M5GFX pin moved `0.2.26` -> `0.2.27` because 0.2.26 is no longer in the PlatformIO registry (CI broke on it). Not yet confirmed on hardware. |
 | `firmware/nod` unit tests | 313 checks pass |
 
 ## NOT verified
