@@ -34,10 +34,13 @@ struct SysState {
     uint16_t    hostPort   = 0;
     bool        hostOnline = false;
 
+    uint8_t     buddy         = 0;  // Claude Code via Core: 0 idle, 1 working, 2 needs you
     uint8_t     agentsWorking = 0;
     uint8_t     agentsWaiting = 0;
     uint8_t     agentsStale   = 0;
     bool        agentQuestion = false;
+    bool        halted = false;
+    bool        haltKnown = false;
     bool        nudgeDue      = false;
     uint32_t    nudgeCheckedAt = 0;
 
@@ -71,6 +74,20 @@ struct SysState {
     int      ollamaVramMb = 0;
     int      ollamaContext = 0;
     uint32_t laptopStatusAt = 0;
+
+    static constexpr int WORK_MAX_TRACKS = 4;
+    static constexpr int WORK_HISTORY_DAYS = 7;
+    bool        workLoaded = false;  // ever received one successful payload
+    uint32_t    workReceivedAt = 0;  // millis() of the last successful poll
+    uint8_t     workTrackCount = 0;
+    std::string workTrackId[WORK_MAX_TRACKS];
+    std::string workTrackLabel[WORK_MAX_TRACKS];
+    std::string workTrackPrimaryEventTypeId[WORK_MAX_TRACKS];
+    float       workTrackToday[WORK_MAX_TRACKS] = {};
+    bool        workTrackHasTarget[WORK_MAX_TRACKS] = {};
+    float       workTrackTarget[WORK_MAX_TRACKS] = {};
+    float       workSeven[WORK_HISTORY_DAYS] = {};
+    std::string workNextAction;
 
     uint32_t freeHeap           = 0;
     uint32_t minFreeHeap        = 0;

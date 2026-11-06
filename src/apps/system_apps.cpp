@@ -12,11 +12,13 @@
 #include "../audio/sfx.h"
 #include "../audio/voice.h"
 #include "../core/notify.h"
+#include "../core/quiet.h"
 #include "../core/settings.h"
 #include "../core/launcher.h"
 #include "../core/shell.h"
 #include "../core/sys.h"
 #include "../input/keyboard.h"
+#include "../net/mazhost.h"
 #include "../net/net.h"
 #include "../storage/store.h"
 #include "apps.h"
@@ -46,6 +48,12 @@ public:
     bool onKey(const KeyEvent& e) override {
         if (!e.down) return false;
         if (!_detail.empty()) {
+            if ((e.code == KEY_ENTER || e.code == KEY_U) && host::updateReady() &&
+                _detail.rfind("nod v", 0) == 0) {
+                host::fwUpdate();
+                invalidate();
+                return true;
+            }
             if (e.code == KEY_ESC) {
                 _detail.clear();
                 _kbTest = false;
@@ -112,13 +120,20 @@ private:
             case 0:
                 micTest();
                 return;
-            case 1:
-                sfx::boot();
-                delay(120);
-                sfx::timerDone();
-                _detail =
-                    "Played boot + alarm tones.\nHeard nothing? check Volume.";
+            case 1: {
+                // Same playRaw path as AI replies: if this is silent the speaker
+                // or volume is the problem, not the reply download.
+                if (!voice::speakerTest(true)) {
+                    _detail = "Cannot test while recording";
+                } else {
+                    snprintf(buf, sizeof(buf),
+                             "Played 1s 440Hz tone + sweep.\nVolume %d%% (min 25%% used)\n"
+                             "Heard nothing? raise Volume\nor the speaker is dead.",
+                             Cfg.volume * 100 / 255);
+                    _detail = buf;
+                }
                 break;
+            }
             case 2:
                 _kbTest = true;
                 _detail = "Press keys - ESC exits";
@@ -163,16 +178,19 @@ private:
                          ui::humanSize(store::totalBytes()).c_str());
                 _detail = buf;
                 break;
-            case 7:
+            case 7: {
+                const std::string cv = host::coreInfo().version;
+                const std::string upd = host::updateReady() ? "\nUPDATE READY v" + host::coreInfo().fwVersion : "";
                 snprintf(buf, sizeof(buf),
-                         "MAZ Pocket v%s\nBoard    Cardputer ADV\nChip     %s "
+                         "nod v" NOD_FW_VERSION " (" NOD_FW_SHA ")\nCore %s%s\nChip     %s "
                          "rev%d\nCores    %d\nKeyboard %s\nUptime   %s",
-                         MAZ_POCKET_VERSION, ESP.getChipModel(),
+                         cv.empty() ? "offline" : ("v" + cv).c_str(), upd.c_str(), ESP.getChipModel(),
                          (int)ESP.getChipRevision(), (int)ESP.getChipCores(),
                          KB.ok() ? "TCA8418 ok" : "NOT DETECTED",
                          ui::hhmmss(Sys.uptimeSeconds()).c_str());
                 _detail = buf;
                 break;
+            }
             case 8:
                 notify::post(Note::Info, "Rebooting", "back to M5Launcher");
                 delay(600);
@@ -217,10 +235,67 @@ private:
     bool        _kbTest = false;
 };
 
+// ------------------------------------------------------------------ Say
+// Type text, ENTER sends it to Core /say and plays the WAV (same download +
+// voice::play path as reply speech).
+class SayApp : public App {
+public:
+    const char* id() const override { return "say"; }
+    const char* title() const override { return "Say"; }
+    const char* hints() const override { return "ENTER speak  ESC back"; }
+
+    bool onKey(const KeyEvent& e) override {
+        if (!e.down || e.code == KEY_ESC) return false;
+        if (e.code == KEY_ENTER) {
+            if (_text.empty() || !store::ready()) return true;
+            if (!_path.empty()) store::remove(_path);
+            _path = store::newPath("cache", "wav");
+            if (host::say(_text, _path)) voice::play(_path);
+            else _path.clear();
+            _note = _path.empty() ? "Say failed. Is hub on?" : "Playing. ENTER repeats.";
+        } else if (e.code == KEY_BACKSPACE) {
+            if (!_text.empty()) _text.pop_back();
+            _note.clear();
+        } else if (e.ch >= 32 && e.ch < 127 && _text.size() < 300) {
+            _text.push_back(e.ch);
+            _note.clear();
+        } else {
+            return false;
+        }
+        invalidate();
+        return true;
+    }
+
+    void render(M5Canvas& g) override {
+        g.fillScreen(BG);
+        ui::header(g, "Say");
+        g.setFont(&fonts::Font0);
+        g.setTextDatum(top_left);
+        if (_text.empty()) {
+            g.setTextColor(DIM, BG);
+            g.drawString("Type what nod should say", PAD, BODY_Y + 22);
+        } else {
+            // Last two lines of 38 chars; the cursor sits on the newest one.
+            const size_t n = _text.size();
+            const size_t start = n > 76 ? n - 76 : 0;
+            const size_t split = start + ((n - start) > 38 ? 38 : 0);
+            g.setTextColor(TEXT, BG);
+            g.drawString(_text.substr(start, split - start).c_str(), PAD, BODY_Y + 22);
+            g.drawString((_text.substr(split) + "_").c_str(), PAD, BODY_Y + 34);
+        }
+        g.setTextColor(_path.empty() ? ERR : OK, BG);
+        g.drawString(_note.c_str(), PAD, BODY_Y + 54);
+    }
+
+private:
+    std::string _text, _path, _note;
+};
+
 // --------------------------------------------------------------- Settings
 const char* SET_NAMES[] = {"Brightness",    "Volume",        "UI sounds",
                            "Screen timeout", "Mic gain",     "Storage",
-                           "Time zone",      "Wi-Fi & host", "Keys & help"};
+                           "Time zone",      "Wi-Fi & host", "Keys & help",
+                           "Voice",           "Quiet mode", "Quiet for"};
 constexpr int SET_COUNT = sizeof(SET_NAMES) / sizeof(SET_NAMES[0]);
 
 class SettingsApp : public App {
@@ -228,7 +303,7 @@ public:
     const char* id() const override { return "settings"; }
     const char* title() const override { return "Settings"; }
     const char* hints() const override {
-        return "left/right change  ENTER toggle";
+        return "</> change  ENTER toggle";
     }
 
     void onExit() override { Cfg.save(); }
@@ -284,6 +359,19 @@ public:
             case 8:
                 if (e.code == KEY_ENTER) shell::pushById("help");
                 break;
+            case 9:
+                if (e.code == KEY_ENTER) shell::pushById("voice");
+                break;
+            case 10: {
+                const int lv = (static_cast<int>(quiet::level()) + (d ? d : 1) + 3) % 3;
+                quiet::set(static_cast<quiet::Level>(lv), Cfg.quietDur);
+                break;
+            }
+            case 11: {
+                const uint8_t dur = static_cast<uint8_t>((Cfg.quietDur + (d ? d : 1) + quiet::DUR_COUNT) % quiet::DUR_COUNT);
+                quiet::set(quiet::level(), dur);
+                break;
+            }
             default:
                 break;
         }
@@ -337,6 +425,14 @@ private:
                 break;
             case 7:
                 return Sys.wifiConnected ? Sys.wifiSsid : "not connected";
+            case 10: {
+                const int mins = quiet::remainingMin();
+                if (mins < 0) return quiet::levelName(quiet::level());
+                snprintf(b, sizeof(b), "%s %dh%02d", quiet::levelName(quiet::level()), mins / 60, mins % 60);
+                break;
+            }
+            case 11:
+                return quiet::durLabel(Cfg.quietDur);
             default:
                 return "";
         }
@@ -344,6 +440,111 @@ private:
     }
 
     ListCursor _cursor;
+};
+
+// ------------------------------------------------------------------ Voice
+// Pick the reply voice (Fish library, chosen on Core). ENTER saves the choice
+// and plays a cached preview through the normal reply playback path.
+class VoiceApp : public App {
+public:
+    const char* id() const override { return "voice"; }
+    const char* title() const override { return "Voice"; }
+    const char* hints() const override { return "UP/DOWN move   ENTER use + hear   ESC back"; }
+
+    void onEnter() override {
+        _items.clear();
+        _status  = "Loading voices...";
+        _pending = Load;
+        _at      = millis();
+        invalidate();
+    }
+
+    void onExit() override {
+        if (!_path.empty()) store::remove(_path);
+    }
+
+    bool onKey(const KeyEvent& e) override {
+        if (!e.down) return false;
+        if (_cursor.onKey(e, (int)_items.size())) {
+            invalidate();
+            return true;
+        }
+        if (e.code == KEY_ENTER && !_items.empty() && _pending == None) {
+            _status  = "Switching...";
+            _pending = Pick;
+            _at      = millis();
+            invalidate();
+            return true;
+        }
+        return false;
+    }
+
+    void update() override {
+        if (_pending == None || millis() - _at < 80) return;  // let the status paint first
+        const Pending what = _pending;
+        _pending           = None;
+        if (what == Load) {
+            std::string err;
+            if (!host::voiceList(_items, err)) _status = err.empty() ? "no voices" : err;
+            else {
+                _status.clear();
+                for (size_t i = 0; i < _items.size(); ++i)
+                    if (_items[i].current) _cursor.sel = (int)i;
+                _cursor.clamp((int)_items.size());
+            }
+        } else {
+            host::VoiceItem& v = _items[_cursor.sel];
+            if (!host::voiceSelect(v.id, v.name)) {
+                _status = "Could not save voice";
+            } else {
+                for (auto& it : _items) it.current = false;
+                v.current = true;
+                _status   = "Voice: " + v.name;
+                if (store::ready()) {
+                    if (!_path.empty()) store::remove(_path);
+                    _path = store::newPath("cache", "wav");
+                    if (host::voicePreview(v.id, _path)) voice::play(_path);
+                    else _status = "Saved; no preview";
+                }
+            }
+        }
+        invalidate();
+    }
+
+    void render(M5Canvas& g) override {
+        g.fillScreen(BG);
+        ui::header(g, "Voice", _items.empty() ? nullptr : "Fish");
+        if (_items.empty()) {
+            ui::emptyState(g, _status.c_str(), "hub must be reachable");
+            return;
+        }
+        const int total = (int)_items.size();
+        const int rows  = std::min(ROWS_VISIBLE - 1, total);
+        for (int i = 0; i < rows; ++i) {
+            const int idx = _cursor.first + i;
+            if (idx >= total) break;
+            const auto& v = _items[idx];
+            std::string label = (v.current ? "* " : "  ") + v.name;
+            std::string desc  = v.description.size() > 18 ? v.description.substr(0, 18) : v.description;
+            ui::listRow(g, i + 1, idx == _cursor.sel, label.c_str(), desc.c_str());
+        }
+        ui::scrollBar(g, total, _cursor.first, ROWS_VISIBLE - 1);
+        if (!_status.empty()) {
+            g.setFont(&fonts::Font0);
+            g.setTextDatum(top_left);
+            g.setTextColor(DIM, BG);
+            g.drawString(_status.c_str(), PAD, BODY_Y + BODY_H - 10);
+        }
+    }
+
+private:
+    enum Pending : uint8_t { None, Load, Pick };
+    ListCursor                _cursor;
+    std::vector<host::VoiceItem> _items;
+    std::string               _status;
+    std::string               _path;
+    Pending                   _pending = None;
+    uint32_t                  _at      = 0;
 };
 
 // ------------------------------------------------------------ Connections
@@ -372,7 +573,7 @@ public:
                 } else {
                     Cfg.hostToken = _field.text; Cfg.firstRunComplete = true; Cfg.save();
                     _field.text.clear(); _hostSetup = 0;
-                    notify::post(Note::Success, "MAZ Host saved", Cfg.hostAddr);
+                    notify::post(Note::Success, "hub saved", Cfg.hostAddr);
                 }
                 invalidate(); return true;
             }
@@ -445,7 +646,7 @@ public:
         if (e.code == KEY_H) {
             const bool ok = net::probeHost();
             notify::post(ok ? Note::Success : Note::Warn,
-                         ok ? "MAZ Host reachable" : "MAZ Host not reachable",
+                         ok ? "hub reachable" : "hub not reachable",
                          Cfg.hostAddr.empty() ? "not configured" : Cfg.hostAddr);
             invalidate();
             return true;
@@ -464,7 +665,7 @@ public:
         g.fillScreen(BG);
 
         if (_hostSetup) {
-            ui::header(g, "MAZ Host setup", _hostSetup == 1 ? "ADDRESS" : "TOKEN");
+            ui::header(g, "hub setup", _hostSetup == 1 ? "ADDRESS" : "TOKEN");
             _field.draw(g, PAD, BODY_Y + 30, SCREEN_W - PAD * 2,
                         _hostSetup == 1 ? "192.168.1.20:8787" : "token from host setup");
             return;
@@ -510,7 +711,7 @@ public:
         const char* hostState = Cfg.hostAddr.empty()
                                     ? "NOT CONFIGURED"
                                     : (Sys.hostOnline ? "ONLINE" : "OFFLINE");
-        row(g, y, "MAZ HOST", hostState,
+        row(g, y, "HUB", hostState,
             Sys.hostOnline ? OK : (Cfg.hostAddr.empty() ? DIM : WARN));
         y += 16;
         if (!Cfg.hostAddr.empty()) {
@@ -518,6 +719,14 @@ public:
             snprintf(addr, sizeof(addr), "%s:%u", Cfg.hostAddr.c_str(),
                      (unsigned)Cfg.hostPort);
             row(g, y, "", addr, DIM);
+            y += 16;
+        }
+        if (!Cfg.hostRemoteUrl.empty()) {
+            std::string h = Cfg.hostRemoteUrl;
+            if (h.rfind("https://", 0) == 0) h = h.substr(8);
+            char rem[56];
+            snprintf(rem, sizeof(rem), "Remote: %.44s", h.c_str());
+            row(g, y, "", rem, DIM);
         }
     }
 
@@ -546,6 +755,8 @@ const char* HELP_LINES[] = {
     "Ctrl+L      back to M5Launcher",
     "Fn+SPACE    context ask (Talk)",
     "Fn+F        toggle field mode",
+    "Fn+Q        quiet / silent / normal",
+    "Fn+H        pause agent permission asks",
     "ESC         back (the <ESC chip)",
     "hold ESC    home from anywhere",
     "#HOME",
@@ -559,12 +770,14 @@ const char* HELP_LINES[] = {
     "            agent ops",
     "#VOICE",
     "hold SPACE  talk (Call, Capture)",
+    "hold ^SPACE call from any screen",
     "P S D       play, save, delete",
     "#LISTS",
     "up/down move   ENTER open",
     "D twice     delete",
     "#ABOUT",
-    "MAZ Pocket for Cardputer ADV",
+    "nod v" NOD_FW_VERSION " on Cardputer ADV",
+    "by Maz Works  mazworks.uk",
     "Bruce and Nemo stay available",
     "through M5Launcher.",
 };
@@ -574,7 +787,7 @@ class HelpApp : public App {
 public:
     const char* id() const override { return "help"; }
     const char* title() const override { return "Keys & Help"; }
-    const char* hints() const override { return "up/down scroll   ESC back"; }
+    const char* hints() const override { return "UP/DOWN scroll"; }
 
     bool onKey(const KeyEvent& e) override {
         if (!e.down) return false;
@@ -612,7 +825,9 @@ private:
 }  // namespace
 
 App* makeTools() { return new ToolsApp(); }
+App* makeSay() { return new SayApp(); }
 App* makeSettings() { return new SettingsApp(); }
+App* makeVoice() { return new VoiceApp(); }
 App* makeConnections() { return new ConnectionsApp(); }
 App* makeHelp() { return new HelpApp(); }
 

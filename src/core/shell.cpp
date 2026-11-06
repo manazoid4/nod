@@ -11,12 +11,15 @@
 #include "../input/keyboard.h"
 #include <charge_monitor.h>
 #include "../net/host_worker.h"
+#include "../net/mazhost.h"
 #include "../net/net.h"
 #include "../storage/store.h"
 #include "../ui/ui.h"
 #include "../ui/lvgl_ui.h"
+#include "approvals.h"
 #include "field.h"
 #include "notify.h"
+#include "quiet.h"
 #include "settings.h"
 #include "launcher.h"
 #include "sys.h"
@@ -36,6 +39,7 @@ bool              gScreenOff   = false;
 uint32_t          gLastPowerMs = 0;
 bool              gEscHandled  = false;
 bool              gEscClaimed  = false;
+bool              gFwConfirm   = false;  // "Update firmware?" modal, any screen
 
 struct FocusTimer {
     bool        running  = false;
@@ -204,7 +208,7 @@ public:
 
         if (dictate::active(this)) {
             const bool listening = dictate::state() == dictate::State::Listening;
-            g.setTextColor(listening ? ACCENT2 : WARN, PANEL);
+            g.setTextColor(listening ? LIVE : TEXT, PANEL);
             g.drawString(listening ? "listening..." : "transcribing...",
                          PAD + 4, BODY_Y + 23);
             return;
@@ -294,8 +298,31 @@ uint8_t navFallback(uint8_t code) {
 
 bool handleGlobalKey(const KeyEvent& e) {
     if (!e.down) return false;
+    if (gFwConfirm) {  // modal: one key yes, ESC no, everything else swallowed
+        if (e.code == KEY_Y || e.code == KEY_ENTER) {
+            gFwConfirm = false;
+            host::fwUpdate();  // reboots on success; shows its own error otherwise
+            invalidate();
+        } else if (e.code == KEY_ESC || e.code == KEY_N) {
+            gFwConfirm = false;
+            invalidate();
+        }
+        return true;
+    }
+    // Ctrl+U: install the available firmware update from any screen (Ctrl never types text).
+    if ((e.mods & MOD_CTRL) && e.code == KEY_U) {
+        confirmFwUpdate();
+        return true;
+    }
     if ((e.mods & MOD_CTRL) && e.code == KEY_K) {
         openPalette();
+        return true;
+    }
+    // Call from any screen: hold Ctrl+Space (Call starts recording while SPACE is held).
+    if ((e.mods & MOD_CTRL) && e.code == KEY_SPACE && !gStack.empty() &&
+        strcmp(gStack.back()->id(), "talk") && strcmp(gStack.back()->id(), "palette")) {
+        field::clearContext();
+        pushById("talk");
         return true;
     }
     if ((e.mods & MOD_CTRL) && e.code == KEY_L) {
@@ -306,6 +333,14 @@ bool handleGlobalKey(const KeyEvent& e) {
         field::armContext(gStack.back()->id(), gStack.back()->contextSnapshot());
         if (strcmp(gStack.back()->id(), "talk")) pushById("talk");
         notify::post(Note::Info, "Context Ask", field::context().c_str());
+        return true;
+    }
+    if ((e.mods & MOD_FN) && e.code == KEY_H) {
+        field::toggleHalt();
+        return true;
+    }
+    if ((e.mods & MOD_FN) && e.code == KEY_Q) {
+        quiet::cycle();
         return true;
     }
     if ((e.mods & MOD_FN) && e.code == KEY_F) {
@@ -320,6 +355,15 @@ bool handleGlobalKey(const KeyEvent& e) {
 M5Canvas& canvas() { return gCanvas; }
 int depth() { return static_cast<int>(gStack.size()); }
 const char* currentId() { return gStack.empty() ? "none" : gStack.back()->id(); }
+
+void confirmFwUpdate() {
+    if (host::updateReady()) {
+        gFwConfirm = true;
+        invalidate();
+    } else {
+        notify::post(Note::Info, "No update", "firmware is current");
+    }
+}
 
 void invalidate() {
     if (!gStack.empty()) gStack.back()->invalidate();
@@ -374,7 +418,13 @@ void openPalette() {
 }
 
 void dispatchKey(const KeyEvent& e) {
+    const bool wasAsleep = gDimmed || gScreenOff;
     if (e.down) wake();
+    // Approvals sit above everything. A key that only woke the screen never decides.
+    if (approvals::active()) {
+        if (!wasAsleep) approvals::handleKey(e);
+        return;
+    }
     if (notify::active() && e.down) notify::dismiss();
 
     if (handleGlobalKey(e)) return;
@@ -486,7 +536,9 @@ void loop() {
     dictate::update();
     net::update();
     field::update();
+    if (approvals::update(gScreenOff)) wake();
     notify::update();
+    quiet::update();
     apps::updateProductServices();
     lvui::tick();
     applyScreenTimeout();
@@ -504,6 +556,20 @@ void loop() {
     ui::statusBar(gCanvas);
     ui::hintBar(gCanvas, top->hints());
     notify::render(gCanvas);
+    approvals::render(gCanvas);
+    if (gFwConfirm) {
+        gCanvas.fillRoundRect(20, 38, SCREEN_W - 40, 52, 4, PANEL);
+        gCanvas.drawRoundRect(20, 38, SCREEN_W - 40, 52, 4, ACCENT);
+        gCanvas.setFont(&fonts::Font0);
+        gCanvas.setTextDatum(top_center);
+        gCanvas.setTextColor(TEXT, PANEL);
+        gCanvas.drawString("Update firmware?", SCREEN_W / 2, 46);
+        gCanvas.setTextColor(DIM, PANEL);
+        gCanvas.drawString(("-> v" + host::coreInfo().fwVersion).c_str(), SCREEN_W / 2, 60);
+        gCanvas.setTextColor(ACCENT, PANEL);
+        gCanvas.drawString("Y/ENTER yes   ESC no", SCREEN_W / 2, 74);
+        gCanvas.setTextDatum(top_left);
+    }
     gCanvas.pushSprite(0, 0);
     top->clean();
     lastPaint = millis();

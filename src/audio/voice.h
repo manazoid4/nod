@@ -72,8 +72,19 @@ const char* lastError();
 
 // --- playback -------------------------------------------------------------
 bool play(const std::string& wavPath);
+// Play wavPath right after the current one with no gap (starts it if idle). Lets a reply
+// start on its first sentence while the rest is still downloading. holdOpen(true) keeps
+// playback alive at the end of the queue (up to ~25 s) waiting for a part; holdOpen(false)
+// lets it finish. Both are main-loop only, like play().
+bool enqueue(const std::string& wavPath);
+void holdOpen(bool on);
 void stopPlayback();
 bool isPlaying();
+
+// Speaker self-test: 1 s of 440 Hz, a gap, then a 300..2400 Hz sweep, generated
+// as PCM and sent through the same queue as replies. wait=true blocks until done
+// (~2 s) and prints "[spk] test done". Refused while recording.
+bool speakerTest(bool wait);
 
 // Duration of a MAZ-written wav without loading it, for list screens.
 uint32_t wavSeconds(const std::string& wavPath);
