@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nod UI preview</title>
+<style>body{font-family:system-ui;background:#0b0d12;color:#e8eaf0;margin:0;padding:20px}h1{font-size:18px}
+select,button{font-size:15px;padding:8px 12px;margin:4px;border-radius:8px;border:1px solid #3a4150;background:#171b24;color:#e8eaf0}
+canvas{image-rendering:pixelated;border:6px solid #222;border-radius:10px;margin:10px;background:#000}
+.row{display:flex;flex-wrap:wrap;align-items:flex-start}.note{color:#9aa3b5;font-size:13px;max-width:560px}</style></head><body>
+<h1>Nod UI preview (layout generated from firmware headers)</h1>
+<div>Screen: <select id="p"></select> <button id="n">Next card</button> <button id="c">Charging view</button> <button id="f">Full view</button></div>
+<p class="note" id="v"></p>
+<div class="row"><canvas id="home"></canvas><canvas id="chg"></canvas></div>
+<p class="note">Mockup for planning shots. Not a photo of real hardware; colours/fonts will differ on the device.</p>
+<script src="layouts.js"></script><script>
+const P=window.NOD_PROFILES,sel=document.getElementById('p'),S=3;let cur=0,mode='charging';
+P.forEach((d,i)=>sel.add(new Option(d.name+' '+d.w+'x'+d.h,i)));
+function setup(c,d){c.width=d.w;c.height=d.h;c.style.width=d.w*S+'px';c.style.height=d.h*S+'px'}
+function home(d){const c=document.getElementById('home');setup(c,d);const g=c.getContext('2d');
+g.fillStyle='#10131a';g.fillRect(0,0,d.w,d.h);g.fillStyle='#1b2030';g.fillRect(...d.bar);
+g.fillStyle='#cfd6e6';g.font='bold '+(d.bar[3]-8)+'px sans-serif';g.textBaseline='middle';g.fillText('nod',6,d.bar[3]/2);
+g.textAlign='right';g.fillText('87%',d.w-6,d.bar[3]/2);g.textAlign='left';
+d.cards.forEach((k,i)=>{const[x,y,w,h]=k.r;g.fillStyle=i==cur%4?'#3b6cff':'#222a3d';g.beginPath();g.roundRect(x,y,w,h,8);g.fill();
+g.fillStyle='#fff';g.font='bold '+Math.round(h*.24)+'px sans-serif';g.textBaseline='alphabetic';g.fillText(k.l,x+8,y+h*.5);
+g.fillStyle=i==cur%4?'#dbe4ff':'#8c97b0';let fs=Math.round(h*.15);g.font=fs+'px sans-serif';while(g.measureText(k.s).width>w-16&&fs>6){fs--;g.font=fs+'px sans-serif'}g.fillText(k.s,x+8,y+h*.78)});
+g.fillStyle='#8c97b0';g.font=(d.foot[3]-5)+'px sans-serif';g.textBaseline='middle';g.fillText('Arrows move   ENTER open   1-4 jump',6,d.foot[1]+d.foot[3]/2)}
+function chg(d){const c=document.getElementById('chg');setup(c,d);const g=c.getContext('2d');const full=mode=='full';
+g.fillStyle=full?'#000':'#05070a';g.fillRect(0,0,d.w,d.h);g.textAlign='center';
+g.fillStyle=full?'#4ade80':'#fbbf24';g.font='bold '+Math.round(d.h*.4)+'px sans-serif';g.textBaseline='middle';
+g.fillText(full?'100%':'63%',d.w/2,d.h*.38);g.fillStyle='#cfd6e6';g.font='bold '+Math.round(d.h*.12)+'px sans-serif';
+g.fillText(full?'Fully charged':'Charging',d.w/2,d.h*.62);g.fillStyle='#8c97b0';g.font=Math.round(d.h*.09)+'px sans-serif';
+g.fillText(full?'Safe to unplug':'about 42 min to full  -  any key wakes',d.w/2,d.h*.78);
+const bw=d.w*.6,bx=(d.w-bw)/2,by=d.h*.88;g.strokeStyle='#445';g.strokeRect(bx,by,bw,d.h*.05);g.fillStyle=full?'#4ade80':'#fbbf24';g.fillRect(bx,by,bw*(full?1:.63),d.h*.05)}
+function draw(){const d=P[sel.value];document.getElementById('v').textContent=d.verified?'Verified on hardware':'NOT yet verified on real hardware';home(d);chg(d)}
+sel.onchange=draw;n.onclick=()=>{cur++;draw()};c.onclick=()=>{mode='charging';draw()};f.onclick=()=>{mode='full';draw()};draw();
+</script></body></html>

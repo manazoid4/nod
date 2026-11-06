@@ -1,0 +1,187 @@
+name: MAZ Pocket build
+
+on:
+  # Feature/fix branches are validated by their pull_request run only. Running
+  # both push + PR for the same head made the shared concurrency group cancel
+  # duplicate jobs against each other. Main/release pushes still build directly.
+  push:
+    branches: [main, "release/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maz-pocket-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: host/requirements.txt
+
+      - name: Read version
+        id: version
+        shell: pwsh
+        run: |
+          $v = (Get-Content .\VERSION -Raw).Trim()
+          "value=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "MAZ Pocket v$v"
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio pytest
+          pip install -r host/requirements.txt
+          pip install "click>=8.0.4,<8.4"
+
+      - name: Test MAZ Core + Host
+        run: python -m pytest host/tests -q
+
+      - name: Validate version/install contract
+        run: python scripts/check-version.py
+
+      - name: Guard non-destructive M5Launcher hand-back
+        run: python scripts/check-launcher-handoff.py
+
+      - name: Validate PowerShell installers/helpers parse
+        shell: pwsh
+        run: |
+          $files = @(
+            '.\scripts\install-to-sd.ps1',
+            '.\scripts\setup-all.ps1',
+            '.\scripts\prepare-release.ps1',
+            '.\host\setup.ps1',
+            '.\host\install-core.ps1',
+            '.\host\pair.ps1',
+            '.\host\beam.ps1'
+          )
+          foreach ($file in $files) {
+            $tokens = $null
+            $parseErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$parseErrors)
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | Format-List
+              throw "$file has parse errors"
+            }
+          }
+
+      - name: Keep executed installers ASCII-only for Windows PowerShell 5.1
+        shell: pwsh
+        run: |
+          $files = @(
+            '.\scripts\START-HERE.cmd',
+            '.\scripts\setup-all.ps1',
+            '.\scripts\INSTALL-MAZ-POCKET.cmd',
+            '.\scripts\install-to-sd.ps1'
+          )
+          $failed = $false
+          foreach ($file in $files) {
+            $text = [IO.File]::ReadAllText((Resolve-Path $file))
+            $bad = [regex]::Matches($text, '[^\x00-\x7F]')
+            if ($bad.Count -gt 0) {
+              Write-Host "::error file=$file::contains $($bad.Count) non-ASCII character(s)"
+              $failed = $true
+            }
+          }
+          if ($failed) { throw 'Executed installer scripts must be plain ASCII' }
+          Write-Host 'Installer scripts are ASCII-only'
+
+      - name: Keep recovery flasher safety tests green
+        shell: pwsh
+        run: |
+          node --check web-flasher/flasher.js
+          node --check web-flasher/partition.js
+          node --check web-flasher/rom.js
+          node web-flasher/test-partition.mjs
+          node web-flasher/test-rom.mjs
+
+      - name: Build Cardputer ADV firmware
+        shell: pwsh
+        run: ./scripts/package-release.ps1
+
+      - name: Validate M5Launcher app image
+        shell: pwsh
+        run: |
+          python -c "from pathlib import Path; b=Path('dist/maz-pocket-app.bin').read_bytes(); assert len(b)>=65536 and b[0]==0xE9, 'invalid ESP32 app image'; assert len(b)<=0x180000, f'{len(b)} exceeds known Launcher slot'; print('ESP image OK',len(b),'bytes')"
+
+      - name: Prepare full client + Cardputer packages
+        shell: pwsh
+        run: ./scripts/prepare-release.ps1
+
+      - name: Verify split-package rule
+        shell: pwsh
+        run: |
+          $v = '${{ steps.version.outputs.value }}'
+          $core = ".\dist\MAZ-Core-v$v.zip"
+          $card = ".\dist\MAZ-Cardputer-v$v.zip"
+          $all = ".\dist\MAZ-Pocket-v$v-Install.zip"
+          foreach ($file in @($core,$card,$all)) { if (-not (Test-Path $file)) { throw "Required package missing: $file" } }
+          $tmp = Join-Path $env:RUNNER_TEMP 'maz-card-check'
+          Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+          Expand-Archive $card $tmp
+          if (-not (Test-Path (Join-Path $tmp "Maz-Pocket-v$v-M5Launcher.bin"))) { throw 'Cardputer ZIP missing firmware' }
+          if (-not (Test-Path (Join-Path $tmp 'QUICKSTART.txt'))) { throw 'Cardputer ZIP missing quickstart' }
+          Write-Host 'Client + Cardputer + combined ZIP rule OK'
+
+      - name: Validate shipped installer under Windows PowerShell 5.1
+        shell: pwsh
+        run: |
+          $v = '${{ steps.version.outputs.value }}'
+          $zip = ".\dist\MAZ-Pocket-v$v-Install.zip"
+          $tmp = Join-Path $env:RUNNER_TEMP 'maz-install-ps51'
+          Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+          Expand-Archive $zip $tmp
+          $ps51 = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+          if (-not (Test-Path $ps51)) { throw "Windows PowerShell 5.1 not found at $ps51" }
+
+          foreach ($script in @('setup-all.ps1', 'install-to-sd.ps1')) {
+            $target = Join-Path $tmp $script
+            if (-not (Test-Path $target)) { throw "Install ZIP is missing $script" }
+            $bytes = [IO.File]::ReadAllBytes($target)
+            if (-not ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)) {
+              throw "$script shipped without a UTF-8 BOM; Windows PowerShell 5.1 would decode it as ANSI"
+            }
+            & $ps51 -NoProfile -ExecutionPolicy Bypass -Command "`$e=`$null; `$t=`$null; [void][System.Management.Automation.Language.Parser]::ParseFile('$target', [ref]`$t, [ref]`$e); if (`$e.Count) { `$e | ForEach-Object { Write-Host `$_.Message }; exit 1 }"
+            if ($LASTEXITCODE -ne 0) { throw "$script fails to parse under Windows PowerShell 5.1" }
+            Write-Host "$script parses under Windows PowerShell 5.1"
+          }
+
+          Push-Location $tmp
+          $env:MAZ_FORCE_WINDOWS_POWERSHELL = '1'
+          cmd /c ".\START-HERE.cmd -SkipCore -SkipSd -NoBrowser < NUL"
+          $forced = $LASTEXITCODE
+          Remove-Item Env:\MAZ_FORCE_WINDOWS_POWERSHELL
+          cmd /c ".\START-HERE.cmd -SkipCore -SkipSd -NoBrowser < NUL"
+          $preferred = $LASTEXITCODE
+          Pop-Location
+          if ($forced -ne 0) { throw "START-HERE.cmd -> setup-all.ps1 failed on the Windows PowerShell 5.1 fallback (exit $forced)" }
+          if ($preferred -ne 0) { throw "START-HERE.cmd -> setup-all.ps1 failed on the preferred PowerShell (exit $preferred)" }
+          Write-Host 'START-HERE.cmd -> setup-all.ps1 dry run OK on both Windows PowerShell 5.1 and pwsh'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: maz-pocket-v${{ steps.version.outputs.value }}
+          if-no-files-found: error
+          path: |
+            dist/Maz-Pocket-v${{ steps.version.outputs.value }}-M5Launcher.bin
+            dist/MAZ-Core-v${{ steps.version.outputs.value }}.zip
+            dist/MAZ-Cardputer-v${{ steps.version.outputs.value }}.zip
+            dist/MAZ-Pocket-v${{ steps.version.outputs.value }}-Install.zip
+            dist/START-HERE.cmd
+            dist/setup-all.ps1
+            dist/INSTALL-MAZ-POCKET.cmd
+            dist/install-to-sd.ps1
+            dist/VERSION
+            dist/SHA256SUMS.txt
+            dist/QUICKSTART.txt
+            dist/RELEASE_NOTES.md
