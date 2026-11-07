@@ -191,6 +191,7 @@
     const s = scene(); set(s);
     const dev = device("", 10.4);
     const tilt = onTable(s, dev, 820);
+    add(s, "tag-sim", "Screen simulated");
     if (o.line) { const n = add(s, "line-top", o.line); words(tl, n, t + (o.lineAt ?? 1.2)); }
     if (o.honest) { const h = honesty(s, o.honest); tl.fromTo(h, { opacity: 0 }, { opacity: 1, duration: 0.3 }, t + 0.1); tl.to(h, { opacity: 0, duration: 0.3 }, t + 2.0); }
     cut(tl, s, t, d, o);
@@ -201,7 +202,7 @@
   // Three proposed cases on the table, staggered in depth, slow lateral move
   S.colours = (tl, t, d, o) => {
     const s = scene(); set(s);
-    const spots = [["mint", 520, -150, 6.2], ["cream", 860, 160, 6.8], ["", 1220, -60, 7.6]];
+    const spots = [["mint", 460, -150, 5.7], ["cream", 800, 160, 6.3], ["", 1160, -60, 7.0]];
     const tilts = spots.map(([c, top, x, mm]) => { const tt = onTable(s, device(c, mm, null, {}), top, { rx: 52, rz: -16 }); tt.parentNode.style.left = x + "px"; return tt; });
     const n = add(s, "line-top", o.line || "Orange. Cream. Mint.");
     add(s, "tag-sim", "Proposed cases · not printed yet");
@@ -215,6 +216,7 @@
     const s = scene(); set(s);
     const dev = device("", 17);
     const tilt = onTable(s, dev, 720, { rx: 34, rz: -10 });
+    add(s, "tag-sim", "Screen simulated");
     if (o.line) { const n = add(s, "line-top", o.line); words(tl, n, t + 0.3); }
     cut(tl, s, t, d, o);
     tl.fromTo(tilt, { x: 200, y: 60 }, { x: -90, y: 0, duration: d, ease: "sine.inOut" }, t);

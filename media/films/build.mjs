@@ -34,7 +34,7 @@ const films = {
     { type: "hero", d: 4.2, line: "Less screen.", lineAt: 1.6, honest: "Concept render. Proposed printed case." },
     { type: "macro", d: 3.2, line: "Real keys. Small screen." },
     { type: "colours", d: 3.4 },
-    { type: "end", d: 3.9, line: "Less screen. More life." },
+    { type: "end", d: 2.6, line: "Less screen. More life." },
   ]),
   stills: film([
     { type: "still", d: 1, colour: "", tilt: 0 },
