@@ -418,4 +418,38 @@ h2 { max-width: 20ch; text-wrap: balance; }
 }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
 
+/* Shorter homepage: tighter rhythm, compact status, tighter concepts */
+.does, .how, .status, .open, .concepts, .inside { padding-block: var(--space-7); }
+.join { padding-block: var(--space-7); }
+.hero { padding-block: var(--space-7) var(--space-7); }
+.does-grid { gap: var(--space-4); }
+.block { padding: var(--space-5); }
+.inside-layout { margin-top: var(--space-5); }
+.inside-parts { gap: var(--space-3); }
+.inside-parts li { padding: var(--space-4); }
+.films { margin-top: var(--space-6); grid-template-columns: repeat(2, minmax(0, 260px)); gap: var(--space-5); }
+.path li p { margin-bottom: 0; }
+.concepts-grid { margin-top: var(--space-5); gap: var(--space-4); }
+.concept-card { padding: var(--space-5); gap: var(--space-3); box-shadow: var(--shadow-s); }
+.concept-card h3 { font-size: 1.5rem; }
+.board { margin: var(--space-5) 0; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); }
+.board li, .board li:nth-child(odd), .board li:nth-child(even) { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); padding: var(--space-4); transform: none; }
+.board .chip { padding: 8px 12px; }
+.board strong { font-size: .98rem; line-height: 1.35; }
+.status .faq { max-width: 820px; }
+.status-links { margin: var(--space-5) 0 0; font-weight: 700; }
+.open-layout { gap: var(--space-5); }
+@media (max-width: 900px) {
+  .does, .how, .status, .open, .concepts, .inside, .join { padding-block: var(--space-6); }
+  .inside-figure img { max-width: 360px; margin-inline: auto; }
+  .path { gap: var(--space-4); }
+}
+@media (max-width: 560px) {
+  .films { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+  .film-card { width: auto; }
+  .board { grid-template-columns: 1fr; }
+  .board li, .board li:nth-child(odd), .board li:nth-child(even) { flex-direction: row; align-items: center; }
+  .board .chip { flex: 0 0 8.2em; }
+  .hero { padding-block: var(--space-5) var(--space-6); }
+}
 .waitlist-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
