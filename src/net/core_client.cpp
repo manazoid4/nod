@@ -550,7 +550,24 @@ void fwBootGuard() {
 void fwMarkGood() {
     Preferences p;
     p.begin("nodfw", false);
-    if (p.isKey("prev")) { p.remove("prev"); p.remove("boots"); Serial.println("[fw] marked good"); }
+    if (p.isKey("prev")) {
+        // Launcher lists every slot that holds a valid image. Now this build has run
+        // stable, blank the header of the slot we updated FROM so Launcher shows one Nod.
+        // Only that slot (saved by fwUpdate), never another app's partition.
+        const esp_partition_t* run = esp_ota_get_running_partition();
+        const esp_partition_t* old = esp_partition_find_first(
+            ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_ANY, p.getString("prev", "").c_str());
+        if (run && old && old != run && old->subtype >= ESP_PARTITION_SUBTYPE_APP_OTA_MIN &&
+            old->subtype < ESP_PARTITION_SUBTYPE_APP_OTA_MAX) {
+            esp_ota_img_states_t st;
+            // A pending image would roll back to the old slot on reset: confirm it first.
+            if (esp_ota_get_state_partition(run, &st) == ESP_OK && st == ESP_OTA_IMG_PENDING_VERIFY)
+                esp_ota_mark_app_valid_cancel_rollback();
+            const esp_err_t e = esp_partition_erase_range(old, 0, 4096);
+            Serial.printf("[fw] old slot %s header erased: %s\n", old->label, esp_err_to_name(e));
+        }
+        p.remove("prev"); p.remove("boots"); Serial.println("[fw] marked good");
+    }
     p.end();
 }
 
