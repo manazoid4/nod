@@ -37,12 +37,12 @@ def main():
         binpath, out = a[1], (a[2:] or ["host/fw"])[0]
     else:
         out = (a or ["host/fw"])[0]
-        runs = json.loads(sh("gh", "run", "list", "-R", "manazoid4/nod", "--workflow", "firmware.yml", "--branch", "main",
+        runs = json.loads(sh("gh", "run", "list", "-R", "manazoid4/piblo", "--workflow", "firmware.yml", "--branch", "main",
                              "--status", "success", "-L", "1", "--json", "databaseId,headSha"))
         if not runs or runs[0]["headSha"] != head:
             sys.exit(f"REFUSED: latest green main build is {runs and runs[0]['headSha'][:7]}, origin/main is {head[:7]} (CI still running?)")
         tmp = tempfile.mkdtemp(prefix="nodfw-")
-        sh("gh", "run", "download", str(runs[0]["databaseId"]), "-R", "manazoid4/nod", "-D", tmp)
+        sh("gh", "run", "download", str(runs[0]["databaseId"]), "-R", "manazoid4/piblo", "-D", tmp)
         binpath = next(Path(tmp).rglob("*M5Launcher.bin"))
     check(binpath, head)
     sh(sys.executable, "scripts/fw_manifest.py", str(binpath), out)
