@@ -53,7 +53,7 @@ Less screen. More life. Join the list at piblo.co.uk.
 | Kickstarter date | Not set | Site |
 | Waitlist | https://piblo.co.uk (see domain note in `README.md`) | Owner brief |
 | Code | https://github.com/manazoid4/nod (repo name predates the rename) | `site/index.html` |
-| Contact | info@mazworks.uk. `TODO-owner`: confirm the press contact | `site/index.html` |
+| Contact | info@piblo.co.uk. press and general contact (forwards to the owner) | `site/index.html` |
 | Not affiliated with | Anthropic, M5Stack | Site footer |
 
 Never state: a town or address, a price, a ship date, a compliance certificate, or that Piblo is made in Britain.

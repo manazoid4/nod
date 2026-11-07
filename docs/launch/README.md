@@ -58,8 +58,8 @@ Status key: done / missing / needs owner.
 | Honest status and readiness pages | done | `site/readiness/`, `site/roadmap/` |
 | Concept films labelled as concept | done | `docs/NOD-FILMS.md`, site captions |
 | Real device photos or footage | missing | `docs/HANDOVER-COMPETITOR-NEXT-2026-11-07.md` says to keep the Concept label until real photos exist |
-| Piblo rename in firmware, Core, site, films, repo | missing | Grep for "piblo" in the repo returns nothing. Core and firmware still say MAZ Pocket in places (`docs/NOD-DEVICE-AND-CORE.md`) |
-| piblo.co.uk live and pointing at the site | needs owner | Site canonical and OG still use `nod-kickstarter.vercel.app`. Domain ownership and DNS not evidenced in the repo |
+| Piblo rename in firmware, Core, site, films, repo | done | PRs #41–#43 (7 Nov 2026): site, films, OG, device/Core display names, repo renamed to manazoid4/piblo. Legacy storage/update identifiers kept on purpose for compatibility |
+| piblo.co.uk live and pointing at the site | done | Live over HTTPS since 7 Nov 2026; www redirects (308) to the apex; canonical, OG and sitemap use https://piblo.co.uk |
 | Trademark / name clearance for "Piblo" | needs owner | Nothing in the repo. Check the UK IPO register and Kickstarter |
 | Reward tiers with real prices, limits, shipping | missing | `docs/kickstarter/REWARDS.md` is all TBD |
 | Funding goal and campaign length | needs owner | Depends on G6 |
@@ -68,7 +68,7 @@ Status key: done / missing / needs owner.
 | Individual or business, VAT position, accountant | needs owner | `LAUNCH-CHECKLIST.md` |
 | Kickstarter identity check, bank details, submit for review, press Launch | needs owner | Cannot be delegated (`LAUNCH-CHECKLIST.md`) |
 | Prelaunch page on Kickstarter | needs owner | Do not invent a follower count |
-| Waitlist test contact deleted before first broadcast | needs owner | `info+nodtest@mazworks.uk` still in segment (`HANDOVER-SPRINT-2026-11-07.md`) |
+| Waitlist test contact deleted before first broadcast | done | Test contacts removed 7 Nov 2026 after the live signup test; segment holds real signups only |
 | Merge state of PRs #16 to #19 (v1.0.2 base, talk-circle Home, Concept A site, desktop app) | needs owner | Listed green in `HANDOVER-COMPETITOR-NEXT-2026-11-07.md`. Current merge state not re-checked here |
 | Outsider-ready setup guide for Windows | missing | Gate 3 depends on it. Desktop Core app is a draft PR #19 |
 | Security review or threat-model note | missing | Gate 2 |
