@@ -10,7 +10,9 @@
   <meta property="og:type" content="website">
   <link rel="canonical" href="https://nod-kickstarter.vercel.app/">
   <meta property="og:url" content="https://nod-kickstarter.vercel.app/">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="https://nod-kickstarter.vercel.app/media/nod-og.jpg">
+  <meta property="og:image:alt" content="Concept render of Nod: an orange case around a Cardputer ADV, screen showing Saved to Notes.">
+  <meta name="twitter:card" content="summary_large_image">
   <title>Nod. Ask. Listen. Nod.</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/tokens.css">
@@ -23,11 +25,11 @@
   <div class="wrap header-inner">
     <a class="logo" href="/" aria-label="Nod home"><span class="logo-dot" aria-hidden="true"></span>nod</a>
     <nav class="nav" aria-label="Main navigation">
-      <a href="/#does">What it does</a><a href="/#how">How it works</a><a href="/#journey">Roadmap</a><a href="/#status">Progress</a><a href="/#open">Open source</a>
+      <a href="/#does">What it does</a><a href="/#inside">What's inside</a><a href="/#how">How it works</a><a href="/#journey">Roadmap</a><a href="/#status">Progress</a><a href="/#open">Open source</a>
     </nav>
     <a class="btn btn-sun btn-small" href="/#waitlist">Get updates</a>
   </div>
-  <details class="mobile-menu"><summary>Menu</summary><nav class="mobile-menu-links" aria-label="Mobile navigation"><a href="/#does">What it does</a><a href="/#how">How it works</a><a href="/#ideas">Ideas in research</a><a href="/#status">Build progress</a><a href="/#journey">Simple roadmap</a><a href="/roadmap/">Detailed roadmap</a><a href="/readiness/">Launch checks</a><a href="/#open">Open source</a></nav></details>
+  <details class="mobile-menu"><summary>Menu</summary><nav class="mobile-menu-links" aria-label="Mobile navigation"><a href="/#does">What it does</a><a href="/#inside">What's inside</a><a href="/#how">How it works</a><a href="/#ideas">Ideas in research</a><a href="/#status">Build progress</a><a href="/#journey">Simple roadmap</a><a href="/roadmap/">Detailed roadmap</a><a href="/readiness/">Launch checks</a><a href="/#open">Open source</a></nav></details>
 </header>
 
 <main id="main">
@@ -42,19 +44,11 @@
       </div>
       <p class="fine">Opens your email app; there is no automated signup yet. Nod is being developed on a Cardputer ADV and a Windows PC. Custom shells are design concepts, not physical products.</p>
     </div>
-    <figure class="hero-device">
-      <div class="device" role="img" aria-label="Concept illustration of the Nod device. The screen shows a large orange talk circle with the words Hold to talk, and shortcuts for Save, Today and PC.">
-        <div class="device-body">
-          <div class="screen">
-            <div class="screen-top"><span>nod</span><span class="screen-concept">CONCEPT</span><span class="battery"></span></div>
-            <div class="talk"><span class="talk-ring"></span><span class="talk-circle"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span></div>
-            <div class="screen-say">Hold to talk</div>
-            <div class="screen-chips"><span>Save</span><span>Today</span><span>PC</span></div>
-          </div>
-          <div class="keys" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        </div>
-      </div>
-      <figcaption>Illustrative screen and shell concept, not a photograph of finished Nod hardware.</figcaption>
+    <figure class="hero-film">
+      <video class="film" data-autoplay muted loop playsinline preload="metadata" poster="/media/nod-everyday-poster.jpg" aria-label="Short film, 15 seconds, no speech. A man about to leave the house pauses, trying to remember something. A concept Nod device types and saves the note bins out tonight. He heads out. Ends on: One less thing on your mind.">
+        <source src="/media/nod-everyday.mp4" type="video/mp4">
+      </video>
+      <figcaption><span class="screen-concept">CONCEPT</span> film. The person is a generated scene, the device is an accurate render of the Cardputer ADV in a proposed case, and the screen is simulated.</figcaption>
     </figure>
   </section>
 
@@ -97,6 +91,39 @@
         </article>
       </div>
       <p class="footnote">These are intended Nod workflows, not a claim that all four are verified on Nod hardware today.</p>
+    </div>
+  </section>
+
+  <section class="inside" id="inside" aria-labelledby="inside-title">
+    <div class="wrap">
+      <p class="eyebrow">What makes a Nod</p>
+      <h2 id="inside-title">Three parts. Nothing hidden.</h2>
+      <div class="inside-layout">
+        <figure class="inside-figure">
+          <img src="/media/nod-exploded.webp" width="1080" height="1240" loading="lazy" decoding="async" alt="Exploded concept render: an orange printed case front, the Cardputer ADV device with its 56-key keyboard and small screen, and an orange printed case back.">
+          <figcaption>Exploded concept render, drawn to the Cardputer ADV's published 84 × 54 mm size.</figcaption>
+        </figure>
+        <ol class="inside-parts">
+          <li><span class="tag tag-concept">Concept</span><h3>A case you can print</h3><p>A removable front and back in orange, cream or mint. Designed for an ordinary home 3D printer. Not printed or fit-tested yet.</p></li>
+          <li><span class="tag tag-real">Real hardware</span><h3>Cardputer ADV inside</h3><p>An off-the-shelf pocket computer by M5Stack, with a full keyboard, a small screen, a microphone and a speaker. We don't make it, and it isn't made in Britain.</p></li>
+          <li><span class="tag tag-wip">In progress</span><h3>Free Nod software</h3><p>Open source. It runs on the device and on a connected Windows PC, and it's what makes one press feel simple.</p></li>
+        </ol>
+      </div>
+      <div class="films">
+        <figure class="film-card">
+          <video class="film" controls muted playsinline preload="none" poster="/media/nod-product-poster.jpg" aria-label="Product film, 19 seconds, no speech: the Nod concept, its three parts, three colours and real size.">
+            <source src="/media/nod-product.mp4" type="video/mp4">
+          </video>
+          <figcaption>The product, 19 seconds. Concept renders.</figcaption>
+        </figure>
+        <figure class="film-card">
+          <video class="film" controls muted playsinline preload="none" poster="/media/nod-launch-poster.jpg" aria-label="Launch film, 27 seconds, no speech: an everyday moment, what Nod is for, the device, three colours and the vision.">
+            <source src="/media/nod-launch.mp4" type="video/mp4">
+          </video>
+          <figcaption>The launch film, 27 seconds. Concept film.</figcaption>
+        </figure>
+      </div>
+      <p class="footnote">Nothing is for sale yet. There are no prices, preorders or delivery dates.</p>
     </div>
   </section>
 

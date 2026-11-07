@@ -1,0 +1,24 @@
+1
+00:00:00,000 --> 00:00:03,200
+Meet nod.
+A small helper for everyday things.
+
+2
+00:00:03,200 --> 00:00:08,200
+What makes a nod: a printed case front, the Cardputer ADV,
+a printed case back, plus free, open-source Nod software.
+
+3
+00:00:08,200 --> 00:00:11,600
+Three colours. One shape.
+Nod Original, Nod Classic, Nod Mint.
+
+4
+00:00:11,600 --> 00:00:14,400
+Pocket-sized. Real keys.
+A small screen you don’t scroll.
+
+5
+00:00:14,400 --> 00:00:18,600
+nod. Less screen. More life.
+Designed in the UK by Maz Works. Prototype in development.
