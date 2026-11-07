@@ -1,4 +1,4 @@
-// Nod - LiPo voltage -> percent. Header-only, no Arduino/M5 dependencies.
+// Piblo - LiPo voltage -> percent. Header-only, no Arduino/M5 dependencies.
 // Typical single-cell LiPo resting curve. While USB is charging, the cell reads
 // HIGHER than its true state of charge, so percent is only an estimate then.
 #pragma once

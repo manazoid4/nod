@@ -1,4 +1,4 @@
-// Nod CHARGING MODE - decides "is it charging / full / running on battery"
+// Piblo CHARGING MODE - decides "is it charging / full / running on battery"
 // from battery-voltage samples, because the Cardputer does not reliably report
 // charging (especially under M5Launcher). Optional VBUS hint overrides when the
 // firmware can read it. Pure logic: feed samples, read state. No hardware calls.

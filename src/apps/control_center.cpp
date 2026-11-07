@@ -148,7 +148,7 @@ private:
         if (idx == 4) {
             ui::header(g, "LIVE SCREEN", "2 FPS");
             draw(g, 0, "Open mazpocket.local");
-            draw(g, 1, "Unlock with nod token");
+            draw(g, 1, "Unlock with Piblo token");
             draw(g, 2, "LIVE SCREEN mirrors this LCD");
             draw(g, 3, "240x135 RGB565 / LAN");
             draw(g, 4, "hub can proxy it remotely");

@@ -55,7 +55,7 @@ public:
     }
 
     std::string contextSnapshot() const override {
-        return std::string("nod pairing token ID ") + tokenId() +
+        return std::string("Piblo pairing token ID ") + tokenId() +
                "; short-lived phone pairing is hub /pair";
     }
 

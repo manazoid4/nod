@@ -1,4 +1,4 @@
-// Nod swappable screens. The UI is laid out from width/height, so a different
+// Piblo swappable screens. The UI is laid out from width/height, so a different
 // panel = a different profile, no UI code changes. Only the stock panel is
 // pre-filled; others are TEMPLATES (verified=false) until tested on hardware.
 #pragma once

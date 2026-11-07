@@ -96,7 +96,7 @@ private:
     void refresh() {
         _summary = host::assurance();
         if (!_summary.ok) _status = "HUB OFFLINE";
-        else if (_summary.questionForMaz) _status = "NEEDS NOD";
+        else if (_summary.questionForMaz) _status = "NEEDS PIBLO";
         else if (_summary.overdue) _status = std::to_string(_summary.overdue) + " OVERDUE";
         else if (_summary.needsNudge) _status = std::to_string(_summary.needsNudge) + " NUDGE DUE";
         else if (_summary.waiting) _status = std::to_string(_summary.waiting) + " WAITING";

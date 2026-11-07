@@ -415,7 +415,7 @@ bool contextArmed() { return !gContext.empty(); }
 void clearContext() { gContext.clear(); }
 
 std::string nowText() {
-    if (Sys.agentQuestion) return "AGENT NEEDS NOD";
+    if (Sys.agentQuestion) return "AGENT NEEDS PIBLO";
     if (Sys.outboxQueued) return "OUTBOX " + std::to_string(Sys.outboxQueued) + " WAITING";
     if (Sys.shiftRunning) return "SHIFT " + elapsed(Sys.shiftSeconds).substr(0, 5);
     if (gReminderDue) return "REMINDER DUE";

@@ -34,7 +34,7 @@ constexpr DeckTemplate DECK[] = {
     {"repo-audit", "AUDIT REPO", "rank fixes"},
     {"research-build", "RESEARCH + BUILD", "compare first"},
     {"security-audit", "SECURITY AUDIT", "trust boundary"},
-    {"maz-feature", "NOD FEATURE", "Pocket-native"},
+    {"maz-feature", "PIBLO FEATURE", "Pocket-native"},
     {"agent-workflow", "AGENT WORKFLOW", "reduce friction"},
 };
 constexpr int DECK_COUNT = sizeof(DECK) / sizeof(DECK[0]);
