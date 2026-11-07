@@ -18,6 +18,15 @@ struct HomeLayout {
     Rect footer;
 };
 
+// Four cards in a 2x2 grid inside any area (the firmware passes its body area,
+// between the shell's status bar and hint bar).
+inline void computeGrid(Rect area, Rect out[CARD_COUNT], int16_t pad = 6, int16_t gap = 6) {
+    const int16_t cw = (area.w - 2 * pad - gap) / 2, ch = (area.h - 2 * pad - gap) / 2;
+    for (int i = 0; i < CARD_COUNT; i++)
+        out[i] = {(int16_t)(area.x + pad + (i % 2) * (cw + gap)),
+                  (int16_t)(area.y + pad + (i / 2) * (ch + gap)), cw, ch};
+}
+
 inline HomeLayout computeHome(uint16_t w, uint16_t h) {
     HomeLayout L;
     const int16_t pad = 6, gap = 6;
