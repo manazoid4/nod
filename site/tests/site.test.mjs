@@ -111,7 +111,7 @@ test("live site (concept A) and concept B: labelled concept, CSP-safe, honest wa
   for (const [dir, k] of [["", "a"], ["concepts/b", "b"]]) {
     const html = readFileSync(join(root, dir, "index.html"), "utf8");
     assert.match(html, /CONCEPT/);
-        assert.match(html, /mailto:info@mazworks.uk|action="[/]api[/]waitlist"/);
+        assert.match(html, /mailto:info@piblo.co.uk|action="[/]api[/]waitlist"/);
         assert.match(html, /Unsubscribe any time|not an automatic mailing list yet|pre-addressed email/);
     assert.doesNotMatch(html, /\son[a-z]+\s*=|style=|<style|<script(?![^>]*(?:\ssrc=|\s+type="application\/ld\+json"))/i);
     assert.equal(readFileSync(join(root, dir, "tokens.css"), "utf8"), readFileSync(join(root, "..", "design", "tokens-" + k + ".css"), "utf8"));

@@ -29,14 +29,51 @@ function fakeRes() {
   };
 }
 
-function recordingFetch(status = 200, text = '') {
+// Writes go in `calls`; the duplicate lookup (GET) goes in `lookups` and, by default,
+// answers "not in any segment" so every signup looks new.
+function recordingFetch(status = 200, text = '', segments = []) {
   const calls = [];
+  const lookups = [];
   const impl = async (url, init) => {
+    if (init.method === 'GET') {
+      lookups.push(url);
+      return { ok: true, status: 200, text: async () => JSON.stringify({ data: segments }) };
+    }
     calls.push({ url, headers: init.headers, body: JSON.parse(init.body) });
     return { ok: status < 300, status, text: async () => text };
   };
-  return { calls, impl };
+  return { calls, lookups, impl };
 }
+
+test('a repeat signup already in the Piblo segment is saved but sends no second alert', async () => {
+  const f = recordingFetch(200, '', [{ id: 'seg_other' }, { id: 'seg_piblo' }]);
+  const res = fakeRes();
+  await handler(fakeReq({ email: 'Ali@example.co.uk', consent: true }), res, f.impl);
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(f.lookups, ['https://api.resend.com/contacts/ali%40example.co.uk/segments']);
+  assert.equal(f.calls.length, 1, 'contact saved (re-subscribes), no owner alert');
+  assert.equal(f.calls[0].url, 'https://api.resend.com/contacts');
+});
+
+test('a contact known only from another list still alerts as a new Piblo signup', async () => {
+  const f = recordingFetch(200, '', [{ id: 'seg_other' }]);
+  await handler(fakeReq({ email: 'ali@example.co.uk', consent: true }), fakeRes(), f.impl);
+  assert.equal(f.calls.length, 2);
+  assert.equal(f.calls[1].url, 'https://api.resend.com/emails');
+});
+
+test('a failed duplicate lookup still alerts (never silently drops a real signup)', async () => {
+  const calls = [];
+  const impl = async (url, init) => {
+    if (init.method === 'GET') throw new Error('network');
+    calls.push(url);
+    return { ok: true, status: 200, text: async () => '' };
+  };
+  const res = fakeRes();
+  await handler(fakeReq({ email: 'ali@example.co.uk', consent: true }), res, impl);
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(calls, ['https://api.resend.com/contacts', 'https://api.resend.com/emails']);
+});
 
 test('a consenting valid email goes into the Piblo segment only', async () => {
   const f = recordingFetch();

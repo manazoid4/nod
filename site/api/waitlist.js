@@ -79,6 +79,33 @@ export async function addContact(email, firstName, fetchImpl = fetch) {
 }
 
 /**
+ * Resend accepts a repeat signup with 200, so the only way to avoid a second owner
+ * alert is to ask first. Any doubt (error, timeout, odd reply) counts as "not yet
+ * on the list", so a real signup is never silently unannounced.
+ */
+export async function alreadyInSegment(email, fetchImpl = fetch) {
+  const apiKey = process.env.RESEND_API_KEY || '';
+  const segmentId = process.env.RESEND_SEGMENT_ID || '';
+  if (!apiKey || !segmentId) return false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const response = await fetchImpl(`${CONTACTS_URL}/${encodeURIComponent(email)}/segments`, {
+      method: 'GET',
+      headers: { authorization: `Bearer ${apiKey}` },
+      signal: controller.signal,
+    });
+    if (!response.ok) return false;
+    const data = JSON.parse(await response.text()).data;
+    return Array.isArray(data) && data.some((segment) => segment && segment.id === segmentId);
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * Best effort: a failed alert must never turn a real signup into an error for
  * the visitor, because the contact is already saved in Resend.
  */
@@ -136,8 +163,11 @@ export default async function handler(req, res, fetchImpl = fetch) {
   // Consent is the lawful basis for the list (see /privacy), so it must be ticked.
   if (body.consent !== 'yes' && body.consent !== true) return reply(req, res, 400, { ok: false, reason: 'no-consent' });
 
+  // Checked before saving, because saving adds them to the segment. Only needed for the alert.
+  const repeat = process.env.SIGNUP_NOTIFY_EMAIL ? await alreadyInSegment(email, fetchImpl) : false;
+  // Still saved on a repeat: it re-subscribes someone who unsubscribed and ticked consent again.
   const result = await addContact(email, firstName, fetchImpl);
   // Awaited, not fired-and-forgotten: the function can be frozen once it replies.
-  if (result.ok) await notifyOwner(email, firstName, fetchImpl);
+  if (result.ok && !repeat) await notifyOwner(email, firstName, fetchImpl);
   return reply(req, res, result.ok ? 200 : 502, result);
 }
