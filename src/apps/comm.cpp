@@ -64,7 +64,7 @@ public:
     const char* title() const override { return "CALL NOD"; }
 
     const char* hints() const override {
-        if (_controlMode) return "</> choose  ENTER send  C back";
+        if (_controlMode) return _confirm ? "Y send to PC  N cancel" : "</> choose  ENTER send  C back";
         if (voice::state() == voice::State::Listening)
             return field::contextArmed() ? "SPACE release to ask" : "SPACE release to send";
         if (working()) return canCancel() ? "ESC cancel" : "ESC leave, nod keeps going";
@@ -78,6 +78,7 @@ public:
     void onEnter() override {
         _scroll = 0;
         _controlMode = false;
+        _confirm = false;
         _discard = false;
         _sending = host_worker::busy();
         consumeWorkerResult();
@@ -112,7 +113,13 @@ public:
             if (e.code == KEY_C) { _controlMode = false; sfx::select(); invalidate(); return true; }
             if (e.code == KEY_LEFT) { _controlSel = (_controlSel + CONTROL_COUNT - 1) % CONTROL_COUNT; sfx::select(); invalidate(); return true; }
             if (e.code == KEY_RIGHT) { _controlSel = (_controlSel + 1) % CONTROL_COUNT; sfx::select(); invalidate(); return true; }
-            if (e.code == KEY_ENTER) { runControl(); return true; }
+            // Nothing reaches the PC until Maz approves it here: ENTER asks, Y sends.
+            if (_confirm) {
+                if (e.code == KEY_Y) { _confirm = false; runControl(); return true; }
+                if (e.code == KEY_N || e.code == KEY_ESC || e.code == KEY_C) { _confirm = false; sfx::select(); invalidate(); return true; }
+                return true;  // swallow other keys while the question is up
+            }
+            if (e.code == KEY_ENTER) { _confirm = true; sfx::select(); invalidate(); return true; }
             if (e.code == KEY_SPACE) { _controlMode = false; beginTake(); return true; }
             return false;
         }
@@ -298,7 +305,8 @@ private:
         g.drawString(CONTROLS[_controlSel].label, SCREEN_W / 2, BODY_Y + 33);
         g.setFont(&fonts::Font0);
         g.setTextColor(TEXT, PANEL);
-        g.drawString("ENTER / SEND", SCREEN_W / 2, BODY_Y + 54);
+        if (_confirm) g.setTextColor(ACCENT, PANEL);
+        g.drawString(_confirm ? "SEND? Y / N" : "ENTER / SEND", SCREEN_W / 2, BODY_Y + 54);
         g.setTextColor(DIM, BG);
         g.drawString(CONTROLS[_controlSel].hint, SCREEN_W / 2, BODY_Y + 83);
         g.setTextDatum(top_left);
@@ -557,6 +565,7 @@ private:
     int _scroll = 0;
     int _controlSel = 0;
     bool _controlMode = false;
+    bool _confirm = false;  // approval question is on screen
     bool _haveTake = false;
     bool _sending = false;
     bool _discard = false;        // ESC cancelled the in-flight talk job; drop its result
