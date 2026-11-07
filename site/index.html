@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#fff4e0">
-  <meta name="description" content="Nod is a little device for asking, saving thoughts and staying on top of the day. Designed in the UK. Open-source prototype in progress.">
-  <meta property="og:title" content="Nod. Ask. Listen. Nod.">
-  <meta property="og:description" content="Less screen. More life. Meet Nod, an everyday pocket helper being developed in the UK.">
+  <meta name="description" content="Nod is a pocket device for asking, saving thoughts and staying on top of the day. Hold a key and talk. Designed in the UK. Open-source prototype in progress.">
+    <meta property="og:title" content="Nod. Ask. Listen. Nod.">
+    <meta property="og:description" content="Less screen. More life. Nod is an everyday pocket helper being developed in the UK — open source and heading to Kickstarter.">
   <meta property="og:type" content="website">
   <link rel="canonical" href="https://nod-kickstarter.vercel.app/">
   <meta property="og:url" content="https://nod-kickstarter.vercel.app/">
@@ -18,6 +18,29 @@
   <link rel="stylesheet" href="/tokens.css">
   <link rel="stylesheet" href="/styles.css">
   <script defer src="/script.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Nod",
+    "description": "A pocket AI device for asking, saving thoughts and approving PC actions. Open-source prototype in development.",
+    "url": "https://nod-kickstarter.vercel.app/",
+    "applicationCategory": "PersonalAssistant",
+    "slogan": "Less screen. More life.",
+    "countryOfOrigin": "GB",
+    "brand": {
+      "@type": "Brand",
+      "name": "MazWorks"
+    },
+    "offers": {
+      "@type": "Offer",
+      "availability": "https://schema.org/PreOrder",
+      "price": "0",
+      "priceCurrency": "GBP",
+      "url": "https://nod-kickstarter.vercel.app/"
+    }
+  }
+  </script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -25,11 +48,11 @@
   <div class="wrap header-inner">
     <a class="logo" href="/" aria-label="Nod home"><span class="logo-dot" aria-hidden="true"></span>nod</a>
     <nav class="nav" aria-label="Main navigation">
-      <a href="/#does">What it does</a><a href="/#inside">What's inside</a><a href="/#how">How it works</a><a href="/#journey">Roadmap</a><a href="/#status">Progress</a><a href="/#open">Open source</a>
-    </nav>
-    <a class="btn btn-sun btn-small" href="/#waitlist">Get updates</a>
+      <a href="/#does">What it does</a><a href="/#inside">What's inside</a><a href="/#how">How it works</a><a href="/#concepts">Concepts</a><a href="/#journey">Roadmap</a><a href="/#open">Open source</a>
+          </nav>
+          <a class="btn btn-sun btn-small" href="/#waitlist">Get updates</a>
   </div>
-  <details class="mobile-menu"><summary>Menu</summary><nav class="mobile-menu-links" aria-label="Mobile navigation"><a href="/#does">What it does</a><a href="/#inside">What's inside</a><a href="/#how">How it works</a><a href="/#ideas">Ideas in research</a><a href="/#status">Build progress</a><a href="/#journey">Simple roadmap</a><a href="/roadmap/">Detailed roadmap</a><a href="/readiness/">Launch checks</a><a href="/#open">Open source</a></nav></details>
+  <details class="mobile-menu"><summary>Menu</summary><nav class="mobile-menu-links" aria-label="Mobile navigation"><a href="/#does">What it does</a><a href="/#inside">What's inside</a><a href="/#how">How it works</a><a href="/#concepts">Future concepts</a><a href="/#ideas">Ideas in research</a><a href="/#journey">Roadmap</a><a href="/roadmap/">Detailed roadmap</a><a href="/readiness/">Launch checks</a><a href="/#open">Open source</a></nav></details>
 </header>
 
 <main id="main">
@@ -39,10 +62,10 @@
       <h1><span class="h-ask">Ask.</span> <span class="h-listen">Listen.</span> <span class="h-nod">Nod.</span></h1>
       <p class="hero-promise">Less screen. More life.</p><p class="lede">A small pocket device for the things you'd otherwise lose: the note, the idea, the bins on Thursday. Type it, put it away, get on with your evening.</p>
       <div class="actions">
-        <a class="btn btn-tomato" href="mailto:info@mazworks.uk?subject=NOD%20launch%20updates&amp;body=Hi%2C%20please%20keep%20me%20updated%20about%20NOD.">Ask for build updates</a>
-        <a class="btn btn-ghost" href="#journey">See the plan</a>
-      </div>
-      <p class="fine">Opens your email app; there is no automated signup yet. Nod is being developed on a Cardputer ADV and a Windows PC. Custom shells are design concepts, not physical products.</p>
+        <a class="btn btn-tomato" href="/#waitlist">Join the launch list</a>
+                <a class="btn btn-ghost" href="#journey">See the plan</a>
+              </div>
+              <p class="fine">Nod is being developed on a Cardputer ADV and a Windows PC. Custom shells are design concepts, not physical products.</p>
     </div>
     <figure class="hero-film">
       <video class="film" data-autoplay controls muted loop playsinline preload="metadata" poster="/media/nod-everyday-poster.jpg" aria-label="Short film, 12 seconds, no speech. A man about to leave the house remembers: bins out tonight. The note is typed on a concept Nod, whose screen then goes to sleep. Ends on: One less thing on your mind.">
@@ -141,8 +164,33 @@
     </div>
   </section>
 
+    <section class="concepts band-cream" id="concepts" aria-labelledby="concepts-title">
+        <div class="wrap">
+          <p class="eyebrow">Designs under investigation</p>
+          <h2 id="concepts-title">Future directions for Nod.</h2>
+          <p>A concept is a question, not a promise. Each of these explores a different way Nod's hardware could evolve — all built around the Cardputer ADV's real dimensions. None have been prototyped, costed or scheduled.</p>
+          <div class="concepts-grid">
+            <article class="concept-card concept-flip">
+              <h3>Nod Flip</h3>
+              <p>A hinged screen that opens to reveal a full keyboard. Closed it fits in a pocket; open it becomes a mini laptop for longer sessions.</p>
+              <span class="tag tag-concept">Design concept</span>
+            </article>
+            <article class="concept-card concept-slide">
+              <h3>Nod Slide</h3>
+              <p>A sliding keyboard mechanism. Push up to reveal the keys for typing; slide back for a compact screen-only view.</p>
+              <span class="tag tag-concept">Design concept</span>
+            </article>
+            <article class="concept-card concept-snap">
+              <h3>Nod Snap</h3>
+              <p>A touchscreen module that snaps onto the back for visual tasks, plus modular add-ons. The core device stays the same; the shell adapts.</p>
+              <span class="tag tag-concept">Design concept</span>
+            </article>
+          </div>
+          <p class="footnote">These are exploratory hardware concepts for the Nod project — currently focused on the Cardputer ADV-based software prototype. No commitment has been made to manufacture any specific design.</p>
+        </div>
+      </section>
 
-  <section class="journey" id="journey" aria-labelledby="journey-title">
+      <section class="journey" id="journey" aria-labelledby="journey-title">
     <div class="wrap">
       <p class="eyebrow">Our simple roadmap</p>
       <h2 id="journey-title">One useful step at a time.</h2>
@@ -227,13 +275,31 @@
   </section>
 
   <section class="join wrap" id="waitlist">
-    <div class="join-card">
-      <h2>To our first supporters.</h2>
-      <p>You are here while Nod is still taking shape. We want to build it with real people, not behind closed doors. We will share progress, show what works, listen to your ideas and keep improving as we go. No inflated promises — just a useful little product we are determined to get right.</p><p class="founder-aside">Is there one everyday hassle you wish Nod could help with? Tell us. Early supporters can help shape what we explore next, with no fees or promised rewards.</p>
-      <a class="btn btn-tomato btn-big" href="mailto:info@mazworks.uk?subject=NOD%20launch%20updates&amp;body=Hi%2C%20please%20keep%20me%20updated%20about%20NOD.">Email us for updates</a>
-      <p class="fine">This opens your email app. It is not an automatic mailing list yet. No launch date, product orders or supporter rewards are confirmed.</p>
-    </div>
-  </section>
+      <div class="join-card">
+        <h2>Be there when Nod launches.</h2>
+        <p>No spam, no pressure. We will send honest updates — when there is a working demo, a Kickstarter date or a price worth sharing. You can unsubscribe any time.</p>
+        <form class="waitlist-form" id="waitlist-form" novalidate>
+          <div class="waitlist-fields">
+            <label class="waitlist-label">
+              <span>Name</span>
+              <input class="waitlist-input" type="text" name="name" placeholder="Your name" autocomplete="name" required>
+            </label>
+            <label class="waitlist-label">
+              <span>Email</span>
+              <input class="waitlist-input" type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+            </label>
+          </div>
+          <div class="waitlist-consent">
+            <label class="waitlist-check">
+              <input type="checkbox" name="consent" required>
+              <span>I am happy to receive Nod updates by email. <a href="/privacy/" target="_blank" rel="noopener noreferrer">Privacy notice</a></span>
+            </label>
+          </div>
+          <button class="btn btn-tomato btn-big waitlist-submit" type="submit">Send me updates</button>
+          <p class="fine waitlist-status" aria-live="polite">Clicking sends a pre-addressed email to us. We are working on an automated signup — your interest helps show there is demand.</p>
+        </form>
+      </div>
+    </section>
 </main>
 
 <footer class="footer">

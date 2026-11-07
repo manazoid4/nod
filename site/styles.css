@@ -373,3 +373,32 @@ p { margin: 0 0 var(--space-4); max-width: 60ch; }
 }
 @media (max-width: 560px) { .films { grid-template-columns: 1fr; justify-items: center; } .film-card { width: min(100%, 320px); } }
 .tag-wip { background: var(--sun); }
+
+/* ---- Future concepts (Flip, Slide, Snap) ---- */
+.concepts { padding-block: var(--space-9); }
+.concepts h2 { max-width: 18ch; }
+.concepts > .wrap > p { max-width: 72ch; font-size: 1.08rem; }
+.concepts-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); margin-top: var(--space-7); }
+.concept-card { border: var(--stroke); border-radius: var(--radius-l); padding: var(--space-6); background: var(--card); box-shadow: var(--shadow-l); display: grid; gap: var(--space-4); }
+.concept-card h3 { font-size: 2rem; margin: 0; }
+.concept-card p { margin: 0; }
+.concept-flip { background: var(--tomato); transform: rotate(-.6deg); }
+.concept-slide { background: var(--sun); transform: rotate(.5deg); }
+.concept-snap { background: var(--mint); transform: rotate(-.4deg); }
+@media (max-width: 900px) { .concepts-grid { grid-template-columns: 1fr; } .concepts { padding-block: var(--space-8); } }
+
+/* ---- Waitlist form ---- */
+.waitlist-form { max-width: 520px; margin: var(--space-5) auto 0; text-align: left; }
+.waitlist-fields { display: grid; gap: var(--space-4); margin-bottom: var(--space-4); }
+.waitlist-label { display: grid; gap: var(--space-2); font-weight: 700; font-size: 1rem; }
+.waitlist-label span { font: 800 .85rem var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+.waitlist-input { font: 500 1.05rem var(--font-body); padding: 12px 16px; border: var(--stroke); border-radius: var(--radius-m); background: var(--paper); color: var(--ink); width: 100%; }
+.waitlist-input:focus { outline: 4px solid var(--tomato); outline-offset: 2px; }
+.waitlist-consent { margin-bottom: var(--space-5); }
+.waitlist-check { display: flex; align-items: start; gap: var(--space-3); font-size: .95rem; cursor: pointer; }
+.waitlist-check input { width: 22px; height: 22px; border: var(--stroke); accent-color: var(--tomato); }
+.waitlist-check a { font-weight: 700; }
+.waitlist-submit { display: block; margin: 0 auto; }
+.waitlist-status { margin-top: var(--space-4); }
+.waitlist-status.ok { color: var(--mint-deep); font-weight: 700; }
+@media (max-width: 520px) { .waitlist-form { max-width: 100%; } .waitlist-fields { gap: var(--space-3); } }

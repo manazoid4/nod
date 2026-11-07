@@ -15,3 +15,23 @@ document.querySelectorAll("video[data-autoplay]").forEach(video => {
   video.addEventListener("pause", () => { if (visible) watcher.disconnect(); });
   watcher.observe(video);
 });
+
+// Waitlist form: builds a mailto link from the fields so the form works as a real signup
+// while we build automated backend integration. The email includes name, message and consent.
+document.getElementById("waitlist-form")?.addEventListener("submit", function (e) {
+  e.preventDefault();
+  const name = this.querySelector('input[name="name"]').value.trim();
+  const email = this.querySelector('input[name="email"]').value.trim();
+  const consent = this.querySelector('input[name="consent"]').checked;
+  if (!name || !email || !consent) return;
+  const subject = encodeURIComponent("NOD launch updates — " + name);
+  const body = encodeURIComponent(
+    "Hi,\n\nPlease keep me updated about NOD.\n\nName: " + name +
+    "\nEmail: " + email +
+    "\n\nI consent to receiving NOD updates by email.\n\n" +
+    "(This is a pre-addressed email. An automated signup is coming.)"
+  );
+  window.location.href = "mailto:info@mazworks.uk?subject=" + subject + "&body=" + body;
+  this.querySelector(".waitlist-status").textContent = "✓ Email app opened. Send the message and you are on the list.";
+  this.querySelector(".waitlist-status").classList.add("ok");
+});
