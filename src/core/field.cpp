@@ -7,11 +7,13 @@
 #include <ctime>
 
 #include "../apps/apps.h"
+#include "../audio/sfx.h"
 #include "../net/host_worker.h"
 #include "../net/mazhost.h"
 #include "../storage/store.h"
 #include "launcher.h"
 #include "notify.h"
+#include "quiet.h"
 #include "settings.h"
 #include "shell.h"
 #include "sys.h"
@@ -36,7 +38,11 @@ uint32_t gLastCountsAt = 0;
 uint32_t gNextOutboxTry = 0;
 uint32_t gOutboxBackoffMs = 15000;
 uint32_t gNextBeamPoll = 0;
+uint32_t gNextCoreInfo = 0;
 bool gSystemRequested = false;
+bool gWorkRequested = false;
+bool gTodayRequested = false;
+host::TodayStatus gToday;
 bool gReminderDue = false;
 
 std::string& quickSetting(int slot) {
@@ -117,7 +123,7 @@ void finishOutboxAudio(const host_worker::OutboxAudioResult& result) {
     answer.status = "open";
     answer.title = result.context.empty() ? "COMM / delayed" : "CONTEXT ASK / delayed";
     answer.body = result.reply.text;
-    answer.source = result.reply.provider.empty() ? "MAZ Core" : result.reply.provider;
+    answer.source = result.reply.provider.empty() ? "hub" : result.reply.provider;
     answer.ref = result.recordId;
     store::addRecord(answer);
     saveReminderFrom(result.reply);
@@ -133,6 +139,15 @@ void finishOutboxBeam(const host_worker::OutboxBeamResult& result) {
     store::Record* queued = findRecord(rows, result.recordId);
     if (!queued) return;
     if (!result.reply.ok) {
+        // Core rejected it (400/422, e.g. blank text): retrying forever blocks the queue.
+        if (result.reply.status == 400 || result.reply.status == 422) {
+            queued->status = "failed";
+            store::updateRecord(*queued);
+            gNextOutboxTry = millis() + 500;
+            notify::post(Note::Error, "Beam rejected", result.reply.error.c_str());
+            refreshCounts();
+            return;
+        }
         gNextOutboxTry = millis() + gOutboxBackoffMs;
         gOutboxBackoffMs = std::min<uint32_t>(gOutboxBackoffMs * 2u, 300000u);
         return;
@@ -141,13 +156,42 @@ void finishOutboxBeam(const host_worker::OutboxBeamResult& result) {
     store::updateRecord(*queued);
     gOutboxBackoffMs = 15000;
     gNextOutboxTry = millis() + 500;
-    notify::post(Note::Success, "Beam delivered", "copied/saved on laptop");
+    notify::post(Note::Success, "Beam delivered", "copied/saved on hub");
     refreshCounts();
 }
 
 void finishBeamPull(const host::BeamMessage& msg) {
     const uint32_t cadence = Cfg.fieldMode ? 45000u : 15000u;
     gNextBeamPoll = millis() + cadence;
+    for (const auto& e : msg.events) {
+        std::string detail = e.source.empty() ? e.text : e.source + ": " + e.text;
+        if (detail.size() > 160) detail.resize(160);
+        // Quiet mode decides the sound only; the toast is always posted.
+        using quiet::Ev;
+        const Ev ev = e.kind == "done" ? Ev::Done : e.kind == "usage" ? Ev::Usage
+                    : e.kind == "needs" ? Ev::Needs : e.kind == "error" ? Ev::Error : Ev::None;
+        if (ev == Ev::None) continue;
+        const bool chirp = quiet::shouldChirp(quiet::level(), ev);
+        if (ev == Ev::Done) {
+            if (chirp) sfx::agentDone();  // plays the chirp, mutes the generic toast beep
+            else sfx::skipNextNote();
+            notify::post(Note::Success, "Agent done", detail);
+        } else {
+            if (!chirp) sfx::skipNextNote();
+            if (ev == Ev::Usage) notify::post(Note::Warn, "Usage", detail);
+            else if (ev == Ev::Needs) notify::post(Note::Warn, "Needs you", detail);
+            else notify::post(Note::Error, "Agent error", detail);
+        }
+    }
+    if (msg.halted >= 0) {
+        const bool value = msg.halted == 1;
+        if (!Sys.haltKnown || Sys.halted != value) shell::invalidate();
+        Sys.halted = value;
+        Sys.haltKnown = true;
+    } else if (msg.haltCheckFailed && Sys.haltKnown) {
+        Sys.haltKnown = false;
+        shell::invalidate();
+    }
     if (!msg.ok || !msg.hasMessage || msg.text.empty()) return;
 
     store::Record r;
@@ -182,6 +226,46 @@ void finishSystem(const host::SystemStatus& s) {
     Sys.ollamaModel = s.ollamaModel;
     Sys.ollamaVramMb = s.ollamaVramMb;
     Sys.ollamaContext = s.ollamaContext;
+    shell::invalidate();
+}
+
+void finishToday(const host::TodayStatus& value) {
+    gTodayRequested = false;
+    gToday = value;
+    shell::invalidate();
+}
+
+void finishWork(const host::WorkSummary& s) {
+    gWorkRequested = false;
+    if (!s.ok) return;  // keep last-known values on a failed poll — never blank/zero
+    Sys.workLoaded = true;
+    Sys.workReceivedAt = millis();
+    Sys.workTrackCount = static_cast<uint8_t>(std::min(s.trackCount, SysState::WORK_MAX_TRACKS));
+    for (int i = 0; i < Sys.workTrackCount; ++i) {
+        Sys.workTrackId[i] = s.tracks[i].id;
+        Sys.workTrackLabel[i] = s.tracks[i].shortLabel;
+        Sys.workTrackPrimaryEventTypeId[i] = s.tracks[i].primaryEventTypeId;
+        Sys.workTrackToday[i] = s.tracks[i].todayTotal;
+        Sys.workTrackHasTarget[i] = s.tracks[i].hasTarget;
+        Sys.workTrackTarget[i] = s.tracks[i].target;
+    }
+    for (int d = 0; d < SysState::WORK_HISTORY_DAYS; ++d) Sys.workSeven[d] = s.sevenDay[d];
+    Sys.workNextAction = s.nextAction;
+    shell::invalidate();
+}
+
+void finishWorkIncrement(const host_worker::WorkIncrementResult& result) {
+    if (!result.reply.ok) {
+        notify::post(Note::Error, "WORK not saved", result.reply.error.c_str());
+        return;
+    }
+    for (int i = 0; i < Sys.workTrackCount; ++i) {
+        if (Sys.workTrackId[i] != result.trackId) continue;
+        Sys.workTrackToday[i] += 1;
+        notify::post(Note::Success, "+1 saved", Sys.workTrackLabel[i].c_str());
+        break;
+    }
+    gWorkRequested = true;
     shell::invalidate();
 }
 
@@ -230,6 +314,8 @@ void begin() {
 }
 
 void update() {
+    static bool good = false;
+    if (!good && millis() > 45000) { good = true; host::fwMarkGood(); }
     if (Sys.shiftRunning) Sys.shiftSeconds = (millis() - gShiftStartedMs) / 1000;
 
     if (host_worker::state() == host_worker::State::Done) {
@@ -249,9 +335,29 @@ void update() {
                 if (host_worker::takeBeamPullResult(r)) finishBeamPull(r);
                 break;
             }
+            case host_worker::JobKind::CoreInfo: {
+                host::CoreInfo r;
+                if (host_worker::takeCoreInfoResult(r)) host::setCoreInfo(r);
+                break;
+            }
             case host_worker::JobKind::SystemStatus: {
                 host::SystemStatus r;
                 if (host_worker::takeSystemStatusResult(r)) finishSystem(r);
+                break;
+            }
+            case host_worker::JobKind::Today: {
+                host::TodayStatus result;
+                if (host_worker::takeTodayResult(result)) finishToday(result);
+                break;
+            }
+            case host_worker::JobKind::WorkSummary: {
+                host::WorkSummary r;
+                if (host_worker::takeWorkSummaryResult(r)) finishWork(r);
+                break;
+            }
+            case host_worker::JobKind::WorkIncrement: {
+                host_worker::WorkIncrementResult r;
+                if (host_worker::takeWorkIncrementResult(r)) finishWorkIncrement(r);
                 break;
             }
             default: break;  // COMM/PC results belong to their caller.
@@ -272,13 +378,27 @@ void update() {
         if (host_worker::submitSystemStatus()) return;
     }
 
+    if (gWorkRequested) {
+        if (host_worker::submitWorkSummary()) return;
+    }
+    if (gTodayRequested) {
+        if (host_worker::submitToday()) return;
+    }
+
     if (Sys.outboxQueued && static_cast<int32_t>(millis() - gNextOutboxTry) >= 0) {
         if (submitNextOutbox()) return;
     }
 
+    if (static_cast<int32_t>(millis() - gNextCoreInfo) >= 0) {
+        gNextCoreInfo = millis() + 30000u;
+        if (host_worker::submitCoreInfo()) return;
+    }
+
     if (static_cast<int32_t>(millis() - gNextBeamPoll) >= 0) {
-        if (host_worker::submitBeamPull()) return;
+        // Schedule before submitting: returning first re-polled every tick and
+        // kept the single worker busy, so Call reported "busy".
         gNextBeamPoll = millis() + (Cfg.fieldMode ? 45000u : 15000u);
+        host_worker::submitBeamPull();
     }
 }
 
@@ -295,14 +415,14 @@ bool contextArmed() { return !gContext.empty(); }
 void clearContext() { gContext.clear(); }
 
 std::string nowText() {
-    if (Sys.agentQuestion) return "AGENT NEEDS MAZ";
+    if (Sys.agentQuestion) return "AGENT NEEDS NOD";
     if (Sys.outboxQueued) return "OUTBOX " + std::to_string(Sys.outboxQueued) + " WAITING";
     if (Sys.shiftRunning) return "SHIFT " + elapsed(Sys.shiftSeconds).substr(0, 5);
     if (gReminderDue) return "REMINDER DUE";
     if (Sys.beamUnread) return "BEAM " + std::to_string(Sys.beamUnread) + " NEW";
     if (Sys.agentsStale) return std::to_string(Sys.agentsStale) + " AGENTS STALE";
     if (Sys.agentsWaiting) return std::to_string(Sys.agentsWaiting) + " AGENTS WAIT";
-    if (host::configured() && !Sys.hostOnline) return "CORE OFFLINE / QUEUE SAFE";
+    if (host::configured() && !Sys.hostOnline) return "HUB OFFLINE / QUEUE SAFE";
     if (Cfg.fieldMode) return "FIELD READY";
     return "READY";
 }
@@ -331,10 +451,10 @@ bool runQuick(int slot) {
     if (id == "launcher") { launcher::reboot(); return true; }
     if (id == "lock" || id == "play_pause" || id == "mute") {
         if (host_worker::submitPcAction(id, false)) {
-            notify::post(Note::Info, "PC command queued", quickLabel(slot));
+            notify::post(Note::Info, "hub command queued", quickLabel(slot));
             return true;
         }
-        notify::post(Note::Warn, "PC busy", "try again in a moment");
+        notify::post(Note::Warn, "hub busy", "try again in a moment");
         return false;
     }
     return false;
@@ -382,6 +502,26 @@ void toggleShift() {
     shell::invalidate();
 }
 
+void toggleHalt() {
+    if (!host::configured()) {
+        notify::post(Note::Warn, "Pause asks needs Core", "pair with PC first");
+        return;
+    }
+    // Unknown state chooses only the safe direction (deny future asks).
+    const bool target = !Sys.haltKnown || !Sys.halted;
+    if (host::haltNow(target)) {
+        Sys.halted = target;
+        Sys.haltKnown = true;
+        notify::post(target ? Note::Warn : Note::Info,
+                     target ? "Asks paused" : "Asks resumed",
+                     target ? "Running tools are NOT stopped" : "New asks still need approval");
+    } else {
+        Sys.haltKnown = false;
+        notify::post(Note::Error, "Pause not confirmed", "Core unreachable");
+    }
+    shell::invalidate();
+}
+
 std::string shiftElapsedText() { return elapsed(Sys.shiftSeconds); }
 
 void requestSystemStatus() {
@@ -392,18 +532,35 @@ void requestSystemStatus() {
     }
 }
 
+void requestWorkSummary() { gWorkRequested = true; }
+
+void requestToday() {
+    gTodayRequested = true;
+    if (!host::configured()) {
+        gToday = host::TodayStatus{};
+        gToday.error = "Core unreachable";
+        gTodayRequested = false;
+    }
+}
+
+const host::TodayStatus& today() { return gToday; }
+
+bool requestWorkIncrement(const std::string& trackId, const std::string& eventTypeId) {
+    return host_worker::submitWorkIncrement(trackId, eventTypeId);
+}
+
 void queueBeam(const std::string& text) {
     if (text.empty()) return;
     store::Record r;
     r.kind = "outbox";
     r.status = "queued";
-    r.title = "BEAM to laptop";
+    r.title = "BEAM to hub";
     r.body = text.substr(0, 2000);
     r.source = "beam";
     if (store::addRecord(r)) {
         gNextOutboxTry = millis();
         refreshCounts();
-        notify::post(Note::Success, "Beam queued", "sends when Core is reachable");
+        notify::post(Note::Success, "Beam queued", "sends when hub is reachable");
     } else {
         notify::post(Note::Error, "Beam not saved", store::backendName());
     }

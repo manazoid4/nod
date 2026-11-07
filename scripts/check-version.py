@@ -57,7 +57,7 @@ if "MAZCOREPAIR\\t" not in control:
 portal = (ROOT / "src" / "net" / "portal_v3.cpp").read_text(encoding="utf-8-sig")
 if "Update.h" in portal or "esp_ota" in portal.lower():
     raise SystemExit("portal must stage firmware only; direct self-OTA is not allowed")
-if "PROMPT DECK" not in portal or "CALL MAZ" not in portal:
+if "PROMPT DECK" not in portal or "CALL NOD" not in portal:
     raise SystemExit("v0.8 phone-first portal is missing clear product actions")
 
 launcher = (ROOT / "src" / "core" / "launcher.cpp").read_text(encoding="utf-8-sig")
@@ -65,6 +65,8 @@ if "esp_ota_set_boot_partition" not in launcher:
     raise SystemExit("M5Launcher hand-back must select a boot partition")
 if "esp_rom_spiflash_write" in launcher or "spi_flash_write" in launcher:
     raise SystemExit("M5Launcher hand-back must never erase/invalidate the running MAZ app")
+if (ROOT / "scripts" / "flash-direct.py").exists():
+    raise SystemExit("M5Launcher must remain the only firmware installer; direct-slot flashing is forbidden")
 
 field = (ROOT / "src" / "core" / "field.cpp").read_text(encoding="utf-8-sig")
 if "submitOutboxAudio" not in field or "submitOutboxBeam" not in field:

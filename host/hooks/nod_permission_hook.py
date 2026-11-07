@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""Claude Code PermissionRequest hook -> nod Core approval.
+
+Env: NOD_TOKEN (required), NOD_CORE_URL (default http://127.0.0.1:8787),
+NOD_BUDDY_TIMEOUT (seconds, default 60). Old MAZ_* names still work. stdlib only.
+
+Device allow/deny -> decision JSON on stdout.
+Timeout or any error -> no stdout, "ask" on stderr, exit 0: Claude Code then
+shows its normal terminal prompt.
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+import time
+import urllib.error
+import urllib.request
+
+def _env(name: str, default: str = "") -> str:  # NOD_* first, legacy MAZ_* fallback
+    return os.environ.get("NOD_" + name) or os.environ.get("MAZ_" + name) or default
+
+
+BASE = _env("CORE_URL", "http://127.0.0.1:8787").rstrip("/")
+TOKEN = _env("TOKEN")
+TIMEOUT = float(_env("BUDDY_TIMEOUT", "60"))
+
+
+def call(method: str, path: str, body: dict | None = None, timeout: float = 10):
+    req = urllib.request.Request(
+        BASE + path,
+        data=json.dumps(body).encode() if body is not None else None,
+        method=method,
+        headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read())
+
+
+def summarize(tool_input: dict) -> str:
+    text = (tool_input.get("command") or tool_input.get("file_path") or tool_input.get("url")
+            or json.dumps(tool_input, separators=(",", ":")))
+    return " ".join(str(text).split())[:200]
+
+
+def decide(event: dict) -> tuple[str | None, str]:
+    """(verdict, reason); None means ask in terminal."""
+    if not TOKEN:
+        return None, ""
+    try:
+        req = call("POST", "/buddy/request", {
+            "tool": event.get("tool_name", "?"),
+            "summary": summarize(event.get("tool_input") or {}),
+            "session_id": event.get("session_id", ""),
+            "project": str(event.get("cwd", "")).replace("\\", "/").rstrip("/").rsplit("/", 1)[-1][:60],
+        })
+        end = time.monotonic() + TIMEOUT
+        while True:
+            if req.get("decision") in ("allow", "deny"):
+                return req["decision"], str(req.get("reason") or "")
+            left = end - time.monotonic()
+            if left <= 0:
+                break
+            req = call("GET", f"/buddy/state?id={req['id']}&wait={min(left, 20):.2f}",
+                       timeout=min(left, 20) + 5)
+        call("POST", "/buddy/decide", {"id": req["id"], "decision": "cancel"})
+    except (urllib.error.URLError, OSError, ValueError, KeyError):
+        pass
+    return None, ""
+
+
+def main() -> int:
+    try:
+        event = json.load(sys.stdin)
+    except ValueError:
+        event = {}
+    verdict, reason = decide(event)
+    if not verdict:
+        print("ask", file=sys.stderr)
+        return 0
+    decision = {"behavior": verdict}
+    if verdict == "deny":
+        decision["message"] = reason or "Denied from nod device"
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PermissionRequest",
+                                             "decision": decision}}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

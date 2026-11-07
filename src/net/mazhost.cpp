@@ -2,8 +2,10 @@
 
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
+#include "remote_tls.h"
 #include <WiFi.h>
 
+#include <string.h>
 #include <utility>
 #include <vector>
 
@@ -16,43 +18,8 @@ namespace host {
 namespace {
 
 bool gRemote = false;
+uint32_t gFastLinkAt = 0;  // millis() of the last host request that kept WiFi modem sleep off
 
-// Tailscale Funnel provisions a normal public HTTPS certificate. Pin the
-// current Let's Encrypt trust root rather than using setInsecure(): the shared
-// MAZ bearer token must never be sent to an unauthenticated TLS peer.
-static const char ISRG_ROOT_X1[] PROGMEM = R"EOF(
------BEGIN CERTIFICATE-----
-MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
-TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
-cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
-WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
-ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
-MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
-h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
-0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
-A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
-T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
-B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
-B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
-KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
-OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
-jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
-qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
-rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
-HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
-hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
-ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
-3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
-NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
-ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
-TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
-jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
-oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
-4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
-mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
-emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
------END CERTIFICATE-----
-)EOF";
 
 std::vector<std::pair<std::string, bool>> bases() {
     std::vector<std::pair<std::string, bool>> out;
@@ -70,15 +37,24 @@ std::vector<std::pair<std::string, bool>> bases() {
 }
 
 const char* route() {
-    return Cfg.talkRoute == 0 ? "local" : (Cfg.talkRoute == 2 ? "cloud" : "auto");
+    return talkRouteApiName(Cfg.talkRoute);
 }
 
-bool beginRequest(HTTPClient& http, const std::string& base, const char* path,
+bool beginRequest(NodHttp& http, const std::string& base, const char* path,
                   bool remote) {
+    // Modem sleep (the ESP32 default) parks every TCP ACK/reply until the next AP beacon
+    // (~100-300 ms each), which throttles uploads and delays Core's reply. Stay awake while
+    // talking; linkIdle() restores power saving.
+    // Only the voice path: background polls (/nudge, /health) must not hold the radio awake.
+    if (!strncmp(path, "/turn", 5) || !strncmp(path, "/speak", 6) || !strncmp(path, "/say", 4) ||
+        !strncmp(path, "/session", 8)) {
+        WiFi.setSleep(false);
+        gFastLinkAt = millis();
+    }
     http.setConnectTimeout(remote ? 6500 : 1800);
     http.setTimeout(60000);
     const String url = (base + path).c_str();
-    const bool begun = remote ? http.begin(url, ISRG_ROOT_X1) : http.begin(url);
+    const bool begun = http.open(url, remote);
     if (!begun) return false;
     http.addHeader("Authorization", ("Bearer " + Cfg.hostToken).c_str());
     return true;
@@ -104,6 +80,8 @@ Reply decodeReply(HTTPClient& http, int status) {
         out.transcript = doc["text"] | "";
         if (out.transcript.empty()) out.transcript = doc["transcript"] | "";
         out.provider = doc["provider"] | "";
+        out.speakId = doc["speak"]["id"] | "";
+        out.speakParts = out.speakId.empty() ? 0 : (uint8_t)(doc["speak"]["parts"] | 0);
         JsonArray commands = doc["commands"].as<JsonArray>();
         if (!commands.isNull() && commands.size() &&
             std::string(commands[0]["type"] | "") == "reminder.create") {
@@ -127,18 +105,21 @@ Reply upload(const char* path, const std::string& wavPath,
     }
     File file = store::fs()->open(wavPath.c_str(), FILE_READ);
     if (!file) {
+        Serial.printf("[upload] cannot open %s\n", wavPath.c_str());
         out.error = "recording missing";
         return out;
     }
 
     for (const auto& base : bases()) {
         file.seek(0);
-        HTTPClient http;
+        NodHttp http;
         if (!beginRequest(http, base.first, path, base.second)) continue;
         http.addHeader("Content-Type", "audio/wav");
         for (const auto& header : headers)
             http.addHeader(header.first.c_str(), header.second.c_str());
         const int status = http.sendRequest("POST", &file, file.size());
+        Serial.printf("[upload] %s%s size=%u status=%d\n", base.first.c_str(), path,
+                      static_cast<unsigned>(file.size()), status);
         if (status <= 0) {
             http.end();
             continue;
@@ -149,7 +130,7 @@ Reply upload(const char* path, const std::string& wavPath,
     }
     file.close();
     Sys.hostOnline = false;
-    out.error = "PC unreachable";
+    out.error = "hub unreachable";
     return out;
 }
 
@@ -160,7 +141,7 @@ Reply jsonPost(const char* path, const std::string& json) {
         return out;
     }
     for (const auto& base : bases()) {
-        HTTPClient http;
+        NodHttp http;
         if (!beginRequest(http, base.first, path, base.second)) continue;
         http.addHeader("Content-Type", "application/json");
         const int status = http.POST(json.c_str());
@@ -172,11 +153,20 @@ Reply jsonPost(const char* path, const std::string& json) {
         return decodeReply(http, status);
     }
     Sys.hostOnline = false;
-    out.error = "PC unreachable";
+    out.error = "hub unreachable";
     return out;
 }
 
 }  // namespace
+
+bool onRemoteLink() { return Sys.hostOnline && gRemote; }
+
+void linkIdle(bool force) {
+    if (gFastLinkAt && (force || millis() - gFastLinkAt > 20000)) {
+        WiFi.setSleep(true);
+        gFastLinkAt = 0;
+    }
+}
 
 bool configured() {
     return !Cfg.hostToken.empty() && (!Cfg.hostAddr.empty() || !Cfg.hostRemoteUrl.empty());
@@ -193,7 +183,7 @@ bool health() {
         return false;
     }
     for (const auto& base : bases()) {
-        HTTPClient http;
+        NodHttp http;
         if (!beginRequest(http, base.first, "/health", base.second)) continue;
         const int status = http.GET();
         http.end();
@@ -212,7 +202,7 @@ bool health() {
 std::string startSession() {
     if (!configured() || WiFi.status() != WL_CONNECTED) return "";
     for (const auto& base : bases()) {
-        HTTPClient http;
+        NodHttp http;
         if (!beginRequest(http, base.first, "/session/start", base.second)) continue;
         const int status = http.POST("");
         if (status <= 0) {
@@ -230,6 +220,47 @@ std::string startSession() {
     return "";
 }
 
+PairCode startPairing() {
+    PairCode out;
+    if (!configured() || WiFi.status() != WL_CONNECTED) {
+        out.error = "hub offline";
+        return out;
+    }
+    for (const auto& base : bases()) {
+        NodHttp http;
+        if (!beginRequest(http, base.first, "/pair/start", base.second)) continue;
+        const int status = http.POST("");
+        if (status <= 0) {
+            http.end();
+            continue;
+        }
+        const String body = http.getString();
+        http.end();
+        JsonDocument doc;
+        if (deserializeJson(doc, body)) {
+            out.error = "invalid pairing response";
+            return out;
+        }
+        if (status < 200 || status >= 300) {
+            out.error = doc["detail"] | "pairing unavailable";
+            return out;
+        }
+        const std::string code = doc["code"] | "";
+        if (code.size() != 8) {
+            out.error = "invalid pairing code";
+            return out;
+        }
+        markOnline(base.second);
+        out.ok = true;
+        out.code = code;
+        out.expiresInSeconds = doc["expires_in_seconds"] | 300;
+        return out;
+    }
+    Sys.hostOnline = false;
+    out.error = "hub unreachable";
+    return out;
+}
+
 Reply talkText(const std::string& session, const std::string& text) {
     JsonDocument doc;
     doc["session_id"] = session;
@@ -241,8 +272,10 @@ Reply talkText(const std::string& session, const std::string& text) {
 }
 
 Reply talkAudio(const std::string& session, const std::string& wavPath) {
-    return upload("/turn/raw", wavPath,
-                  {{"X-MAZ-Session", session}, {"X-MAZ-Route", route()}});
+    std::vector<std::pair<std::string, std::string>> headers = {
+        {"X-MAZ-Session", session}, {"X-MAZ-Route", route()}};
+    if (Cfg.ttsEnabled) headers.push_back({"X-MAZ-Speak", "1"});  // Core starts TTS as soon as the LLM answers
+    return upload("/turn/raw", wavPath, headers);
 }
 
 Reply transcribe(const std::string& wavPath) {
@@ -269,46 +302,131 @@ Reply pcAction(const std::string& action) {
     return jsonPost("/pc/action", body.c_str());
 }
 
-bool speak(const std::string& text, const std::string& wavPath) {
-    if (!configured() || WiFi.status() != WL_CONNECTED || !store::ready() ||
-        text.empty())
-        return false;
-
-    JsonDocument doc;
-    doc["text"] = text.size() > 1400 ? text.substr(0, 1400) : text;
-    String body;
-    serializeJson(doc, body);
+namespace {
+// Core route that answers with a WAV, saved to wavPath. body == nullptr means GET.
+bool postWav(const char* path, const std::string& body, const std::string& wavPath, bool get = false) {
+    if (!configured() || WiFi.status() != WL_CONNECTED || !store::ready()) return false;
 
     for (const auto& base : bases()) {
-        HTTPClient http;
-        if (!beginRequest(http, base.first, "/speak", base.second)) continue;
-        http.addHeader("Content-Type", "application/json");
-        const int status = http.POST(body);
+        NodHttp http;
+        if (!beginRequest(http, base.first, path, base.second)) continue;
+        int status;
+        if (get) {
+            status = http.GET();
+        } else {
+            http.addHeader("Content-Type", "application/json");
+            status = http.POST(body.c_str());
+        }
         if (status <= 0) {
             http.end();
             continue;
         }
         if (status != 200) {
+            Serial.printf("[speak] %s -> HTTP %d\n", path, status);
             http.end();
             return false;
         }
         store::remove(wavPath);
         File out = store::fs()->open(wavPath.c_str(), FILE_WRITE);
         if (!out) {
+            Serial.printf("[speak] SD open failed: %s\n", wavPath.c_str());
             http.end();
             return false;
         }
+        const int expect = http.getSize();
         const int written = http.writeToStream(&out);
+        Serial.printf("[speak] path=%s status=%d bytes=%d\n", wavPath.c_str(), status, written);
         out.close();
         http.end();
-        if (written > 44) {
+        if (written > 44 && (expect <= 0 || written == expect)) {
             markOnline(base.second);
             return true;
         }
+        Serial.printf("[speak] bad download: wrote %d expected %d\n", written, expect);
         store::remove(wavPath);
         return false;
     }
     return false;
+}
+}  // namespace
+
+bool speak(const std::string& text, const std::string& wavPath) {
+    if (text.empty()) return false;
+    JsonDocument doc;
+    doc["text"] = text.size() > 1400 ? text.substr(0, 1400) : text;
+    String body;
+    serializeJson(doc, body);
+    return postWav("/speak", body.c_str(), wavPath);
+}
+
+bool say(const std::string& text, const std::string& wavPath) {
+    if (text.empty()) return false;
+    JsonDocument doc;
+    doc["text"] = text.size() > 300 ? text.substr(0, 300) : text;
+    String body;
+    serializeJson(doc, body);
+    return postWav("/say", body.c_str(), wavPath);
+}
+
+bool speakPart(const std::string& id, uint8_t part, const std::string& wavPath) {
+    if (id.empty() || id.size() > 32) return false;
+    for (char ch : id)
+        if (!isalnum((unsigned char)ch)) return false;
+    const std::string path = "/speak?id=" + id + "&part=" + std::to_string(part);
+    return postWav(path.c_str(), "", wavPath, true);
+}
+
+bool voiceList(std::vector<VoiceItem>& out, std::string& error) {
+    out.clear();
+    if (!configured() || WiFi.status() != WL_CONNECTED) {
+        error = "host offline";
+        return false;
+    }
+    for (const auto& base : bases()) {
+        NodHttp http;
+        if (!beginRequest(http, base.first, "/voices", base.second)) continue;
+        const int status = http.GET();
+        if (status <= 0) {
+            http.end();
+            continue;
+        }
+        const String body = http.getString();
+        http.end();
+        JsonDocument doc;
+        if (status != 200 || deserializeJson(doc, body)) {
+            error = "voices unavailable";
+            return false;
+        }
+        markOnline(base.second);
+        for (JsonObject v : doc["voices"].as<JsonArray>()) {
+            VoiceItem item;
+            item.name = v["name"] | "";
+            item.id = v["reference_id"] | "";
+            item.description = v["description"] | "";
+            item.current = v["current"] | false;
+            if (!item.id.empty()) out.push_back(item);
+        }
+        return !out.empty();
+    }
+    error = "hub unreachable";
+    return false;
+}
+
+bool voiceSelect(const std::string& id, const std::string& name) {
+    JsonDocument doc;
+    doc["reference_id"] = id;
+    doc["name"] = name;
+    String body;
+    serializeJson(doc, body);
+    return jsonPost("/voices/select", body.c_str()).ok;
+}
+
+bool voicePreview(const std::string& id, const std::string& wavPath) {
+    JsonDocument doc;
+    doc["reference_id"] = id;
+    String body;
+    serializeJson(doc, body);
+    return postWav("/voices/preview", body.c_str(), wavPath);
 }
 
 Assurance assurance() {
@@ -318,7 +436,7 @@ Assurance assurance() {
         return out;
     }
     for (const auto& base : bases()) {
-        HTTPClient http;
+        NodHttp http;
         if (!beginRequest(http, base.first, "/nudge", base.second)) continue;
         const int status = http.GET();
         if (status <= 0) {
@@ -361,7 +479,7 @@ Assurance assurance() {
         return out;
     }
     Sys.hostOnline = false;
-    out.error = "PC unreachable";
+    out.error = "hub unreachable";
     return out;
 }
 

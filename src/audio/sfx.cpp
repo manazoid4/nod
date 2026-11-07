@@ -3,6 +3,8 @@
 #include <M5Unified.h>
 
 #include "../core/settings.h"
+#include "../core/quiet.h"
+#include "voice.h"
 
 namespace maz {
 namespace sfx {
@@ -11,7 +13,11 @@ namespace {
 // `force` exists so an alarm the user asked for (Focus complete) still fires
 // with UI sounds muted — muting chirps is not the same as muting alarms.
 void beep(float hz, uint32_t ms, bool force = false) {
-    if (!Cfg.uiSounds && !force) return;
+    if ((!Cfg.uiSounds || quiet::level() == quiet::Level::Silent) && !force) return;
+    // tone() auto-starts the speaker; while the mic owns the shared codec that
+    // would fight the capture. Silence beats corrupting a recording.
+    const auto st = voice::state();
+    if (st == voice::State::Listening || st == voice::State::Paused) return;
     M5.Speaker.tone(hz, ms);
 }
 void pair(float a, float b, uint32_t ms, bool force = false) {
@@ -33,6 +39,14 @@ void lineClose() { pair(660.f, 330.f, 55); }
 void saved()     { beep(1760.f, 45); }
 void error()     { pair(300.f, 200.f, 90); }
 
+void approval()  { pair(880.f, 1480.f, 90, /*force=*/true); }
+
+// Called right before notify::post(Success): the toast's generic "saved" beep
+// is skipped once so only the agent chirp plays.
+bool gSkipNextNote = false;
+void agentDone() { gSkipNextNote = true; pair(880.f, 1175.f, 50); }
+void skipNextNote() { gSkipNextNote = true; }
+
 void timerDone() {
     for (int i = 0; i < 3; ++i) {
         beep(1200.f, 120, /*force=*/true);
@@ -41,6 +55,7 @@ void timerDone() {
 }
 
 void forNote(Note kind) {
+    if (gSkipNextNote) { gSkipNextNote = false; return; }
     switch (kind) {
         case Note::Success: saved(); break;
         case Note::Warn:    beep(700.f, 60); break;

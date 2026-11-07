@@ -38,6 +38,7 @@ void setup() {
     Sys.bootMillis = millis();
 
     Cfg.load();
+    host::fwBootGuard();
     Serial.println("[boot] settings");
 
     if (!KB.begin())
@@ -66,7 +67,7 @@ void setup() {
         Serial.println("[boot] shell failed: out of memory");
         M5.Display.fillScreen(TFT_BLACK);
         M5.Display.setTextColor(TFT_RED);
-        M5.Display.drawString("MAZ Pocket: out of memory", 10, 60);
+        M5.Display.drawString("nod: out of memory", 10, 60);
         return;
     }
     Serial.println("[boot] shell");
@@ -96,6 +97,7 @@ void loop() {
     portal::update();
     shell::loop();
     ambient::update();
+    host::linkIdle();  // WiFi power saving back on 20 s after the last voice request, from any screen
 
     health::observeLoop(millis() - loopStarted);
     health::update();

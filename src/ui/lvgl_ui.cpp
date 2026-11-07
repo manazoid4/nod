@@ -13,27 +13,24 @@ using namespace theme;
 namespace {
 bool active = false;
 
-void drawContext(M5Canvas& g, const char* kind, const char* text) {
-    constexpr int stripY = BODY_Y;
-    constexpr int stripH = 22;
-
-    g.fillRect(0, stripY, SCREEN_W, stripH, BG);
+// One big status line, one small line under it, small version at the right.
+void drawStatus(M5Canvas& g, const Status& st) {
+    g.fillRect(0, BODY_Y, SCREEN_W, HOME_STATUS_H, BG);
     g.setTextDatum(top_left);
+    constexpr int GLYPH = 22;
+    constexpr int TEXT_X = PAD + GLYPH + 6;
+    ui::glyph(g, PAD, BODY_Y + 3, GLYPH, st.phase);
+    g.setFont(&fonts::Font4);
+    // Long agent/outbox phrases drop to the smaller font instead of clipping.
+    if (g.textWidth(st.line) > SCREEN_W - TEXT_X - PAD) g.setFont(&fonts::Font2);
+    ui::stateWord(g, TEXT_X, BODY_Y + 3, st.phase, st.line);
+
     g.setFont(&fonts::Font0);
-    g.setTextColor(ACCENT, BG);
-    g.drawString(kind ? kind : "MAZ", 7, stripY + 5);
-
-    g.setTextDatum(top_right);
     g.setTextColor(DIM, BG);
-    std::string state = text ? text : "POCKET 0.3.1";
-    constexpr size_t maxChars = 27;
-    if (state.size() > maxChars) {
-        state.resize(maxChars - 1);
-        state += '~';
-    }
-    g.drawString(state.c_str(), SCREEN_W - 7, stripY + 5);
+    if (st.sentence) g.drawString(st.sentence, PAD, BODY_Y + 28);
+    g.setTextDatum(top_right);
+    g.drawString(st.version, SCREEN_W - PAD, BODY_Y + 28);
     g.setTextDatum(top_left);
-    g.drawFastHLine(5, stripY + stripH - 1, SCREEN_W - 10, LINE);
 }
 
 void drawTile(M5Canvas& g, const Cell& cell, int index, bool selected) {
@@ -54,25 +51,28 @@ void drawTile(M5Canvas& g, const Cell& cell, int index, bool selected) {
     const int boxH = 18;
     const int boxX = x + 6;
     const int boxY = y + 5;
-    g.fillRoundRect(boxX, boxY, boxW, boxH, 3, BG);
-    g.drawRoundRect(boxX, boxY, boxW, boxH, 3, selected ? BG : DIM);
+    const bool keyed = cell.badge != ' ';  // no key, no badge
+    if (keyed) {
+        g.fillRoundRect(boxX, boxY, boxW, boxH, 3, BG);
+        g.drawRoundRect(boxX, boxY, boxW, boxH, 3, selected ? BG : DIM);
+        char icon[2] = {cell.badge, 0};
+        g.setFont(&fonts::Font2);
+        g.setTextDatum(middle_center);
+        g.setTextColor(ACCENT, BG);
+        g.drawString(icon, boxX + boxW / 2, boxY + boxH / 2);
+    }
 
-    char icon[2] = {cell.badge, '\0'};
     g.setFont(&fonts::Font2);
-    g.setTextDatum(middle_center);
-    g.setTextColor(ACCENT, BG);
-    g.drawString(icon, boxX + boxW / 2, boxY + boxH / 2);
-
-    g.setFont(&fonts::Font0);
     g.setTextDatum(middle_left);
     g.setTextColor(titleColour, tileFill);
     std::string title = cell.title ? cell.title : "";
-    constexpr size_t maxTitle = 7;
-    if (title.size() > maxTitle) {
-        title.resize(maxTitle - 1);
+    const int titleX = keyed ? boxX + boxW + 5 : boxX;
+    const int room = x + w - 4 - titleX;
+    while (title.size() > 1 && g.textWidth(title.c_str()) > room) {
+        title.resize(title.size() - 2);
         title += '~';
     }
-    g.drawString(title.c_str(), boxX + boxW + 5, y + h / 2);
+    g.drawString(title.c_str(), titleX, y + h / 2);
     g.setTextDatum(top_left);
 }
 }  // namespace
@@ -85,12 +85,11 @@ void setActive(bool value) { active = value; }
 void tick() {}
 
 void renderHome(M5Canvas& canvas, const Cell* cellData, size_t count,
-                int selected, const char* contextKind, const char* contextText,
-                int, int) {
+                int selected, const Status& status) {
     if (!active) return;
 
     canvas.fillRect(0, BODY_Y, SCREEN_W, BODY_H, BG);
-    drawContext(canvas, contextKind, contextText);
+    drawStatus(canvas, status);
 
     const size_t visible = std::min(count, static_cast<size_t>(TABLE_PAGE));
     for (size_t i = 0; i < visible; ++i) {

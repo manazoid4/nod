@@ -5,6 +5,7 @@
 
 #include "../audio/sfx.h"
 #include "../core/field.h"
+#include "../core/settings.h"
 #include "../core/shell.h"
 #include "../core/sys.h"
 #include "../input/keyboard.h"
@@ -25,12 +26,11 @@ class HomeApp : public App {
 public:
     const char* id() const override { return "home"; }
     const char* title() const override { return "MAZ Pocket"; }
-    const char* hints() const override { return _hints.c_str(); }
+    const char* hints() const override { return _hints; }
 
     void onEnter() override {
         buildPrimary();
         _spaceArmed = false;
-        _easter = false;
         lvui::setActive(true);
         rebuildHints();
         invalidate();
@@ -39,29 +39,9 @@ public:
     void onExit() override { lvui::setActive(false); }
 
     bool onKey(const KeyEvent& e) override {
-        if (_easter && e.down) {
-            _easter = false;
-            rebuildHints();
-            sfx::select();
-            invalidate();
-            return true;
-        }
-
         if (!e.down) {
-            if (e.code == KEY_SPACE && _spaceArmed) {
-                _spaceArmed = false;
-                shell::pushById("talk");
-                return true;
-            }
+            if (e.code == KEY_SPACE) _spaceArmed = false;
             return false;
-        }
-
-        if ((e.mods & MOD_FN) && e.code == KEY_M) {
-            _easter = true;
-            _hints = "any key returns to 2026";
-            sfx::confirm();
-            invalidate();
-            return true;
         }
 
         if (e.code >= KEY_1 && e.code <= KEY_4) {
@@ -73,6 +53,7 @@ public:
             return true;
         }
 
+        if (e.code == KEY_U && host::updateReady()) { shell::confirmFwUpdate(); return true; }
         if (e.code == KEY_SPACE) { _spaceArmed = true; return true; }
         if (e.code == KEY_ENTER) { open(_sel); return true; }
         if (e.code == KEY_RIGHT) { move(+1); return true; }
@@ -95,14 +76,11 @@ public:
     void update() override {
         if (_spaceArmed && KB.heldFor(KEY_SPACE) > 250) {
             _spaceArmed = false;
-            shell::pushById("talk");
+            shell::pushById("braindump");  // keeps recording while SPACE is held
             return;
         }
-        if (millis() - _lastRefresh > 500) {
-            _lastRefresh = millis();
-            rebuildHints();
-            invalidate();
-        }
+        // The shell repaints every 250 ms anyway; only refresh the hint text here.
+        rebuildHints();
     }
 
     std::string contextSnapshot() const override {
@@ -112,41 +90,59 @@ public:
     }
 
     void render(M5Canvas& g) override {
-        if (_easter) { renderEaster(g); return; }
         std::array<lvui::Cell, TABLE_PAGE> cells{};
         for (size_t i = 0; i < _primary.size() && i < cells.size(); ++i) {
             cells[i].title = _primary[i]->cellTitle();
-            cells[i].badge = iconFor(*_primary[i]);
+            cells[i].badge = _primary[i]->shortcut ? static_cast<char>('A' + (_primary[i]->shortcut - KEY_A)) : ' ';
         }
-        const std::string now = field::nowText();
-        lvui::renderHome(g, cells.data(), _primary.size(), _sel, "NOW", now.c_str(), 0, 1);
+        lvui::Status st;
+        st.version = "v" NOD_FW_VERSION;
+        statusFor(st);
+        lvui::renderHome(g, cells.data(), _primary.size(), _sel, st);
     }
 
 private:
+    // Link trouble beats everything else, then a ready update, then what the
+    // field layer reports. Same words and colours as Call (ui::statusWord).
+    void statusFor(lvui::Status& st) {
+        static std::string now;
+        const char* link = linkSentence(true);
+        ui::Phase ph = ui::Phase::Ready;
+        st.sentence = "Hold SPACE: brain dump  T: talk  S: type";
+        if (link) {
+            ph = ui::Phase::Offline;
+            st.sentence = link;
+        } else if (host::updateReady()) {
+            ph = ui::Phase::Update;
+            st.sentence = "Press U, then Y";
+        } else if (Sys.agentQuestion) {
+            ph = ui::Phase::NeedsYou;
+            st.sentence = "An agent asked. Press N.";
+        }
+        const ui::StatusWord w = ui::statusWord(ph);
+        st.phase = ph;
+        st.line = w.text;
+        st.colour = w.colour;
+        if (ph == ui::Phase::Ready) {
+            now = field::nowText();
+            if (now != "READY") st.line = now.c_str();  // outbox, shift, reminder...
+        }
+    }
+
     void buildPrimary() {
         _primary.clear();
         size_t n = 0;
         const Descriptor* t = apps::table(n);
         for (size_t i = 0; i < n; ++i)
-            if (t[i].onHome && strcmp(t[i].id, "home")) _primary.push_back(&t[i]);
+            if (t[i].onHome && strcmp(t[i].id, "home") && _primary.size() < TABLE_PAGE) _primary.push_back(&t[i]);
         if (_sel >= static_cast<int>(_primary.size())) _sel = 0;
     }
 
     void rebuildHints() {
-        _hints = "hold SPACE call | 1 "; _hints += field::quickLabel(1);
-        _hints += " 2 "; _hints += field::quickLabel(2);
-        _hints += " 3 "; _hints += field::quickLabel(3);
-        _hints += " 4 "; _hints += field::quickLabel(4);
-    }
-
-    static char iconFor(const Descriptor& d) {
-        if (!strcmp(d.id, "talk")) return 'C';
-        if (!strcmp(d.id, "capturehub")) return '+';
-        if (!strcmp(d.id, "agents")) return 'A';
-        if (!strcmp(d.id, "desk")) return '#';
-        if (!strcmp(d.id, "recall")) return 'M';
-        if (!strcmp(d.id, "flow")) return 'F';
-        return '*';
+        // W opens Wi-Fi from Home (registry shortcut), so say so when Wi-Fi is down.
+        _hints = (linkSentence(true) && !Sys.wifiConnected) ? "SPACE dump  ENTER open  W wifi"
+               : host::updateReady()                        ? "SPACE dump  ENTER open  U update"
+                                                            : "SPACE dump  ENTER open  1-4 quick";
     }
 
     void move(int delta) {
@@ -160,31 +156,21 @@ private:
         sfx::confirm(); shell::pushById(_primary[slot]->id);
     }
 
-    void renderEaster(M5Canvas& g) {
-        g.fillScreen(BG);
-        g.setFont(&fonts::Font0);
-        g.setTextDatum(top_left);
-        g.setTextColor(ACCENT, BG);
-        g.drawString("MAZ TERMINAL / 2026", PAD, BODY_Y + 5);
-        g.setTextColor(TEXT, BG);
-        g.drawString("UPLINK....OK", PAD, BODY_Y + 21);
-        g.drawString("MEMORY....OK", PAD, BODY_Y + 34);
-        g.drawString("AGENTS....?", PAD, BODY_Y + 47);
-        g.drawString("HUMAN.....MAZ", PAD, BODY_Y + 60);
-        g.setTextColor(ACCENT2, BG);
-        g.drawString("> THE FUTURE WAS SUPPOSED", PAD, BODY_Y + 80);
-        g.drawString("  TO LOOK LIKE THIS.", PAD, BODY_Y + 94);
-    }
-
     std::vector<const Descriptor*> _primary;
     int _sel = 0;
     bool _spaceArmed = false;
-    bool _easter = false;
-    uint32_t _lastRefresh = 0;
-    std::string _hints;
+    const char* _hints = "";
 };
 
 }  // namespace
+
+const char* linkSentence(bool quiet) {
+    if (quiet && (millis() - Sys.bootMillis <= 12000 || Cfg.fieldMode)) return nullptr;
+    if (!Sys.wifiConnected) return "No Wi-Fi. Press W to connect.";
+    if (!host::configured()) return "Not paired. Control > Pair.";
+    if (!Sys.hostOnline) return "Core is off. Start it on PC.";
+    return nullptr;
+}
 
 App* makeHome() { return new HomeApp(); }
 

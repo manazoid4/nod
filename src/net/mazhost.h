@@ -16,6 +16,15 @@ struct Reply {
     std::string error;
     std::string reminderTitle;
     uint32_t    reminderDelay = 0;
+    std::string speakId;       // Core planned the voice: GET /speak?id=&part=N
+    uint8_t     speakParts = 0;
+};
+
+struct PairCode {
+    bool ok = false;
+    std::string code;
+    int expiresInSeconds = 0;
+    std::string error;
 };
 
 struct Agent {
@@ -66,12 +75,36 @@ struct CoreJob {
     std::string error;
 };
 
+// Notify-only agent ping from Core /buddy/events (kind: done|usage|needs|error).
+// Data only: nothing in this struct can approve, deny or run anything.
+struct AgentEvent {
+    std::string kind;
+    std::string text;
+    std::string source;  // free-text agent name, may be empty
+};
+
 struct BeamMessage {
+    std::vector<AgentEvent> events;  // new /buddy/events since the last poll
+    int8_t halted = -1;              // Core state: -1 unknown, 0 off, 1 on
+    bool haltCheckFailed = false;
     bool ok = false;
     bool hasMessage = false;
     std::string id;
     std::string kind;
     std::string text;
+    std::string error;
+};
+
+// "What did my agents do today" counts from Core GET /buddy/today.
+constexpr int TODAY_MAX_AGENTS = 9;  // 8 named + "other"
+struct TodayAgent { std::string source; int done = 0; };
+struct TodayStatus {
+    bool ok = false;
+    int done = 0, needs = 0, errors = 0, usage = 0, approved = 0, denied = 0;
+    int agentCount = 0;
+    TodayAgent agents[TODAY_MAX_AGENTS];
+    bool hasLast = false;
+    std::string lastKind, lastText, lastSource;
     std::string error;
 };
 
@@ -91,6 +124,30 @@ struct SystemStatus {
     std::string ollamaModel;
     int ollamaVramMb = 0;
     int ollamaContext = 0;
+    std::string error;
+};
+
+// WORK Consistency glance payload. Server-side hard cap (spec): at most 4
+// pinned tracks, a fixed 7-length day array — mirrored here as fixed-size,
+// bounded fields so a malformed/oversized response cannot overflow anything.
+constexpr int WORK_MAX_TRACKS = 4;
+constexpr int WORK_HISTORY_DAYS = 7;
+
+struct WorkTrack {
+    std::string id;
+    std::string shortLabel;
+    std::string primaryEventTypeId;
+    float todayTotal = 0;
+    bool hasTarget = false;
+    float target = 0;
+};
+
+struct WorkSummary {
+    bool ok = false;
+    int trackCount = 0;
+    WorkTrack tracks[WORK_MAX_TRACKS];
+    float sevenDay[WORK_HISTORY_DAYS] = {};
+    std::string nextAction;
     std::string error;
 };
 
@@ -114,8 +171,11 @@ struct TeachStatus {
 
 bool configured();
 bool health();
+void linkIdle(bool force = false);  // re-enable WiFi modem sleep (20 s after the last request, or now if force)
+bool onRemoteLink();   // true while the active Core link is the remote HTTPS URL
 const char* linkName();
 std::string startSession();
+PairCode startPairing();
 Reply talkText(const std::string& session, const std::string& text);
 Reply talkTextContext(const std::string& session, const std::string& text,
                       const std::string& context);
@@ -124,6 +184,23 @@ Reply transcribe(const std::string& wavPath);
 Reply brainDump(const std::string& wavPath, const std::vector<uint32_t>& highlights);
 Reply pcAction(const std::string& action);
 bool speak(const std::string& text, const std::string& wavPath);
+// Say tool: Core POST /say (free Fish model only), WAV saved to wavPath.
+bool say(const std::string& text, const std::string& wavPath);
+
+// One part of a Core-planned reply (part 0 = first sentence). Blocks until Core has it.
+bool speakPart(const std::string& id, uint8_t part, const std::string& wavPath);
+
+// Reply voice (Core /voices). voiceSelect persists the choice on the PC;
+// voicePreview downloads a cached "Hi, I'm nod." wav in that voice.
+struct VoiceItem {
+    std::string name;
+    std::string id;
+    std::string description;
+    bool        current = false;
+};
+bool voiceList(std::vector<VoiceItem>& out, std::string& error);
+bool voiceSelect(const std::string& id, const std::string& name);
+bool voicePreview(const std::string& id, const std::string& wavPath);
 Assurance assurance();
 Reply sendNudge(const std::string& sessionId);
 
@@ -148,9 +225,27 @@ TeachStatus teachStatus(const std::string& sessionId);
 // a command. Telemetry is a cached one-shot laptop snapshot, not a stream.
 Reply beamSend(const std::string& text);
 BeamMessage beamPull();
+bool haltNow(bool on);    // immediate authenticated POST; never stops running processes
 SystemStatus systemStatus();
+TodayStatus todayStatus();
+WorkSummary workSummary();
+Reply workIncrement(const std::string& trackId, const std::string& eventTypeId);
 
 CoreStatus coreStatus();
+// Core /health: its version plus the firmware it holds (fw_latest). Polled in the background.
+struct CoreInfo { bool ok = false; std::string version, fwVersion, fwSha, remoteUrl; };
+CoreInfo fetchCoreInfo();
+// Core /buddy: Claude Code approvals waiting for a thumb (see docs/APPROVALS.md).
+struct BuddyItem { std::string id, tool, summary, project, session; int left = 0; };
+struct BuddyPoll { bool ok = false; std::string agent; int count = 0; std::vector<BuddyItem> items; };
+BuddyPoll buddyPoll();                                              // GET /buddy/summary (tiny)
+bool buddyDecide(const std::string& id, const std::string& decision, std::string& applied);  // allow|deny|allow_all
+const CoreInfo& coreInfo();          // last poll result (cached)
+void setCoreInfo(const CoreInfo& info);
+bool updateReady();
+bool fwUpdate();       // blocking: download Core's firmware into the spare slot, verify sha256, reboot
+void fwBootGuard();    // call at boot: roll back to the previous slot if a fresh update never ran stable
+void fwMarkGood();     // call once running stable: drop the rollback marker                  // Core holds a different build than this one
 std::vector<CoreProject> coreProjects(std::string& error);
 Reply coreAction(const std::string& action, const std::string& project);
 CoreJob coreStartJob(const std::string& action, const std::string& project);

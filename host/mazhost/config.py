@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import ipaddress
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,8 +17,13 @@ class Settings(BaseSettings):
     )
 
     token: str = "change-me-before-first-run"
+    autoupdate: bool = True  # MAZ_AUTOUPDATE=0 disables the GitHub Releases self-update loop
+    update_interval_s: int = 300
+    repo_dir: str = ""  # git checkout Core updates; default: the checkout containing mazhost
     bind: str = "0.0.0.0"
     port: int = 8787
+    remote_url: str = ""  # MAZ_REMOTE_URL; empty = auto-detect the Tailscale Funnel URL
+    remote_detect: bool = True  # MAZ_REMOTE_DETECT=0 disables the background tailscale probe
     whisper_model: str = "base.en"
     whisper_device: str = "cpu"
     whisper_compute: str = "int8"
@@ -29,15 +36,42 @@ class Settings(BaseSettings):
     llamacpp_backup_url: str = ""
     llamacpp_backup_model: str = ""
     ollama_url: str = "http://127.0.0.1:11434"
-    ollama_model: str = "lfm2.5-8b-a1b-gpu:latest"
-    ollama_backup_model: str = "qwen3.5:4b"
+    # LOCAL_FAST: the reliability-critical default. Small enough to stay fully
+    # resident on a 6 GB card and answer in single-digit seconds once warm.
+    ollama_model: str = "qwen3.5:4b"
+    # LOCAL_SMART: optional, larger/slower. Never the AUTO reliability default.
+    ollama_backup_model: str = "lfm2.5-8b-a1b-gpu:latest"
     local_model_policy: Literal["auto", "primary", "backup"] = "auto"
     ai_profile: Literal["smart", "save", "fast"] = "smart"
+
+    # Free fast brain for conversation: Groq first (key from env/.env). Each model has its
+    # own Groq rate-limit bucket (8000 tokens/min), so a 429 hops to the next model;
+    # llama-3.3-70b was removed from this account (404). Each model is one AUTO stage. Empty key = stages skipped.
+    groq_url: str = "https://api.groq.com/openai/v1"
+    groq_key: str = ""
+    groq_api_key: str = ""  # Alias for groq_key (PR #43 uses this name)
+    groq_models: str = "openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b"
+    # Conversational turns on LOCAL/AUTO use the full free chain (local last).
+    smart_voice: bool = True
+    now_path: str = "~/Desktop/Maz Works Knowledge Vault/NOW.md"
+
+    # Last free cloud hop before local (key: MAZ_OPENROUTER_API_KEY; ~3 s, still beats local 7-14 s).
+    openrouter_api_key: str = ""
+    openrouter_free_model: str = "openrouter/free"
+
+    # Dictation flow directory (PR #43)
+    flow_dir: str = "~/.maz-pocket/flow"
 
     cloud_url: str = "https://openrouter.ai/api/v1"
     cloud_key: str = ""
     cloud_model: str = "anthropic/claude-3.5-haiku"
-    default_route: Literal["local", "auto", "cloud"] = "local"
+    # Explicit 9router route. Keeping this loopback-only ensures the Cardputer
+    # never receives gateway credentials or contacts the model router itself.
+    mazlatest_url: str = Field(default="http://localhost:20128/v1", max_length=200)
+    mazlatest_key: str = ""
+    mazlatest_model: str = Field(default="MazLatest", min_length=1, max_length=120)
+    default_route: Literal["local", "auto", "cloud", "mazlatest"] = "local"
+    build_id: str = Field(default="dev", min_length=1, max_length=120)
 
     max_upload_mb: int = Field(default=12, ge=1, le=64)
     max_audio_seconds: int = Field(default=900, ge=1, le=3600)
@@ -45,6 +79,16 @@ class Settings(BaseSettings):
     max_turns: int = Field(default=12, ge=1, le=100)
     tts_enabled: bool = False
     tts_rate: int = Field(default=180, ge=80, le=300)
+    fish_api_key: str = ""
+    tts_voice: str = "bf322df2096a46f18c579d0baa36f41d"  # Fish "Adrian"
+    tts_model: str = "s2.1-pro-free"
+    # Host-only opt-in; firmware never receives model paths or keys.
+    tts_provider: Literal["fish", "kokoro", "windows"] = "fish"
+    kokoro_model_path: str = ""
+    kokoro_voices_path: str = ""
+    kokoro_voice: str = Field(default="am_michael", min_length=3, max_length=32)
+    kokoro_speed: float = Field(default=1.05, ge=0.75, le=1.35)
+    data_dir: str = ""  # MAZ_DATA_DIR; empty = host/data in the install dir (voice choice, previews)
     nudge_url: str = "http://127.0.0.1:47831"
     nudge_token: str = ""
     nudge_token_file: str = "~/.agent-nudge/control-plane.key"
@@ -80,6 +124,12 @@ class Settings(BaseSettings):
     control_command_timeout_seconds: int = Field(default=300, ge=5, le=3600)
     control_max_output_chars: int = Field(default=40_000, ge=2_000, le=500_000)
 
+    # WORK Consistency: JOB HUNT / MAZ WORKS / custom tracks. Same authenticated
+    # phone-control session boundary as the rest of /control; own SQLite store.
+    work_dir: str = "~/.maz-pocket/work"
+    # Brain dump inbox any agent can read (MAZ_DUMPS_DIR). Not ~/nod: that is a public git clone.
+    dumps_dir: str = "~/nod-inbox"
+
     # Claude/Codex/Hermes jobs are subprocesses on the PC. Their own CLI
     # permission bypasses are only used after the external MAZ phone broker has
     # approved PROJECT FULL or broader authority.
@@ -111,6 +161,23 @@ class Settings(BaseSettings):
     def migrate_legacy_shipped_defaults(self):
         if self.ollama_model == "gemma3:1b":
             self.ollama_model = "lfm2.5-8b-a1b-gpu:latest"
+        parsed = None
+        try:
+            parsed = urlsplit(self.mazlatest_url)
+            host = parsed.hostname or ""
+            loopback = host.lower() == "localhost" or ipaddress.ip_address(host).is_loopback
+        except ValueError:
+            loopback = False
+        if (
+            parsed is None
+            or parsed.scheme != "http"
+            or not loopback
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("mazlatest_url must be a loopback HTTP URL without embedded credentials")
         return self
 
     @property
@@ -133,3 +200,5 @@ class Settings(BaseSettings):
     @property
     def web_origin_list(self) -> list[str]:
         return [x.strip() for x in self.web_origins.split(",") if x.strip()]
+
+

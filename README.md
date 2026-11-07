@@ -54,6 +54,10 @@ Anthropic's open-source [Claude Desktop Buddy](https://github.com/anthropics/cla
 
 The working Cardputer firmware and the PC-side Nod Core now live in this repo. See [docs/NOD-DEVICE-AND-CORE.md](docs/NOD-DEVICE-AND-CORE.md) for layout, verified status and what is not yet tested on hardware.
 
+## Progress
+
+**[NOD_STATUS.md](NOD_STATUS.md)**: simple ticks, 🟢 only with evidence. Every feature and where it lives: [FEATURE_INVENTORY.md](FEATURE_INVENTORY.md).
+
 ## Roadmap
 
 1. Hub endpoints and Claude Code hook

@@ -6,10 +6,49 @@
 
 namespace maz {
 
+constexpr uint8_t TALK_ROUTE_COUNT = 4;
+constexpr uint8_t TALK_ROUTE_LOCAL = 0;
+constexpr uint8_t TALK_ROUTE_AUTO = 1;
+constexpr uint8_t TALK_ROUTE_CLOUD = 2;
+constexpr uint8_t TALK_ROUTE_MAZLATEST = 3;
+
+inline uint8_t normalizedTalkRoute(uint8_t route) {
+    return route < TALK_ROUTE_COUNT ? route : 2;
+}
+
+inline const char* talkRouteApiName(uint8_t route) {
+    switch (normalizedTalkRoute(route)) {
+        case 0: return "local";
+        case 1: return "auto";
+        case 3: return "mazlatest";
+        default: return "cloud";
+    }
+}
+
+inline uint8_t talkRouteFromApiName(const std::string& route, uint8_t fallback = TALK_ROUTE_CLOUD) {
+    if (route == "local" || route == "0") return TALK_ROUTE_LOCAL;
+    if (route == "auto" || route == "1") return TALK_ROUTE_AUTO;
+    if (route == "cloud" || route == "2") return TALK_ROUTE_CLOUD;
+    if (route == "mazlatest" || route == "3") return TALK_ROUTE_MAZLATEST;
+    return normalizedTalkRoute(fallback);
+}
+
+inline const char* talkRouteLabel(uint8_t route) {
+    switch (normalizedTalkRoute(route)) {
+        case 0: return "LOCAL";
+        case 1: return "AUTO";
+        case 3: return "MAZLATEST";
+        default: return "CLOUD";
+    }
+}
+
 struct Settings {
     uint8_t  brightness    = 110;
     uint8_t  volume        = 160;
     bool     uiSounds      = true;
+    // Quiet mode: last choice only. The device always boots Normal (see quiet.cpp).
+    uint8_t  quietLevel    = 0;
+    uint8_t  quietDur      = 1;
     uint16_t screenTimeout = 60;
     uint8_t  micGain       = 12;
     bool     preferSd      = true;
@@ -21,10 +60,9 @@ struct Settings {
     uint16_t    hostPort = 8787;
     std::string hostRemoteUrl;
     std::string hostToken;
-    // Fresh v0.8 installs prefer CLOUD for Call MAZ as requested. Existing
-    // devices keep their persisted choice. A on the Call screen cycles
-    // CLOUD -> LOCAL -> AUTO without needing the web settings page.
-    uint8_t     talkRoute = 2;
+    // Persist the public symbolic identity ("mazlatest", "cloud", etc.). The
+    // byte remains an internal compact enum and supports legacy NVS migration.
+    uint8_t     talkRoute = TALK_ROUTE_MAZLATEST;
     bool        ttsEnabled = true;
     uint8_t     nudgePollMinutes = 5;
     bool        firstRunComplete = false;

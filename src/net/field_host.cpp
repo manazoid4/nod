@@ -5,8 +5,12 @@
 
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
+#include "remote_tls.h"
 #include <WiFi.h>
 
+#include <algorithm>
+#include <cmath>
+#include <cstring>
 #include <utility>
 #include <vector>
 
@@ -17,39 +21,6 @@ namespace maz {
 namespace host {
 namespace {
 
-static const char ISRG_ROOT_X1_FIELD[] PROGMEM = R"EOF(
------BEGIN CERTIFICATE-----
-MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
-TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
-cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
-WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
-ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
-MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
-h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
-0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
-A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
-T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
-B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
-B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
-KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
-OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
-jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
-qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
-rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
-HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
-hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
-ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
-3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
-NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
-ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
-TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
-jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
-oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
-4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
-mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
-emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
------END CERTIFICATE-----
-)EOF";
 
 std::vector<std::pair<std::string, bool>> fieldBases() {
     std::vector<std::pair<std::string, bool>> out;
@@ -63,13 +34,12 @@ std::vector<std::pair<std::string, bool>> fieldBases() {
     return out;
 }
 
-bool beginField(HTTPClient& http, const std::string& base, const char* path, bool remote) {
+bool beginField(NodHttp& http, const std::string& base, const char* path, bool remote) {
     if (Cfg.hostToken.empty() || WiFi.status() != WL_CONNECTED) return false;
     http.setConnectTimeout(remote ? 6500 : 1800);
     http.setTimeout(12000);
     const std::string url = base + path;
-    const bool begun = remote ? http.begin(url.c_str(), ISRG_ROOT_X1_FIELD)
-                              : http.begin(url.c_str());
+    const bool begun = http.open(url.c_str(), remote);
     if (!begun) return false;
     http.addHeader("Authorization", ("Bearer " + Cfg.hostToken).c_str());
     return true;
@@ -81,7 +51,98 @@ std::string jsonError(JsonDocument& doc, const char* fallback) {
     return fallback;
 }
 
+enum class BodyReadResult : uint8_t { Ok, TooLarge, Incomplete };
+
+BodyReadResult readBoundedBody(HTTPClient& http, String& body, size_t maxBytes) {
+    const int expected = http.getSize();
+    if (expected > 0 && static_cast<size_t>(expected) > maxBytes)
+        return BodyReadResult::TooLarge;
+
+    body = "";
+    body.reserve(expected > 0 ? static_cast<size_t>(expected) : 512u);
+    WiFiClient* stream = http.getStreamPtr();
+    if (!stream) return BodyReadResult::Incomplete;
+
+    uint8_t chunk[256];
+    uint32_t lastProgress = millis();
+    while (http.connected() &&
+           (expected < 0 || body.length() < static_cast<size_t>(expected))) {
+        const size_t available = static_cast<size_t>(stream->available());
+        if (!available) {
+            if (millis() - lastProgress > 12000u) break;
+            delay(1);
+            continue;
+        }
+        size_t wanted = std::min(available, sizeof(chunk));
+        if (expected >= 0) {
+            const size_t remaining = static_cast<size_t>(expected) - body.length();
+            wanted = std::min(wanted, remaining);
+        }
+        if (body.length() + wanted > maxBytes) return BodyReadResult::TooLarge;
+        const int count = stream->readBytes(chunk, wanted);
+        if (count <= 0) break;
+        body.concat(reinterpret_cast<const char*>(chunk), static_cast<unsigned int>(count));
+        lastProgress = millis();
+    }
+
+    if (body.length() > maxBytes) return BodyReadResult::TooLarge;
+    if (expected >= 0 && body.length() != static_cast<size_t>(expected))
+        return BodyReadResult::Incomplete;
+    return BodyReadResult::Ok;
+}
+
 void fieldOnline() { Sys.hostOnline = true; }
+
+// Agent alerts ride the existing Beam poll (same cadence, same worker job).
+// RAM only: -1 = not synced yet. The first poll just records `last`, so a
+// reboot never replays old pings. Worker-task only, no locking needed.
+int32_t gAgentSince = -1;
+
+void pullHaltState(const std::string& base, bool remote, BeamMessage& out) {
+    NodHttp http;
+    if (!beginField(http, base, "/buddy/halt", remote)) {
+        out.haltCheckFailed = true;
+        return;
+    }
+    http.setTimeout(3500);
+    const int status = http.GET();
+    String body;
+    const bool read = status == 200 && readBoundedBody(http, body, 768) == BodyReadResult::Ok;
+    http.end();
+    JsonDocument doc;
+    if (!read || deserializeJson(doc, body) || !doc["halted"].is<bool>()) {
+        out.haltCheckFailed = true;
+        return;
+    }
+    out.halted = doc["halted"].as<bool>() ? 1 : 0;
+}
+
+void pullAgentEvents(const std::string& base, bool remote, BeamMessage& out) {
+    NodHttp http;
+    const std::string path = "/buddy/events?since=" +
+                             std::to_string(gAgentSince < 0 ? INT32_MAX : gAgentSince);
+    if (!beginField(http, base, path.c_str(), remote)) return;
+    http.setTimeout(4000);
+    const int status = http.GET();
+    String body;
+    const bool read = status == 200 && readBoundedBody(http, body, 6144) == BodyReadResult::Ok;
+    http.end();
+    if (!read) return;  // older Core without /buddy/events: silently skip
+    JsonDocument doc;
+    if (deserializeJson(doc, body) || !doc["last"].is<int>()) return;
+    const int32_t last = doc["last"].as<int32_t>();
+    const bool synced = gAgentSince >= 0 && last >= gAgentSince;  // last < since: Core restarted
+    if (synced) {
+        for (JsonObject e : doc["events"].as<JsonArray>()) {
+            AgentEvent ev;
+            ev.kind = e["kind"] | "";
+            ev.text = e["text"] | "";
+            ev.source = e["source"] | "";
+            out.events.push_back(std::move(ev));
+        }
+    }
+    gAgentSince = last;
+}
 
 }  // namespace
 
@@ -91,14 +152,14 @@ Reply talkTextContext(const std::string& session, const std::string& text,
     if (session.empty() || text.empty()) { out.error = "context ask missing input"; return out; }
     JsonDocument req;
     req["session_id"] = session;
-    req["route"] = Cfg.talkRoute == 0 ? "local" : (Cfg.talkRoute == 2 ? "cloud" : "auto");
+    req["route"] = talkRouteApiName(Cfg.talkRoute);
     req["text"] = text;
     req["context"] = context.size() > 700 ? context.substr(0, 700) : context;
     String payload;
     serializeJson(req, payload);
 
     for (const auto& base : fieldBases()) {
-        HTTPClient http;
+        NodHttp http;
         if (!beginField(http, base.first, "/turn/text", base.second)) continue;
         http.addHeader("Content-Type", "application/json");
         const int status = http.POST(payload);
@@ -123,7 +184,7 @@ Reply talkTextContext(const std::string& session, const std::string& text,
         return out;
     }
     Sys.hostOnline = false;
-    out.error = "PC unreachable";
+    out.error = "hub unreachable";
     return out;
 }
 
@@ -136,7 +197,7 @@ Reply beamSend(const std::string& text) {
     serializeJson(req, payload);
 
     for (const auto& base : fieldBases()) {
-        HTTPClient http;
+        NodHttp http;
         if (!beginField(http, base.first, "/beam/from-pocket", base.second)) continue;
         http.addHeader("Content-Type", "application/json");
         const int status = http.POST(payload);
@@ -149,19 +210,37 @@ Reply beamSend(const std::string& text) {
         if (status < 200 || status >= 300) { out.error = jsonError(doc, "Beam failed"); return out; }
         fieldOnline();
         out.ok = true;
-        out.text = doc["reply"] | "BEAMED TO LAPTOP";
+        out.text = doc["reply"] | "BEAMED TO HUB";
         out.provider = "beam-local";
         return out;
     }
     Sys.hostOnline = false;
-    out.error = "PC unreachable";
+    out.error = "hub unreachable";
     return out;
+}
+
+bool haltNow(bool on) {
+    // Issued directly on Fn+H, without waiting for the periodic Beam poll.
+    for (const auto& base : fieldBases()) {
+        NodHttp http;
+        if (!beginField(http, base.first, "/buddy/halt", base.second)) continue;
+        http.setTimeout(3500);
+        http.addHeader("Content-Type", "application/json");
+        const int status = http.POST(on ? "{\"on\":true}" : "{\"on\":false}");
+        String body;
+        const bool read = status == 200 && readBoundedBody(http, body, 768) == BodyReadResult::Ok;
+        http.end();
+        JsonDocument doc;
+        if (read && !deserializeJson(doc, body) && doc["halted"].is<bool>() &&
+            doc["halted"].as<bool>() == on) return true;
+    }
+    return false;
 }
 
 BeamMessage beamPull() {
     BeamMessage out;
     for (const auto& base : fieldBases()) {
-        HTTPClient http;
+        NodHttp http;
         if (!beginField(http, base.first, "/beam/pull", base.second)) continue;
         const int status = http.GET();
         const String body = status > 0 ? http.getString() : String();
@@ -179,24 +258,26 @@ BeamMessage beamPull() {
             out.kind = msg["kind"] | "text";
             out.text = msg["text"] | "";
         }
+        pullHaltState(base.first, base.second, out);
+        pullAgentEvents(base.first, base.second, out);
         return out;
     }
     Sys.hostOnline = false;
-    out.error = "PC unreachable";
+    out.error = "hub unreachable";
     return out;
 }
 
 SystemStatus systemStatus() {
     SystemStatus out;
     for (const auto& base : fieldBases()) {
-        HTTPClient http;
+        NodHttp http;
         if (!beginField(http, base.first, "/system/status", base.second)) continue;
         const int status = http.GET();
         const String body = status > 0 ? http.getString() : String();
         http.end();
         if (status <= 0) continue;
         JsonDocument doc;
-        if (deserializeJson(doc, body)) { out.error = "invalid laptop status"; return out; }
+        if (deserializeJson(doc, body)) { out.error = "invalid hub status"; return out; }
         if (status < 200 || status >= 300) { out.error = jsonError(doc, "status unavailable"); return out; }
         fieldOnline();
         out.ok = doc["ok"] | true;
@@ -223,7 +304,190 @@ SystemStatus systemStatus() {
         return out;
     }
     Sys.hostOnline = false;
+    out.error = "hub unreachable";
+    return out;
+}
+
+TodayStatus todayStatus() {
+    constexpr size_t MAX_TODAY_PAYLOAD_BYTES = 2048;
+    TodayStatus out;
+    for (const auto& base : fieldBases()) {
+        NodHttp http;
+        if (!beginField(http, base.first, "/buddy/today", base.second)) continue;
+        http.setTimeout(4000);
+        const int status = http.GET();
+        String body;
+        const BodyReadResult read = status > 0
+                                        ? readBoundedBody(http, body, MAX_TODAY_PAYLOAD_BYTES)
+                                        : BodyReadResult::Incomplete;
+        http.end();
+        if (status <= 0) continue;
+        if (status == 404) { out.error = "update Core"; return out; }  // older Core
+        if (read != BodyReadResult::Ok) { out.error = "bad today response"; return out; }
+        JsonDocument doc;
+        if (deserializeJson(doc, body) || status < 200 || status >= 300 ||
+            !(doc["ok"] | false) || !doc["done"].is<int>()) {
+            out.error = "bad today response";
+            return out;
+        }
+        fieldOnline();
+        out.done = doc["done"] | 0;
+        out.needs = doc["needs"] | 0;
+        out.errors = doc["errors"] | 0;
+        out.usage = doc["usage"] | 0;
+        out.approved = doc["approved"] | 0;
+        out.denied = doc["denied"] | 0;
+        for (JsonObject a : doc["agents"].as<JsonArray>()) {
+            if (out.agentCount >= TODAY_MAX_AGENTS) break;
+            TodayAgent& t = out.agents[out.agentCount++];
+            t.source = a["source"] | "";
+            t.done = a["done"] | 0;
+        }
+        JsonObject last = doc["last"].as<JsonObject>();
+        if (!last.isNull()) {
+            out.hasLast = true;
+            out.lastKind = last["kind"] | "";
+            out.lastText = last["text"] | "";
+            out.lastSource = last["source"] | "";
+        }
+        out.ok = true;
+        return out;
+    }
+    Sys.hostOnline = false;
     out.error = "PC unreachable";
+    return out;
+}
+
+WorkSummary workSummary() {
+    constexpr size_t MAX_WORK_PAYLOAD_BYTES = 4096;
+    WorkSummary out;
+    for (const auto& base : fieldBases()) {
+        NodHttp http;
+        if (!beginField(http, base.first, "/work/cardputer", base.second)) continue;
+        const int status = http.GET();
+        String body;
+        const BodyReadResult read = status > 0
+                                        ? readBoundedBody(http, body, MAX_WORK_PAYLOAD_BYTES)
+                                        : BodyReadResult::Incomplete;
+        http.end();
+        if (status <= 0) continue;
+        if (read == BodyReadResult::TooLarge) {
+            out.error = "work payload too large";
+            return out;
+        }
+        if (read != BodyReadResult::Ok) {
+            out.error = "incomplete work response";
+            return out;
+        }
+        JsonDocument doc;
+        if (deserializeJson(doc, body)) { out.error = "invalid work response"; return out; }
+        if (status < 200 || status >= 300) { out.error = jsonError(doc, "work unavailable"); return out; }
+
+        // Fail the whole snapshot if any required field is absent or malformed.
+        // finishWork() then retains the previous successful data instead of
+        // replacing unknown values with default zeroes.
+        if (!doc["ok"].is<bool>() || !doc["ok"].as<bool>() ||
+            !doc["tracks"].is<JsonArray>() || !doc["seven_day"].is<JsonArray>()) {
+            out.error = "malformed work response";
+            return out;
+        }
+        const char* nextAction = doc["next_action"] | "";
+        if (strlen(nextAction) > 80) { out.error = "work next action too long"; return out; }
+        out.nextAction = nextAction;
+        JsonArray tracks = doc["tracks"].as<JsonArray>();
+        if (tracks.size() > WORK_MAX_TRACKS) {
+            out.error = "too many work tracks";
+            return out;
+        }
+        int i = 0;
+        for (JsonObject t : tracks) {
+            const char* id = t["track_id"] | nullptr;
+            const char* label = t["short_label"] | nullptr;
+            const char* primary = t["primary_event_type_id"] | nullptr;
+            if (!id || !label || !id[0] || !label[0] || strlen(id) > 80 ||
+                strlen(label) > 16 || !primary || !primary[0] || strlen(primary) > 120 ||
+                !t["today_total"].is<float>()) {
+                out.error = "malformed work track";
+                return out;
+            }
+            const float today = t["today_total"].as<float>();
+            if (!std::isfinite(today)) { out.error = "invalid work total"; return out; }
+            out.tracks[i].id = id;
+            out.tracks[i].shortLabel = label;
+            out.tracks[i].primaryEventTypeId = primary;
+            out.tracks[i].todayTotal = today;
+            out.tracks[i].hasTarget = !t["target"].isNull();
+            if (out.tracks[i].hasTarget) {
+                if (!t["target"].is<float>()) { out.error = "invalid work target"; return out; }
+                out.tracks[i].target = t["target"].as<float>();
+                if (!std::isfinite(out.tracks[i].target)) {
+                    out.error = "invalid work target";
+                    return out;
+                }
+            }
+            ++i;
+        }
+        out.trackCount = i;
+        JsonArray seven = doc["seven_day"].as<JsonArray>();
+        if (seven.size() != WORK_HISTORY_DAYS) {
+            out.error = "invalid work history length";
+            return out;
+        }
+        int d = 0;
+        for (JsonVariant dayValue : seven) {
+            if (!dayValue.is<JsonObject>()) { out.error = "invalid work history"; return out; }
+            JsonObject day = dayValue.as<JsonObject>();
+            if (day.size() > WORK_MAX_TRACKS) { out.error = "work history too wide"; return out; }
+            float total = 0;
+            for (JsonPair kv : day) {
+                if (!kv.value().is<float>()) { out.error = "invalid work history total"; return out; }
+                const float value = kv.value().as<float>();
+                if (!std::isfinite(value)) { out.error = "invalid work history total"; return out; }
+                total += value;
+            }
+            out.sevenDay[d] = total;
+            ++d;
+        }
+        out.ok = true;
+        fieldOnline();
+        return out;
+    }
+    Sys.hostOnline = false;
+    out.error = "hub unreachable";
+    return out;
+}
+
+Reply workIncrement(const std::string& trackId, const std::string& eventTypeId) {
+    Reply out;
+    if (trackId.empty() || trackId.size() > 80 || eventTypeId.empty() || eventTypeId.size() > 120) {
+        out.error = "invalid work increment";
+        return out;
+    }
+    for (const auto& base : fieldBases()) {
+        NodHttp http;
+        if (!beginField(http, base.first, "/work/cardputer/increment", base.second)) continue;
+        JsonDocument request;
+        request["event_id"] = "evt_cardputer_" + std::to_string(ESP.getEfuseMac()) + "_" + std::to_string(millis());
+        request["track_id"] = trackId;
+        request["event_type_id"] = eventTypeId;
+        String body;
+        serializeJson(request, body);
+        http.addHeader("Content-Type", "application/json");
+        const int status = http.POST(body);
+        const String response = status > 0 ? http.getString() : String();
+        http.end();
+        if (status <= 0) continue;
+        JsonDocument doc;
+        if (deserializeJson(doc, response)) { out.error = "invalid work increment response"; return out; }
+        if (status < 200 || status >= 300) { out.error = jsonError(doc, "work increment failed"); return out; }
+        out.ok = true;
+        out.text = "+1 saved";
+        out.provider = "work-local";
+        fieldOnline();
+        return out;
+    }
+    Sys.hostOnline = false;
+    out.error = "hub unreachable";
     return out;
 }
 
