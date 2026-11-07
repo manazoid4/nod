@@ -272,6 +272,13 @@ class SelfUpdater:
             log.warning("selfupdate: checkout dirty, skipping code update")
             self.state["code"] = "skipped_dirty"
             return "code_skipped_dirty"
+        if not self._git(["ls-remote", "--heads", "origin", BRANCH], check=False, timeout=60):
+            # The checkout's origin has no deploy branch (e.g. a plain clone of main):
+            # code self-update is simply not set up here. Skip quietly, don't error.
+            if self.state["code"] != "skipped_no_deploy_branch":
+                log.info("selfupdate: origin has no %s branch; code self-update off for this checkout", BRANCH)
+            self.state["code"] = "skipped_no_deploy_branch"
+            return "code_skipped_no_deploy_branch"
         self._git(["fetch", "origin", BRANCH], timeout=180)
         p = subprocess.run(["git", "merge-base", "--is-ancestor", target, f"origin/{BRANCH}"],
                            cwd=self.repo, capture_output=True)
