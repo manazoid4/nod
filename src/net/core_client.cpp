@@ -7,6 +7,7 @@
 
 #include "../core/settings.h"
 #include "../core/sys.h"
+#include "../ui/theme.h"
 
 namespace maz {
 namespace host {
@@ -313,12 +314,12 @@ namespace {
 
 void fwProgress(const char* line, int pct) {
     auto& d = M5.Display;
-    d.fillRect(0, 50, 240, 40, 0);
-    d.setTextColor(0xFFFF, 0);
+    d.fillRect(0, 50, 240, 40, theme::BG);
+    d.setTextColor(theme::TEXT, theme::BG);
     d.setTextDatum(top_left);
     d.drawString(line, 8, 52);
-    d.drawRect(8, 72, 224, 10, 0xFFFF);
-    d.fillRect(8, 72, 224 * pct / 100, 10, 0x07E0);
+    d.drawRect(8, 72, 224, 10, theme::TEXT);
+    d.fillRect(8, 72, 224 * pct / 100, 10, theme::OK);
 }
 
 // Last failure: kept in RAM and NVS so /api/status and Core can explain it without a cable.
@@ -405,8 +406,8 @@ bool fwFail(const char* stage, const char* why, esp_err_t code = ESP_OK, size_t 
     Serial.printf("[fw] FAIL %s: %s (%s 0x%x)\n", stage, why, name, (unsigned)code);
     diagSet(stage, code == ESP_OK ? String(why).c_str() : (String(why) + " / " + name).c_str(), (int)code);
     auto& d = M5.Display;
-    d.fillRect(0, 50, 240, 60, 0);
-    d.setTextColor(0xFFFF, 0);
+    d.fillRect(0, 50, 240, 60, theme::BG);
+    d.setTextColor(theme::ERR, theme::BG);
     d.setTextDatum(top_left);
     d.drawString(why, 8, 52);
     d.drawString(name, 8, 68);
