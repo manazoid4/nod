@@ -1,0 +1,41 @@
+/* Nod concept B, "Retro-future handheld". Reusable by the site, Nod Core (Windows) and device screens.
+   Contrast (WCAG AA) is checked by site/tests/site.test.mjs. Keep in sync: site/concepts/b/tokens.css. */
+:root {
+  /* colour: plastic + charcoal */
+  --plastic: #ece9e1;
+  --plastic-2: #dcd8cc;
+  --plastic-3: #c9c4b5;
+  --charcoal: #202328;
+  --charcoal-2: #30343b;
+  --ink: #202328;
+  --ink-soft: #4a4e57;
+  /* colour: accents. Fills take charcoal text; -deep shades are safe as text on plastic */
+  --mustard: #f2b705;
+  --mustard-deep: #7a5a00;
+  --teal: #2fd3c0;
+  --teal-deep: #0b6666;
+  --red-led: #ff6b4a;
+  /* device screen (Cardputer 240x135) */
+  --screen-bg: #14171a;
+  --screen-ink: #ece9e1;
+  --screen-talk: #f2b705;
+  --screen-ring: #2fd3c0;
+  /* type */
+  --font-display: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  /* shape: small radii, stepped "pixel" corners */
+  --radius-s: 4px;
+  --radius-m: 10px;
+  --radius-l: 22px;
+  --radius-pill: 999px;
+  --pixel-step: 6px;
+  /* moulded-plastic shadow: bevel + drop */
+  --shadow-s: inset 0 -3px 0 rgba(0,0,0,.18), 0 2px 0 var(--plastic-3);
+  --shadow-m: inset 0 -5px 0 rgba(0,0,0,.2), 0 4px 0 var(--charcoal);
+  --shadow-l: 0 18px 0 -6px var(--plastic-3), 0 24px 40px -18px rgba(32,35,40,.45);
+  --stroke: 2px solid var(--charcoal);
+  /* spacing scale */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 72px; --space-9: 112px;
+}
