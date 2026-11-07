@@ -15,6 +15,7 @@
 #include "../net/host_worker.h"
 #include "../net/mazhost.h"
 #include "../storage/store.h"
+#include "../ui/talk_orb.h"
 #include "apps.h"
 #include "common.h"
 
@@ -261,7 +262,15 @@ private:
         const char* word = sw.text;
         constexpr int GLYPH = 20;
         constexpr int SIDE = PAD + GLYPH + 6;  // word stays centred with room for the glyph
-        ui::glyph(g, PAD, STATE_Y + 4, GLYPH, p);
+        if (p == Phase::Ready || p == Phase::Listening || p == Phase::Thinking || p == Phase::Speaking) {
+            // Same Talk circle as Home, small: pulses with the mic, spins while thinking.
+            ui::talkOrb(g, PAD + GLYPH / 2, STATE_Y + 4 + GLYPH / 2, 7,
+                        p == Phase::Listening ? nod::TALK_LISTENING : p == Phase::Thinking ? nod::TALK_THINKING
+                        : p == Phase::Speaking ? nod::TALK_SPEAKING : nod::TALK_IDLE,
+                        voice::level());
+        } else {
+            ui::glyph(g, PAD, STATE_Y + 4, GLYPH, p);
+        }
         g.setFont(&fonts::Font4);
         float scale = STATE_SCALE;  // shrink until the word fits the screen
         g.setTextSize(scale);

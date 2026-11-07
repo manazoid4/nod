@@ -162,6 +162,14 @@ class Settings(BaseSettings):
     skill_vault_dir: str = "~/.maz-pocket/skills"
     skill_draft_dir: str = "~/.maz-pocket/skills/drafts"
 
+    # SUBTITLES: local video -> timestamped .srt beside it. Only files inside
+    # these folders (semicolon-separated) can be read or written. Empty means
+    # the user's Videos folder. Multilingual model so `auto` language works.
+    media_roots: str = ""
+    subtitle_model: str = "base"
+    subtitle_timeout_seconds: int = Field(default=3600, ge=30, le=6 * 3600)
+    vlc_path: str = ""
+
     @model_validator(mode="after")
     def migrate_legacy_shipped_defaults(self):
         if self.ollama_model == "gemma3:1b":
@@ -199,6 +207,18 @@ class Settings(BaseSettings):
         for value in values:
             path = Path(value).expanduser()
             if path.exists() and path not in result:
+                result.append(path)
+        return result
+
+    @property
+    def media_root_paths(self) -> list[Path]:
+        values = [p.strip() for p in self.media_roots.split(";") if p.strip()]
+        if not values:
+            values = [str(Path.home() / "Videos")]
+        result: list[Path] = []
+        for value in values:
+            path = Path(value).expanduser().resolve()
+            if path.is_dir() and path not in result:
                 result.append(path)
         return result
 
