@@ -1,0 +1,41 @@
+﻿<!doctype html><meta charset="utf-8"><title>Nod Home: talk circle (mockup)</title>
+<style>body{margin:0;background:#222;color:#ccc;font:13px sans-serif}.g{display:flex;flex-wrap:wrap;gap:14px;padding:14px}figure{margin:0}canvas{display:block;border:2px solid #444;image-rendering:pixelated}figcaption{padding:4px 0}</style>
+<div class="g" id="g"></div>
+<script>
+// MOCKUP drawn from the same numbers the unit tests pin (firmware/nod/tests/test_nod.cpp). Not a device screenshot.
+const C={bg:'#0B0D10',text:'#F3EBDD',talk:'#FF5A36',live:'#3DDC97',think:'#FFB020',btn:'#1B2026',dim:'#9AA4AE',panel:'#14181D'};
+const S=2,L={cx:56,cy:68,r:44,btn:[[112,19],[112,49],[112,79]],bw:122,bh:26,sy:109};
+function tri(ms,p,a){const q=ms%p,h=p/2;return (q<h?q:p-q)*a/h}
+function frame(state,t,focus,line,wifi){
+  const c=document.createElement('canvas');c.width=240*S;c.height=135*S;const x=c.getContext('2d');x.scale(S,S);
+  x.fillStyle=C.bg;x.fillRect(0,0,240,135);
+  x.fillStyle=C.panel;x.fillRect(0,0,240,15);x.fillRect(0,121,240,14);
+  x.fillStyle=C.text;x.font='7px monospace';x.fillText('12:30',16,10);x.fillText('QUIET',110,10);x.fillText('WiFi',188,10);x.fillText('82%+',214,10);
+  x.fillStyle=C.live;x.beginPath();x.arc(172,7,3,0,7);x.fill();
+  x.fillStyle=C.dim;x.fillText('<ESC',4,130);x.fillText(wifi?'ENTER pick  SPACE save  W wifi':'ENTER pick  hold SPACE save',40,130);
+  const live=state=='listening'||state=='speaking';
+  const fill=state=='thinking'?'#7a2d1b':live?C.live:C.talk;
+  let lvl=state=='listening'?0.55+0.35*Math.sin(t*5):state=='speaking'?(350+tri(t*1000,480,400))/1000:0;
+  x.fillStyle=fill;x.beginPath();x.arc(L.cx,L.cy,L.r,0,7);x.fill();
+  x.lineWidth=2;
+  if(state=='thinking'){x.strokeStyle=C.think;x.lineWidth=3;x.beginPath();const a=(t*1000%1200)/1200*Math.PI*2;x.arc(L.cx,L.cy,L.r+4.5,a,a+Math.PI/2);x.stroke()}
+  else{const rr=live?L.r+3+lvl*5:L.r+3+tri(t*1000,3200,2);x.strokeStyle=live?C.live:C.talk;x.beginPath();x.arc(L.cx,L.cy,rr,0,7);x.stroke()}
+  if(focus==0){x.strokeStyle=C.bg;x.lineWidth=1;x.beginPath();x.arc(L.cx,L.cy,L.r-3,0,7);x.stroke()}
+  x.textAlign='center';x.fillStyle=state=='thinking'?C.text:C.bg;
+  const w={idle:'Talk',listening:'Listening',thinking:'Thinking',speaking:'Speaking'}[state];
+  x.font='bold '+(state=='idle'?'20':'13')+'px sans-serif';x.fillText(w,L.cx,L.cy+(state=='idle'?-2:4));
+  if(state=='idle'){x.font='9px sans-serif';x.fillText('ENTER',L.cx,L.cy+16)}
+  x.textAlign='left';
+  [['Save','hold SPACE'],['Today',''],['More','all apps']].forEach((b,i)=>{const[bx,by]=L.btn[i];
+    x.fillStyle=C.btn;x.beginPath();x.roundRect(bx,by,L.bw,L.bh,6);x.fill();
+    x.strokeStyle=focus==i+1?C.text:C.dim;x.lineWidth=focus==i+1?2:1;x.stroke();
+    x.fillStyle=C.text;x.font='12px sans-serif';x.fillText(b[0],bx+10,by+17);
+    x.fillStyle=C.dim;x.font='7px monospace';x.textAlign='right';x.fillText(b[1],bx+L.bw-8,by+16);x.textAlign='left'});
+  x.fillStyle=wifi?C.text:C.dim;x.font='7px monospace';x.fillText(line,112,L.sy+7);
+  return c}
+const q=new URLSearchParams(location.search);const states=[['idle','Idle: breathing ring',0,1.0,0],['idle','Idle, Save focused (arrow keys)',0.4,0,1],['listening','Listening: ring follows mic level, mint',0,0],['thinking','Thinking: rotating arc',0.3,0],['speaking','Speaking: ring pulses with playback',0.2,0],['idle','Idle, Wi-Fi down',0,0]];
+const g=document.getElementById('g');
+states.forEach(([s,cap,t,f],i)=>{const fig=document.createElement('figure');
+  fig.append(frame(s,t||0.4,i==1?1:0,i==5?'No Wi-Fi: press W':'1-4 quick actions',i==5));
+  const fc=document.createElement('figcaption');fc.textContent=cap;fig.append(fc);g.append(fig)});
+</script>

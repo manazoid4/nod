@@ -52,6 +52,8 @@ from .sessions import SessionStore
 from starlette.concurrency import run_in_threadpool
 from .flow import Flow, paste as paste_text
 from .stt import SpeechToText
+from .subtitle_routes import install_subtitle_routes
+from .subtitles import SubtitleJobs, WhisperTranscriber
 from .telemetry import SystemTelemetry
 from . import netpool
 from .speakplan import SpeakPlanner, TimingLog
@@ -140,6 +142,7 @@ def create_app(
     beam: BeamStore | None = None,
     telemetry: SystemTelemetry | None = None,
     updater: SelfUpdater | None = None,
+    subtitles: SubtitleJobs | None = None,
 ) -> FastAPI:
     cfg = settings or Settings()
     security = Security(cfg)
@@ -173,6 +176,10 @@ def create_app(
     )
 
     remote_info = RemoteInfo(cfg.remote_url, cfg.port, detector=None if cfg.remote_detect else (lambda _p: {}))
+    subtitle_jobs = subtitles or SubtitleJobs(
+        cfg,
+        WhisperTranscriber(cfg, speech if isinstance(speech, SpeechToText) else SpeechToText(cfg)),
+    )
 
     api = FastAPI(
         title="MAZ Core",
@@ -906,6 +913,8 @@ def create_app(
     api.include_router(build_library_router(cfg, model_router))
     api.include_router(build_needs_router(cfg, install_buddy_routes(api)))
     install_focus_routes(api, focus)
+    # ------------------------------------------------------------ SUBTITLES
+    install_subtitle_routes(api, subtitle_jobs)
 
     if cfg.control_enabled:
         install_control_routes(
