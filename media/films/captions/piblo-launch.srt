@@ -8,7 +8,7 @@ Bins out tonight.
 
 3
 00:00:03,200 --> 00:00:07,800
-[Typed on Nod: bins out tonight. Screen simulated.]
+[Typed on Piblo: bins out tonight. Screen simulated.]
 
 4
 00:00:08,600 --> 00:00:11,400
@@ -25,6 +25,6 @@ Real keys. Small screen.
 
 7
 00:00:17,000 --> 00:00:21,200
-nod. One less thing on your mind.
-Follow the build: nod-kickstarter.vercel.app
+piblo. One less thing on your mind.
+Follow the build: piblo.co.uk
 Designed in the UK by Maz Works. Concept film. Prototype in development.

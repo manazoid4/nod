@@ -143,8 +143,8 @@ test("Piblo rebrand: piblo.co.uk canonical/og:url and no visible Nod brand text"
     assert.ok(html.includes('<link rel="canonical" href="https://piblo.co.uk' + path + '">'), path + " canonical");
     if (html.includes('property="og:url"')) assert.ok(html.includes('content="https://piblo.co.uk' + path + '"'), path + " og:url");
     assert.doesNotMatch(html, /nod-kickstarter\.vercel\.app/, path);
-    // Allowed: media filenames, the GitHub repo slug, the honeypot field name, and one "formerly Nod" line.
-    const visible = html.replace(/\/media\/nod-[\w.-]+/g, "").replace(/manazoid4\/nod/g, "").replace(/nod_hp_field/g, "").replace(/Piblo was previously called Nod\./g, "");
+    // Allowed: the GitHub repo slug and one "formerly Nod" line.
+    const visible = html.replace(/manazoid4\/nod/g, "").replace(/Piblo was previously called Nod\./g, "");
     assert.doesNotMatch(visible, /(?<![\w-])nod(?![\w-])/i, path + " still has Nod branding");
     assert.match(strip(html), /Piblo/, path);
   }
@@ -152,4 +152,14 @@ test("Piblo rebrand: piblo.co.uk canonical/og:url and no visible Nod brand text"
   assert.match(readFileSync(join(root, "robots.txt"), "utf8"), /Sitemap: https:\/\/piblo\.co\.uk\/sitemap\.xml/);
   assert.match(contents["/privacy/"], /Resend/);
   assert.doesNotMatch(contents["/privacy/"], /do not currently run[^.]*mailing-list signup form/);
+});
+test("media references use piblo-* files that exist, and no nod-* media remains", async () => {
+  const { readdirSync } = await import("node:fs");
+  const html = contents["/"];
+  const refs = html.match(/\/media\/[\w.-]+\.(mp4|webp|jpg)/g) || [];
+  assert.ok(refs.length >= 8);
+  for (const ref of refs) { assert.match(ref, /\/media\/piblo-/); assert.ok(existsSync(join(root, ref)), ref); }
+  assert.deepEqual(readdirSync(join(root, "media")).filter(f => /nod/i.test(f)), []);
+  assert.match(html, /name="piblo_hp_field"/);
+  assert.ok(existsSync(join(root, "media/piblo-og.jpg")));
 });

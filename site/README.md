@@ -1,50 +1,40 @@
-# piblo pre-launch site
-A static, accessible site under `site/`. Separate from firmware. Optimised for easy migration of copy and truthful, demonstrated footage to Kickstarter.
+# Piblo pre-launch site
+A static, accessible site under `site/`, separate from firmware. Formerly called Nod. Live at https://piblo.co.uk.
 
 ## Deploy
-Create a Vercel project connected to `manazoid4/nod` with **Root Directory** `site`, **Framework Preset** Other (no build step), Production Branch `main`. Git pushes to main deploy automatically. No dependencies or secret keys required.
+Vercel project connected to the repo with **Root Directory** `site`, **Framework Preset** Other (no build step), Production Branch `main`. Git pushes to main deploy automatically. Pages are plain HTML/CSS/JS with no dependencies; the only server code is `api/waitlist.js`.
+
+## Waitlist backend (`api/waitlist.js`)
+Signups are saved to a Resend segment and a notification email is sent to the team. Set these in Vercel (names only, never commit values):
+- `RESEND_API_KEY`: Resend API key.
+- `RESEND_SEGMENT_ID`: the Piblo segment. Without it signups are refused rather than added to the shared list.
+- `SIGNUP_NOTIFY_EMAIL`: where the signup alert goes. Unset means no alert; the signup still works.
+
+The sender is `signups@mazworks.uk` for now. The form works without JavaScript (303 redirect). Honeypot field is `piblo_hp_field` (the old `nod_hp_field` is still treated as a bot for cached pages). `/privacy/` must stay in step with what this function collects.
 
 ## Routes
-- `/` — early Piblo interest page with three core interface scenarios, two interactive **non-functional proposed-workflow** illustrations (saved-video knowledge / Reel-to-Print), transparent limitations, FAQ and source links.
-- `/readiness/` — noindex founder audit and launch gates. Public URL, not a private portal.
-- `/roadmap/` — public, interactive four-stage roadmap displaying 21 proposed delivery packages and proof criteria, with no private-security exploit details or fake shipped-feature statuses.
+- `/` homepage with films, concepts, honest build status and the waitlist form.
+- `/roadmap/` public four-stage roadmap of 21 proposed delivery packages.
+- `/readiness/` noindex founder audit and launch gates. Public URL, not a private portal.
+- `/privacy/` privacy notice.
+
+## Tests
+`node --test site/tests/site.test.mjs site/tests/waitlist.test.mjs`
 
 ## Before a Kickstarter campaign
-1. Replace illustrative keyboard UI with **actual photographed prototype** and test video. Kickstarter design-tech rules require clear real prototype demonstration, not CGI of missing functions.
-2. Resolve go/no-go gates in `docs/audits/NOD-KICKSTARTER-2026-10-09.md` and update `/readiness/` facts.
-3. Replace mailto with a real tested opt-in waitlist (privacy policy and double opt-in) or verified Kickstarter pre-launch link. Do not present the current email CTA as a one-click signup.
-4. Set funding target, rewards, dates and shipping only after BOM, supplier quotes, taxes and delivery validation.
-5. Check page content for claims before copying sections into Kickstarter's editor.
+1. Replace concept renders and films with a real photographed prototype and test video. Kickstarter design-tech rules require a clear real prototype demonstration, not CGI of missing functions.
+2. Resolve the go/no-go gates in `docs/audits/` and update `/readiness/`.
+3. Set funding target, rewards, dates and shipping only after BOM, supplier quotes, taxes and delivery validation.
+4. Check page content for claims before copying sections into Kickstarter's editor.
 
-## Validation
-No build needed. Open `site/index.html`, test mode-switch controls with keyboard, mobile at 360px and reduced-motion preferences. Check internal links, semantic landmarks and no JS errors.
-
-## October concept showcase
-The homepage contains a **concept-only** video learning and Reel-to-Print story. The tab switcher is an accessible, client-side illustration; it does **not** fetch Instagram data, download media, run models, slice files, access OctoPrint or trigger a printer. Keep every disclaimer and no-auto-print rule when iterating. An Instagram Saved JSON export generally supplies links, not other creators' Reel media. We must only ingest content with legitimate access/rights. A real proof would show original creator-linked/licensed STL and supervised physical print, plus timestamped audio/visual learning evidence. The Cardputer is a PC companion, not a standalone media GPU or printer.
-
-## Deployment acceptance (October)
-- Both sets of scenario tabs respond to mouse, touch, arrows, Home and End; ARIA selected/labelledby stays synchronised.
-- All FAQ entries open with keyboard, nav anchors resolve, and reduced motion is respected.
-- Test 360px / 390px / 768px / 1280px. No external image/fonts or third-party JS dependencies.
-- Mailto launches email, **not** a fictitious signup; future Kickstarter waitlist requires actual backend, privacy policy and verified consent.
-- Check Vercel production deployment SHA and custom-domain visitor accessibility separately (team SSO may protect vercel.app subdomains).
-
-## 10 October multipass improvements
-- Site-wide native mobile navigation (works with keyboard even when JS is disabled).
-- Concept screen now says CONCEPT, not falsely READY.
-- Primary updates CTA explicitly opens email rather than claiming a signup service.
-- Canonical URL metadata, colour contrast and 21-item roadmap proof labels strengthened.
-
-## November 2026 — public-facing product language
-
-Lead with **"Less screen. More life."** and explain everyday value before technology. The homepage talks about quick questions, saved thoughts and keeping control of important PC actions; it avoids repeatedly using the term "AI". Developer-facing technical information remains in the detailed 21-work-package roadmap and GitHub docs.
-
-- The homepage now includes a short four-step roadmap at `/#journey`. The existing detailed `/roadmap/` stays in place.
-- The early-supporter paragraph invites ideas but does not invent a paid founders programme, priority perks or an automated mailing-list signup.
-- Orange, cream and mint are **proposed** removable FDM-printed enclosure colours. No custom case has yet been built, printed, or physically fit-tested.
-- **Designed in the UK** refers to Piblo/Maz Works product development. The Cardputer ADV electronics are manufactured elsewhere. Never say the physical electronics are UK-manufactured.
-- Current hardware is the M5Stack Cardputer ADV connected to a Windows PC, not a finished or standalone custom Piblo device.
-- Creative inspiration can come from Kode Dot's clear photography and modularity, but Piblo focuses on everyday usefulness rather than maker gadgetry. Do not copy product designs or claim NFC/RFID functionality.
-- Site previews are not real photographs or tested demos. The user plans to supply approved image/video assets later; do not publish mobile-app screenshots as product imagery.
-- Claims about capabilities must be grounded in `NOD_STATUS.md` and physical test evidence. No funding, launch date, shipping deadline, finished hardware or price is promised.
-- Homepage CTAs remain `mailto:` links; there is no automatic email subscription or waitlist backend yet.
+## Content rules
+- Lead with **"Less screen. More life."** and explain everyday value before technology.
+- Orange, cream and mint cases are **proposed** FDM-printed colours. No case has been printed or fit-tested.
+- Piblo Flip, Slide and Snap are **concepts**, labelled as such. Films and renders are AI-generated concepts and must be captioned that way.
+- **Designed in the UK** only: no town, address or postcode anywhere.
+- The Cardputer ADV (M5Stack) is made elsewhere. Never say the electronics are UK-manufactured. Current hardware is a Cardputer ADV connected to a Windows PC, not a finished Piblo device.
+- No funding, launch date, shipping deadline, price or preorders are promised.
+- The saved-video and Reel-to-Print illustrations are non-functional concepts. Keep every disclaimer and the no-auto-print rule.
+- Do not copy other products' designs or claim NFC/RFID functionality.
+- Claims about capabilities must be grounded in `NOD_STATUS.md` and physical test evidence.
+- Test at 360px / 390px / 768px / 1280px, with keyboard and reduced motion.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Synthesised, royalty-free sound effects for the Nod films (no third-party audio).
+# Synthesised, royalty-free sound effects for the Piblo films (no third-party audio).
 set -e; cd "$(dirname "$0")"
 # one soft key click: 30 ms band-passed noise with a fast decay
 ffmpeg -v error -y -f lavfi -i "aevalsrc=exp(-t*170)*(0.5*sin(2*PI*2300*t)+0.5*(random(1)*2-1))*0.7:d=0.045:s=48000" -af "highpass=f=900,lowpass=f=7000" click.wav

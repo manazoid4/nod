@@ -1,4 +1,4 @@
-/* Shared brand for Nod marketing assets. Edit the HTML files, then run render.mjs. Tokens mirror site/tokens.css. */
+/* Shared brand for Piblo marketing assets. Edit the HTML files, then run render.mjs. Tokens mirror site/tokens.css. */
 @font-face{font-family:"Bricolage Grotesque";src:url(../../site/fonts/bricolage-grotesque-bold.ttf);font-weight:700 800}
 @font-face{font-family:"Manrope";src:url(../../site/fonts/manrope-variable.ttf);font-weight:200 800}
 :root{--paper:#fff4e0;--paper-2:#fbe3bd;--ink:#2a1a12;--ink-soft:#5b4336;--tomato:#ee5a36;--mint:#8fdcb8;--mint-deep:#0d6e4f;--sun:#ffc93c;--blue:#3b7cf0}
@@ -11,7 +11,7 @@ h1,h2,h3,.logo{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weigh
 .pill.t{background:var(--tomato)}
 .tag{display:inline-block;font:700 22px ui-monospace,Consolas,monospace;padding:.3em .7em;border:3px dashed var(--ink);border-radius:999px;background:var(--paper);text-transform:uppercase;letter-spacing:.04em}
 .fine{font-size:20px;color:var(--ink-soft);font-weight:600}
-.ask{color:var(--tomato)}.listen{color:var(--mint-deep)}.nod{text-decoration:underline;text-decoration-color:var(--sun);text-decoration-thickness:.12em;text-underline-offset:.08em}
+.ask{color:var(--tomato)}.listen{color:var(--mint-deep)}.piblo{text-decoration:underline;text-decoration-color:var(--sun);text-decoration-thickness:.12em;text-underline-offset:.08em}
 .dev{position:absolute}
 /* concept silhouettes: simple, clearly labelled, not renders */
 .cn{position:absolute;border:5px solid var(--ink);border-radius:30px;background:var(--mint);box-shadow:0 10px 0 var(--ink)}

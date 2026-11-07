@@ -92,10 +92,17 @@ test('a bad email is refused before anything reaches Resend', async () => {
   assert.equal(f.calls.length, 0);
 });
 
+test('old honeypot name (cached pages) is still treated as a bot', async () => {
+  const f = recordingFetch(); const res = fakeRes();
+  await handler(fakeReq({ email: 'bot@example.com', consent: true, nod_hp_field: 'spam' }), res, f.impl);
+  assert.equal(f.calls.length, 0);
+  assert.equal(res.statusCode, 200);
+});
+
 test('honeypot looks successful but sends nothing', async () => {
   const f = recordingFetch();
   const res = fakeRes();
-  await handler(fakeReq({ email: 'bot@example.com', consent: true, nod_hp_field: 'spam' }), res, f.impl);
+  await handler(fakeReq({ email: 'bot@example.com', consent: true, piblo_hp_field: 'spam' }), res, f.impl);
   assert.equal(res.statusCode, 200);
   assert.equal(f.calls.length, 0);
 });

@@ -125,7 +125,8 @@ export default async function handler(req, res, fetchImpl = fetch) {
 
   // Honeypot: real visitors never see this field, so anything in it is a bot.
   // Unusual field name so browser autofill never fills it and drops a real signup.
-  if (typeof body.nod_hp_field === 'string' && body.nod_hp_field.trim() !== '') {
+  // nod_hp_field is the pre-rename name; keep it so cached old pages still trip the trap.
+  if ([body.piblo_hp_field, body.nod_hp_field].some(v => typeof v === 'string' && v.trim() !== '')) {
     return reply(req, res, 200, { ok: true });
   }
 

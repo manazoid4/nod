@@ -355,6 +355,7 @@ p { margin: 0 0 var(--space-4); max-width: 60ch; }
 .film { display: block; width: 100%; aspect-ratio: 9 / 16; background: var(--paper-2); border: var(--stroke); border-radius: var(--radius-m); box-shadow: var(--shadow-l); object-fit: cover; }
 .hero-film figcaption, .film-card figcaption, .inside-figure figcaption { font-size: .9rem; line-height: 1.45; color: var(--ink-soft); margin-top: var(--space-4); }
 .hero-film .screen-concept { font: 800 .78rem/1 var(--font-mono); letter-spacing: .06em; padding: 4px 8px; border: 2px dashed var(--ink); border-radius: var(--radius-pill); color: var(--ink); }
+.film-card .screen-concept { font: 800 .78rem/1 var(--font-mono); letter-spacing: .06em; padding: 4px 8px; border: 2px dashed var(--ink); border-radius: var(--radius-pill); color: var(--ink); }
 .inside { padding-block: var(--space-9); }
 .inside-layout { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-7); align-items: center; margin-top: var(--space-6); }
 .inside-figure { margin: 0; }

@@ -1,4 +1,4 @@
-/* Nod films: device renderer + scene builders. One GSAP timeline per film, fully seekable (no clocks, no randomness).
+/* Piblo films: device renderer + scene builders. One GSAP timeline per film, fully seekable (no clocks, no randomness).
    Device: measured from the official M5Stack Cardputer ADV photos and drawing (media/refs/m5stack-official, hardware/case/DIMENSIONS.md). */
 (function () {
   // ---------- Cardputer ADV, measured from the official M5Stack top view (docs.m5stack.com, 7 Nov 2026) ----------
@@ -25,7 +25,7 @@
   function screenUI(state) {
     const ui = el("div", "ui");
     ui.innerHTML =
-      '<div class="bar"><span>nod</span><span>CONCEPT</span></div>' +
+      '<div class="bar"><span>piblo</span><span>CONCEPT</span></div>' +
       '<div class="home"><span class="ring"></span><span class="circle"></span><div class="say">Hold to talk</div><div class="chips"><span>Save</span><span>Today</span><span>PC</span></div></div>' +
       '<div class="type" style="opacity:0"><div class="hint">NOTE</div><div class="txt"><span class="t"></span><span class="caret"></span></div></div>' +
       '<div class="saved" style="opacity:0"><span class="tick"></span><div class="t1">Kept for later</div><div class="t2">bins out tonight</div></div>';
@@ -82,7 +82,7 @@
     const fr = svgPart(mm, rr(0, 0, 88, 58, 4.5) + FRAME_HOLES, `url(#g-${colour || "o"})`,
       `<defs><linearGradient id="g-${colour || "o"}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset=".45" stop-color="${base}"/><stop offset="1" stop-color="${lo}"/></linearGradient></defs>` +
       `<path d="${rr(0.3, 0.3, 87.4, 57.4, 4.3)}" fill="none" stroke="rgba(255,255,255,.35)" stroke-width=".35"/>` +
-      `<text class="mark" x="6.2" y="14" font-family="Bricolage Grotesque" font-weight="700" font-size="5" fill="${lo}" opacity=".75">nod</text>`);
+      `<text class="mark" x="6.2" y="14" font-family="Bricolage Grotesque" font-weight="700" font-size="5" fill="${lo}" opacity=".75">piblo</text>`);
     fr.classList.add("frame");
     top.append(fr);
     // shadows the frame edge casts into each window, and the 3.6 mm drop from the screen block to the keyboard deck
@@ -100,7 +100,7 @@
     stack(p, k => svgPart(mm, skirt, shade(lo, 1 - 0.3 * k)), 10, step);           // 5 mm skirt that slides over the shell
     const top = svgPart(mm, rr(0, 0, 88, 58, 4.5) + FRAME_HOLES, base,
       `<path d="${rr(22.2, 4.2, 25.9, 16.5, 1.6)}" fill="none" stroke="${hi}" stroke-width=".5"/>` +
-      `<text class="mark" x="6.2" y="14" font-family="Bricolage Grotesque" font-weight="700" font-size="5" fill="${lo}">nod</text>`);
+      `<text class="mark" x="6.2" y="14" font-family="Bricolage Grotesque" font-weight="700" font-size="5" fill="${lo}">piblo</text>`);
     p.append(top); texture(p); return p;
   }
   function bodyPart(mm) {
@@ -112,7 +112,7 @@
     const [base, hi, lo] = CASE[colour || ""], p = sized(el("div", "part3"), mm), step = mm * 0.5;
     const floor = svgPart(mm, rr(0, 0, 88, 58, 4.5), shade(base, 0.92),
       [0, 1, 2, 3, 4].map(i => `<rect x="${30 + i * 6}" y="22" width="2.2" height="14" rx="1.1" fill="${shade(lo, 0.7)}"/>`).join("") +
-      `<text class="mark" x="44" y="47" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="700" font-size="6" fill="${lo}" opacity=".8">nod</text>`);
+      `<text class="mark" x="44" y="47" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="700" font-size="6" fill="${lo}" opacity=".8">piblo</text>`);
     floor.style.transform = `translateZ(${-24 * step}px)`;
     p.append(floor);
     const wall = rr(0, 0, 88, 58, 4.5) + rr(2.4, 2.4, 83.2, 53.2, 3.2);
@@ -251,7 +251,7 @@
   // End card
   S.end = (tl, t, d, o) => {
     const s = scene(); s.append(el("div", "plain"));
-    const logo = add(s, "logo", '<span class="dot"></span><span>nod</span>', 640);
+    const logo = add(s, "logo", '<span class="dot"></span><span>piblo</span>', 640);
     const line = add(s, "endline", o.line || "Less screen. More life.", 920);
     const nodes = [line];
     if (o.cta) nodes.push(add(s, "cta", o.cta, 1150));
@@ -261,7 +261,7 @@
     nodes.forEach((n, i) => words(tl, n, t + 0.35 + i * 0.15));
   };
 
-  window.NodFilm = {
+  window.PibloFilm = {
     device,
     build(id, scenes) {
       const tl = gsap.timeline({ paused: true });
