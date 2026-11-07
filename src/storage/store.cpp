@@ -249,6 +249,7 @@ bool writeText(const std::string& path, const std::string& text) {
 
 bool appendText(const std::string& path, const std::string& text) {
     if (!active) return false;
+    nod::recoverFile(*active, path);
     File f = active->open(path.c_str(), FILE_APPEND);
     if (!f) return false;
     f.print(text.c_str());
@@ -271,7 +272,11 @@ std::string readText(const std::string& path, size_t maxBytes) {
 }
 
 bool remove(const std::string& path) {
-    return active && active->remove(path.c_str());
+    if (!active) return false;
+    // Drop crash leftovers too, or a later read would bring the note back.
+    nod::removeIfThere(*active, path + ".bak");
+    nod::removeIfThere(*active, path + ".tmp");
+    return active->remove(path.c_str());
 }
 bool rename(const std::string& from, const std::string& to) {
     return active && active->rename(from.c_str(), to.c_str());
