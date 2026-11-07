@@ -417,3 +417,5 @@ h2 { max-width: 20ch; text-wrap: balance; }
   .hero { padding-block: var(--space-6) var(--space-7); }
 }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+
+.waitlist-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }

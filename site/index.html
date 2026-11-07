@@ -278,11 +278,12 @@
       <div class="join-card">
         <h2>Be there when Nod launches.</h2>
         <p>No spam, no pressure. We will send honest updates — when there is a working demo, a Kickstarter date or a price worth sharing. You can unsubscribe any time.</p>
-        <form class="waitlist-form" id="waitlist-form" novalidate>
+        <form class="waitlist-form" id="waitlist-form" action="/api/waitlist" method="post" novalidate>
+          <input class="waitlist-hp" type="text" name="nod_hp_field" tabindex="-1" autocomplete="off" aria-hidden="true">
           <div class="waitlist-fields">
             <label class="waitlist-label">
               <span>Name</span>
-              <input class="waitlist-input" type="text" name="name" placeholder="Your name" autocomplete="name" required>
+              <input class="waitlist-input" type="text" name="first_name" placeholder="Your name" autocomplete="name" required>
             </label>
             <label class="waitlist-label">
               <span>Email</span>
@@ -291,12 +292,12 @@
           </div>
           <div class="waitlist-consent">
             <label class="waitlist-check">
-              <input type="checkbox" name="consent" required>
+              <input type="checkbox" name="consent" value="yes" required>
               <span>I am happy to receive Nod updates by email. <a href="/privacy/" target="_blank" rel="noopener noreferrer">Privacy notice</a></span>
             </label>
           </div>
           <button class="btn btn-tomato btn-big waitlist-submit" type="submit">Send me updates</button>
-          <p class="fine waitlist-status" aria-live="polite">Clicking sends a pre-addressed email to us. We are working on an automated signup — your interest helps show there is demand.</p>
+          <p class="fine waitlist-status" aria-live="polite">We'll only email you about Nod. Unsubscribe any time.</p>
         </form>
       </div>
     </section>

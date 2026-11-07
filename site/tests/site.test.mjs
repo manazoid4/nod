@@ -66,8 +66,8 @@ test("homepage refuses fake device statuses and is honest about signup", () => {
   const html = contents["/"];
   assert.match(html, /screen-concept">CONCEPT/);
     assert.doesNotMatch(html, /screen-concept">.*READY/);
-    assert.match(html, /automated signup|pre-addressed email/);
-    assert.match(html, /mailto:info@mazworks.uk/);
+    assert.match(html, /action="[/]api[/]waitlist"/);
+    assert.doesNotMatch(html, /pre-addressed email/);
     assert.match(html, /not yet implemented/i);
     assert.match(html, /human|person|You check the printer/i);
     assert.match(html, /href="\/roadmap\/"/);
@@ -111,8 +111,8 @@ test("live site (concept A) and concept B: labelled concept, CSP-safe, honest wa
   for (const [dir, k] of [["", "a"], ["concepts/b", "b"]]) {
     const html = readFileSync(join(root, dir, "index.html"), "utf8");
     assert.match(html, /CONCEPT/);
-        assert.match(html, /mailto:info@mazworks.uk/);
-        assert.match(html, /We are working on an automated signup|not an automatic mailing list yet|pre-addressed email/);
+        assert.match(html, /mailto:info@mazworks.uk|action="[/]api[/]waitlist"/);
+        assert.match(html, /Unsubscribe any time|not an automatic mailing list yet|pre-addressed email/);
     assert.doesNotMatch(html, /\son[a-z]+\s*=|style=|<style|<script(?![^>]*(?:\ssrc=|\s+type="application\/ld\+json"))/i);
     assert.equal(readFileSync(join(root, dir, "tokens.css"), "utf8"), readFileSync(join(root, "..", "design", "tokens-" + k + ".css"), "utf8"));
     assert.match(readFileSync(join(root, dir, "styles.css"), "utf8"), /prefers-reduced-motion/);
