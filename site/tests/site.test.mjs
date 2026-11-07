@@ -137,3 +137,29 @@ test("films: muted, labelled as concepts, lazy, and small enough for mobile", as
   assert.match(html, /isn't made in Britain/);
   for (const src of html.match(/\/media\/[\w.-]+\.(mp4|webp|jpg)/g)) assert.ok(statSync(join(root, src)).size < 3_000_000, src + " is over 3 MB");
 });
+test("Piblo rebrand: piblo.co.uk canonical/og:url and no visible Nod brand text", () => {
+  const strip = html => html.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "").replace(/<[^>]+>/g, " ");
+  for (const [path, html] of Object.entries(contents)) {
+    assert.ok(html.includes('<link rel="canonical" href="https://piblo.co.uk' + path + '">'), path + " canonical");
+    if (html.includes('property="og:url"')) assert.ok(html.includes('content="https://piblo.co.uk' + path + '"'), path + " og:url");
+    assert.doesNotMatch(html, /nod-kickstarter\.vercel\.app/, path);
+    // Allowed: the GitHub repo slug and one "formerly Nod" line.
+    const visible = html.replace(/manazoid4\/nod/g, "").replace(/Piblo was previously called Nod\./g, "");
+    assert.doesNotMatch(visible, /(?<![\w-])nod(?![\w-])/i, path + " still has Nod branding");
+    assert.match(strip(html), /Piblo/, path);
+  }
+  assert.match(readFileSync(join(root, "sitemap.xml"), "utf8"), /https:\/\/piblo\.co\.uk\//);
+  assert.match(readFileSync(join(root, "robots.txt"), "utf8"), /Sitemap: https:\/\/piblo\.co\.uk\/sitemap\.xml/);
+  assert.match(contents["/privacy/"], /Resend/);
+  assert.doesNotMatch(contents["/privacy/"], /do not currently run[^.]*mailing-list signup form/);
+});
+test("media references use piblo-* files that exist, and no nod-* media remains", async () => {
+  const { readdirSync } = await import("node:fs");
+  const html = contents["/"];
+  const refs = html.match(/\/media\/[\w.-]+\.(mp4|webp|jpg)/g) || [];
+  assert.ok(refs.length >= 8);
+  for (const ref of refs) { assert.match(ref, /\/media\/piblo-/); assert.ok(existsSync(join(root, ref)), ref); }
+  assert.deepEqual(readdirSync(join(root, "media")).filter(f => /nod/i.test(f)), []);
+  assert.match(html, /name="piblo_hp_field"/);
+  assert.ok(existsSync(join(root, "media/piblo-og.jpg")));
+});

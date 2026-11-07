@@ -1,4 +1,4 @@
-/* Nod concept A, "Toy-shop warm". Uses tokens.css (copy of design/tokens-a.css). */
+/* Piblo concept A, "Toy-shop warm". Uses tokens.css (copy of design/tokens-a.css). */
 @font-face { font-family: "Bricolage Grotesque"; src: url("/fonts/bricolage-grotesque-bold.ttf") format("truetype"); font-weight: 700 800; font-display: swap; }
 @font-face { font-family: "Manrope"; src: url("/fonts/manrope-variable.ttf") format("truetype"); font-weight: 200 800; font-display: swap; }
 
@@ -57,8 +57,8 @@ p { margin: 0 0 var(--space-4); max-width: 60ch; }
 .hero h1 { font-size: clamp(3.6rem, 9.5vw, 8rem); line-height: .92; letter-spacing: -0.045em; margin-bottom: var(--space-5); }
 .hero h1 span { display: block; }
 .h-listen { color: var(--mint-deep); }
-.h-nod { color: var(--tomato-deep); position: relative; width: fit-content; }
-.h-nod::after { content: ""; position: absolute; left: 0; right: 0; bottom: -.04em; height: .12em; background: var(--sun); border-radius: 99px; z-index: -1; transform: rotate(-1.2deg); }
+.h-end { color: var(--tomato-deep); position: relative; width: fit-content; }
+.h-end::after { content: ""; position: absolute; left: 0; right: 0; bottom: -.04em; height: .12em; background: var(--sun); border-radius: 99px; z-index: -1; transform: rotate(-1.2deg); }
 .lede { font-size: 1.3rem; line-height: 1.5; }
 .actions { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-6); align-items: center; }
 
@@ -320,7 +320,7 @@ p { margin: 0 0 var(--space-4); max-width: 60ch; }
   .road-large span { font-size: 4.5rem; }
 }
 
-/* Homepage — everyday Nod, short roadmap and early supporters (November 2026) */
+/* Homepage — everyday Piblo, short roadmap and early supporters (November 2026) */
 .hero-promise { font:800 clamp(1.35rem,3vw,2rem)/1.15 var(--font-display); color:var(--tomato-deep); margin-bottom:var(--space-3); }
 .journey { padding-block:var(--space-9); background:var(--paper); }
 .journey h2 { max-width:22ch; }
@@ -350,11 +350,12 @@ p { margin: 0 0 var(--space-4); max-width: 60ch; }
 @media (max-width:900px) { .journey-steps { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:560px) { .journey-steps { grid-template-columns:1fr; } .shell-preview { flex-direction:column; align-items:flex-start; } }
 
-/* ---- launch films + what makes a Nod ---- */
+/* ---- launch films + what makes a Piblo ---- */
 .hero-film { margin: 0; justify-self: center; width: min(100%, 380px); }
 .film { display: block; width: 100%; aspect-ratio: 9 / 16; background: var(--paper-2); border: var(--stroke); border-radius: var(--radius-m); box-shadow: var(--shadow-l); object-fit: cover; }
 .hero-film figcaption, .film-card figcaption, .inside-figure figcaption { font-size: .9rem; line-height: 1.45; color: var(--ink-soft); margin-top: var(--space-4); }
 .hero-film .screen-concept { font: 800 .78rem/1 var(--font-mono); letter-spacing: .06em; padding: 4px 8px; border: 2px dashed var(--ink); border-radius: var(--radius-pill); color: var(--ink); }
+.film-card .screen-concept { font: 800 .78rem/1 var(--font-mono); letter-spacing: .06em; padding: 4px 8px; border: 2px dashed var(--ink); border-radius: var(--radius-pill); color: var(--ink); }
 .inside { padding-block: var(--space-9); }
 .inside-layout { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-7); align-items: center; margin-top: var(--space-6); }
 .inside-figure { margin: 0; }
@@ -453,3 +454,9 @@ h2 { max-width: 20ch; text-wrap: balance; }
   .hero { padding-block: var(--space-5) var(--space-6); }
 }
 .waitlist-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+/* Piblo polish: no sideways scroll on narrow phones, 44px tap targets for text links. */
+.privacy-layout { overflow-wrap: anywhere; }
+.footer-links a, .status-links .link, .logo, .btn-small, .privacy-body .link, .privacy-meta a, .audit-links .link { display: inline-flex; align-items: center; min-height: 44px; }
+.waitlist-check { min-height: 44px; align-items: center; }
+.waitlist-check input { width: 22px; height: 22px; }

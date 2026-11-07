@@ -3,7 +3,7 @@ import { EventEmitter } from 'node:events';
 import test from 'node:test';
 
 process.env.RESEND_API_KEY = 're_test_key';
-process.env.RESEND_SEGMENT_ID = 'seg_nod';
+process.env.RESEND_SEGMENT_ID = 'seg_piblo';
 process.env.SIGNUP_NOTIFY_EMAIL = 'owner@example.com';
 const { default: handler } = await import('../api/waitlist.js');
 
@@ -38,22 +38,22 @@ function recordingFetch(status = 200, text = '') {
   return { calls, impl };
 }
 
-test('a consenting valid email goes into the Nod segment only', async () => {
+test('a consenting valid email goes into the Piblo segment only', async () => {
   const f = recordingFetch();
   const res = fakeRes();
   await handler(fakeReq({ email: ' Ali@Example.co.uk ', first_name: ' Ali ', consent: true }), res, f.impl);
   assert.equal(res.statusCode, 200);
   assert.equal(f.calls.length, 2, 'contact, then the owner alert');
   assert.equal(f.calls[0].url, 'https://api.resend.com/contacts');
-  assert.deepEqual(f.calls[0].body, { email: 'ali@example.co.uk', first_name: 'Ali', unsubscribed: false, segments: [{ id: 'seg_nod' }] });
+  assert.deepEqual(f.calls[0].body, { email: 'ali@example.co.uk', first_name: 'Ali', unsubscribed: false, segments: [{ id: 'seg_piblo' }] });
 });
 
-test('owner alert goes from the Nod sender to the configured inbox', async () => {
+test('owner alert goes from the Piblo sender to the configured inbox', async () => {
   const f = recordingFetch();
   await handler(fakeReq({ email: 'ali@example.co.uk', consent: true }), fakeRes(), f.impl);
   const mail = f.calls[1];
   assert.equal(mail.url, 'https://api.resend.com/emails');
-  assert.equal(mail.body.from, 'Nod <signups@mazworks.uk>');
+  assert.equal(mail.body.from, 'Piblo <signups@mazworks.uk>');
   assert.deepEqual(mail.body.to, ['owner@example.com']);
 });
 
@@ -92,10 +92,17 @@ test('a bad email is refused before anything reaches Resend', async () => {
   assert.equal(f.calls.length, 0);
 });
 
+test('old honeypot name (cached pages) is still treated as a bot', async () => {
+  const f = recordingFetch(); const res = fakeRes();
+  await handler(fakeReq({ email: 'bot@example.com', consent: true, nod_hp_field: 'spam' }), res, f.impl);
+  assert.equal(f.calls.length, 0);
+  assert.equal(res.statusCode, 200);
+});
+
 test('honeypot looks successful but sends nothing', async () => {
   const f = recordingFetch();
   const res = fakeRes();
-  await handler(fakeReq({ email: 'bot@example.com', consent: true, nod_hp_field: 'spam' }), res, f.impl);
+  await handler(fakeReq({ email: 'bot@example.com', consent: true, piblo_hp_field: 'spam' }), res, f.impl);
   assert.equal(res.statusCode, 200);
   assert.equal(f.calls.length, 0);
 });

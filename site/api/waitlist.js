@@ -1,12 +1,12 @@
-// Waitlist signup for the Nod site. Ported from the Maz Meats subscribe function:
-// contacts go into the Nod Resend segment (RESEND_SEGMENT_ID), the owner alert is
+// Waitlist signup for the Piblo site. Ported from the Maz Meats subscribe function:
+// contacts go into the Piblo Resend segment (RESEND_SEGMENT_ID), the owner alert is
 // sent from the verified mazworks.uk domain. Server-side so the API key never
 // reaches a browser, and the form works without JavaScript (303 redirect).
 const CONTACTS_URL = 'https://api.resend.com/contacts';
 const EMAILS_URL = 'https://api.resend.com/emails';
 // Resend stores contacts silently, so each signup is also emailed to the owner.
 // The destination lives only in Vercel (SIGNUP_NOTIFY_EMAIL); unset means no alert.
-const NOTIFY_FROM = 'Nod <signups@mazworks.uk>';
+const NOTIFY_FROM = 'Piblo <signups@mazworks.uk>';
 const MAX_BODY_BYTES = 2048;
 const TIMEOUT_MS = 10000;
 
@@ -96,8 +96,8 @@ export async function notifyOwner(email, firstName, fetchImpl = fetch) {
         from: NOTIFY_FROM,
         to: [to],
         reply_to: email,
-        subject: `New Nod waitlist signup: ${email}`,
-        text: `${firstName ? `${firstName} <${email}>` : email} just joined the Nod waitlist.\n\nThey are saved in Resend under the Nod segment.`,
+        subject: `New Piblo waitlist signup: ${email}`,
+        text: `${firstName ? `${firstName} <${email}>` : email} just joined the Piblo waitlist.\n\nThey are saved in Resend under the Piblo segment.`,
       }),
       signal: controller.signal,
     });
@@ -125,7 +125,8 @@ export default async function handler(req, res, fetchImpl = fetch) {
 
   // Honeypot: real visitors never see this field, so anything in it is a bot.
   // Unusual field name so browser autofill never fills it and drops a real signup.
-  if (typeof body.nod_hp_field === 'string' && body.nod_hp_field.trim() !== '') {
+  // nod_hp_field is the pre-rename name; keep it so cached old pages still trip the trap.
+  if ([body.piblo_hp_field, body.nod_hp_field].some(v => typeof v === 'string' && v.trim() !== '')) {
     return reply(req, res, 200, { ok: true });
   }
 

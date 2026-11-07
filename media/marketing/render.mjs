@@ -11,7 +11,7 @@ for (const [n, [w, h]] of Object.entries(sizes)) {
   await p.goto(pathToFileURL(resolve(n + '.html')).href);
   await p.evaluate(() => document.fonts.ready);
   await p.waitForTimeout(300);
-  await p.screenshot({ path: `out/nod-${n}.png` });
+  await p.screenshot({ path: `out/piblo-${n}.png` });
   console.log(n);
 }
 await b.close();

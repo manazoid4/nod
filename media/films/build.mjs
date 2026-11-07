@@ -50,7 +50,7 @@ const films = {
     { type: "hero", d: 3.6, line: "Less screen. More life.", lineAt: 0.8 },
     { type: "colours", d: 3.0 },
     { type: "macro", d: 2.6, line: "Real keys. Small screen." },
-    { type: "end", d: 4.2, line: "One less thing on your mind.", cta: "Follow the build · nod-kickstarter.vercel.app" },
+    { type: "end", d: 4.2, line: "One less thing on your mind.", cta: "Follow the build · piblo.co.uk" },
   ]),
 };
 
@@ -59,20 +59,20 @@ const page = (name, f) => `<!doctype html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1080, height=1920">
-<title>Nod · ${name}</title>
-<link rel="stylesheet" href="assets/nod.css">
+<title>Piblo · ${name}</title>
+<link rel="stylesheet" href="assets/piblo.css">
 <script src="assets/gsap.min.js"></script>
-<script src="assets/nod.js"></script>
+<script src="assets/piblo.js"></script>
 </head>
 <body>
-<div id="root" data-composition-id="nod-${name}" data-start="0" data-width="1080" data-height="1920" data-duration="${f.duration}">
+<div id="root" data-composition-id="piblo-${name}" data-start="0" data-width="1080" data-height="1920" data-duration="${f.duration}">
 ${f.videos.map(v => `  <div class="vwrap" id="${v.id}-wrap"${v.zoom !== 1 ? ` style="transform:scale(${v.zoom});transform-origin:50% 30%"` : ""}><video id="${v.id}" src="${SHOT_A}" data-start="${v.start}" data-duration="${v.dur}" data-media-start="${v.mediaStart}" data-playback-rate="${v.rate}" data-has-audio="true" data-volume="2.5" playsinline></video></div>`).join("\n")}
   <div id="stage"></div>
   <audio id="room" src="assets/room.wav" data-start="0" data-duration="${f.duration}" data-volume="0.6"></audio>
 ${f.sfx.map(([s, t, vol], i) => `  <audio id="sfx-${s}-${i}" src="assets/${s}.wav" data-start="${t.toFixed(2)}" data-volume="${vol ?? (s === "typing" ? 0.45 : 1)}"></audio>`).join("\n")}
 </div>
 <script>
-NodFilm.build("nod-${name}", ${JSON.stringify(f.scenes)});
+PibloFilm.build("piblo-${name}", ${JSON.stringify(f.scenes)});
 </script>
 </body>
 </html>

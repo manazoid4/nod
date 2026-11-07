@@ -28,8 +28,8 @@ waitlist?.addEventListener("submit", async function (e) {
   e.preventDefault();
   const button = this.querySelector("button[type=submit]");
   const data = Object.fromEntries(new FormData(this));
-  if (!data.first_name?.trim() || !data.email?.trim() || !data.consent) {
-    return setWaitlistStatus("Please add your name, email and tick the box.", false);
+  if (!data.email?.trim() || !data.consent) {
+    return setWaitlistStatus("Please add your email and tick the box.", false);
   }
   button.disabled = true;
   setWaitlistStatus("Sending...", false);
@@ -42,7 +42,7 @@ waitlist?.addEventListener("submit", async function (e) {
     const out = await res.json().catch(() => ({}));
     if (res.ok && out.ok) {
       this.reset();
-      setWaitlistStatus("You're on the list. We'll only email you about Nod.", true);
+      setWaitlistStatus("You're on the list. We'll only email you about Piblo.", true);
     } else {
       setWaitlistStatus(out.reason === "invalid-email" ? "That email address doesn't look right." : "Sorry, that didn't go through. Please try again in a minute.", false);
     }
@@ -53,6 +53,6 @@ waitlist?.addEventListener("submit", async function (e) {
 });
 if (waitlistStatus) {
   const result = new URLSearchParams(location.search).get("subscribed");
-  if (result === "1") setWaitlistStatus("You're on the list. We'll only email you about Nod.", true);
+  if (result === "1") setWaitlistStatus("You're on the list. We'll only email you about Piblo.", true);
   if (result === "0") setWaitlistStatus("Sorry, that didn't go through. Please try again.", false);
 }
