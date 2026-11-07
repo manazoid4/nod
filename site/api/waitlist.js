@@ -9,6 +9,8 @@ const EMAILS_URL = 'https://api.resend.com/emails';
 const NOTIFY_FROM = 'Piblo <signups@mazworks.uk>';
 const MAX_BODY_BYTES = 2048;
 const TIMEOUT_MS = 10000;
+// The duplicate check is only a nicety, so it gets a short leash before the real save.
+const LOOKUP_TIMEOUT_MS = 4000;
 
 // Deliberately loose: the goal is to reject typos and junk, not to be an RFC.
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
@@ -88,9 +90,10 @@ export async function alreadyInSegment(email, fetchImpl = fetch) {
   const segmentId = process.env.RESEND_SEGMENT_ID || '';
   if (!apiKey || !segmentId) return false;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), LOOKUP_TIMEOUT_MS);
   try {
-    const response = await fetchImpl(`${CONTACTS_URL}/${encodeURIComponent(email)}/segments`, {
+    // shortcut: one page of 100 segments; the account has a handful. Paginate if that ever changes.
+    const response = await fetchImpl(`${CONTACTS_URL}/${encodeURIComponent(email)}/segments?limit=100`, {
       method: 'GET',
       headers: { authorization: `Bearer ${apiKey}` },
       signal: controller.signal,

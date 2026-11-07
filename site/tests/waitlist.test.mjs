@@ -50,7 +50,7 @@ test('a repeat signup already in the Piblo segment is saved but sends no second 
   const res = fakeRes();
   await handler(fakeReq({ email: 'Ali@example.co.uk', consent: true }), res, f.impl);
   assert.equal(res.statusCode, 200);
-  assert.deepEqual(f.lookups, ['https://api.resend.com/contacts/ali%40example.co.uk/segments']);
+  assert.deepEqual(f.lookups, ['https://api.resend.com/contacts/ali%40example.co.uk/segments?limit=100']);
   assert.equal(f.calls.length, 1, 'contact saved (re-subscribes), no owner alert');
   assert.equal(f.calls[0].url, 'https://api.resend.com/contacts');
 });
@@ -60,6 +60,17 @@ test('a contact known only from another list still alerts as a new Piblo signup'
   await handler(fakeReq({ email: 'ali@example.co.uk', consent: true }), fakeRes(), f.impl);
   assert.equal(f.calls.length, 2);
   assert.equal(f.calls[1].url, 'https://api.resend.com/emails');
+});
+
+test('a brand-new contact (lookup 404) is saved and alerts', async () => {
+  const calls = [];
+  const impl = async (url, init) => {
+    if (init.method === 'GET') return { ok: false, status: 404, text: async () => '{"name":"not_found"}' };
+    calls.push(url);
+    return { ok: true, status: 200, text: async () => '' };
+  };
+  await handler(fakeReq({ email: 'new@example.co.uk', consent: true }), fakeRes(), impl);
+  assert.deepEqual(calls, ['https://api.resend.com/contacts', 'https://api.resend.com/emails']);
 });
 
 test('a failed duplicate lookup still alerts (never silently drops a real signup)', async () => {
