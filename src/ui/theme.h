@@ -42,6 +42,9 @@ constexpr uint16_t ACCENT2 = TEXT;
 constexpr uint16_t OK      = 0x3E90;  // #3DDC84
 constexpr uint16_t WARN    = TEXT;
 constexpr uint16_t ERR     = 0xFA4A;  // #FF4D50
+constexpr uint16_t TALK_BLUE     = 0x2B5F;  // #2E6BFF
+constexpr uint16_t TALK_BLUE_HI  = 0x649F;  // #6090FF
+constexpr uint16_t TALK_BLUE_DIM = 0x1ABC;  // #1E56E0
 
 namespace rgb {
 constexpr uint32_t BG     = 0x0B0D10;
@@ -55,6 +58,9 @@ constexpr uint32_t ACCENT2 = 0xE6E9EC;
 constexpr uint32_t OK     = 0x3DDC84;
 constexpr uint32_t WARN   = 0xE6E9EC;
 constexpr uint32_t ERR    = 0xFF4D50;
+constexpr uint32_t TALK_BLUE     = 0x2E6BFF;
+constexpr uint32_t TALK_BLUE_HI  = 0x6090FF;
+constexpr uint32_t TALK_BLUE_DIM = 0x1E56E0;
 }  // namespace rgb
 
 // Calm UI tokens (see docs/UI-GUIDE.md). Fonts: state word Font4 scaled,
