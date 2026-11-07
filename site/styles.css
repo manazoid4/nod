@@ -372,3 +372,4 @@ p { margin: 0 0 var(--space-4); max-width: 60ch; }
   .hero-film { width: min(100%, 340px); }
 }
 @media (max-width: 560px) { .films { grid-template-columns: 1fr; justify-items: center; } .film-card { width: min(100%, 320px); } }
+.tag-wip { background: var(--sun); }

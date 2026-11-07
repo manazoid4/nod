@@ -1,22 +1,16 @@
 1
-00:00:00,150 --> 00:00:02,900
-Wait. What was I meant to remember?
+00:00:00,100 --> 00:00:00,900
+Concept film. Generated scene.
 
 2
-00:00:02,900 --> 00:00:06,300
-Tell nod.
-[Screen: bins out tonight]
+00:00:00,900 --> 00:00:03,200
+Bins out tonight.
 
 3
-00:00:06,300 --> 00:00:08,300
-Then let it go.
-[Screen: Saved to Notes]
+00:00:03,200 --> 00:00:08,200
+[Typed on Nod: bins out tonight. Screen simulated.]
 
 4
-00:00:08,400 --> 00:00:10,500
-Out the door. Nothing nagging.
-
-5
-00:00:10,500 --> 00:00:14,900
+00:00:08,200 --> 00:00:12,100
 nod. One less thing on your mind.
-Designed in the UK by Maz Works. Prototype in development.
+Designed in the UK by Maz Works. Concept film. Prototype in development.

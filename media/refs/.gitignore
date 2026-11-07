@@ -1,0 +1,4 @@
+# M5Stack's official photos are copyright M5Stack: kept local for reference only (URLs in SOURCE.txt)
+m5stack-official/*
+!m5stack-official/SOURCE.txt
+overlay-gate.png

@@ -133,6 +133,7 @@ test("films: muted, labelled as concepts, lazy, and small enough for mobile", as
   }
   assert.match(html, /screen-concept">CONCEPT<\/span> film/);
   assert.match(html, /Not printed or fit-tested yet/);
+  assert.match(html, /screen is simulated/);
   assert.match(html, /isn't made in Britain/);
   for (const src of html.match(/\/media\/[\w.-]+\.(mp4|webp|jpg)/g)) assert.ok(statSync(join(root, src)).size < 3_000_000, src + " is over 3 MB");
 });

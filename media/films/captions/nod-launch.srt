@@ -1,40 +1,30 @@
 1
-00:00:00,150 --> 00:00:02,900
-Wait. What was I meant to remember?
+00:00:00,100 --> 00:00:00,900
+Concept film. Generated scene.
 
 2
-00:00:02,900 --> 00:00:06,100
-Remember the thing. Catch the idea.
-Ask a quick question. Put the phone down.
+00:00:00,900 --> 00:00:03,200
+Bins out tonight.
 
 3
-00:00:06,100 --> 00:00:09,500
-Tell nod.
-[Screen: bins out tonight]
+00:00:03,200 --> 00:00:07,800
+[Typed on Nod: bins out tonight. Screen simulated.]
 
 4
-00:00:09,500 --> 00:00:11,500
-Then let it go.
-[Screen: Saved to Notes]
+00:00:08,600 --> 00:00:11,400
+Less screen. More life.
 
 5
-00:00:11,600 --> 00:00:13,700
-Out the door. Nothing nagging.
+00:00:11,400 --> 00:00:14,400
+Orange. Cream. Mint.
+(Proposed cases, not printed yet.)
 
 6
-00:00:13,700 --> 00:00:16,300
-Meet nod. Less screen. More life.
+00:00:14,400 --> 00:00:17,000
+Real keys. Small screen.
 
 7
-00:00:16,300 --> 00:00:19,700
-Three colours. One shape.
-
-8
-00:00:19,700 --> 00:00:22,100
-Starting small. Getting better together.
-
-9
-00:00:22,100 --> 00:00:26,500
+00:00:17,000 --> 00:00:21,200
 nod. One less thing on your mind.
 Follow the build: nod-kickstarter.vercel.app
-Designed in the UK by Maz Works. Prototype in development.
+Designed in the UK by Maz Works. Concept film. Prototype in development.

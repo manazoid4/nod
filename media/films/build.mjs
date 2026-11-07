@@ -8,22 +8,17 @@ const here = dirname(fileURLToPath(import.meta.url));
 const SHOT_A = "assets/shotA-hallway.mp4"; // generated Google Flow footage, 2.08 s, graded and upscaled from 720p
 
 // Scenes are listed with durations only; start times, footage clips and sound cues are derived.
-// Footage (one 2.08 s generated shot) overlaps 0.35 s into neighbours so cross-fades never show an empty frame.
-const SRC_LEN = 2.06, XF = 0.35;
-const CAP_OPEN = [{ at: 0.15, text: "Wait. What was I meant to remember?" }];
-const CAP_BACK = [{ at: 0.1, text: "Out the door. Nothing nagging." }];
+// Hard cuts (no dissolves). Sound sits on beats: the key clicks and one soft note on the end card.
+const SRC_LEN = 2.06;
+const OPEN = { type: "footage", d: 3.2, captions: [{ at: 0.9, text: "Bins out tonight." }], honest: "Concept film. Generated scene." };
 function film(list) {
   let t = 0, n = 0; const scenes = [], videos = [], sfx = [];
   list.forEach((sc, i) => {
     const s = { ...sc, t: +t.toFixed(2) };
-    if (i === 0) s.fadeIn = 0;
     if (i === list.length - 1) s.last = true;
-    if (s.type === "footage") {
-      const start = i === 0 ? 0 : t - XF, dur = s.d + (i === 0 ? XF : 2 * XF);
-      videos.push({ id: "hall" + ++n, start: +start.toFixed(2), dur: +dur.toFixed(2), rate: +Math.min(1, SRC_LEN / dur).toFixed(3), mediaStart: 0, zoom: n > 1 ? 1.14 : 1 });
-    }
-    if (s.type === "save") sfx.push(["typing", t + 1.2], ["chime", t + 3.15]);
-    if (s.type === "end") sfx.push(["chime", t + 0.2, 0.55]);
+    if (s.type === "footage") videos.push({ id: "hall" + ++n, start: +t.toFixed(2), dur: s.d, rate: +Math.min(1, SRC_LEN / s.d).toFixed(3), mediaStart: 0, zoom: 1 });
+    if (s.type === "type") sfx.push(["typing", t + 0.9, 0.5]);
+    if (s.type === "end") sfx.push(["chime", t + 0.1, 0.4]);
     scenes.push(s); t += s.d;
   });
   return { duration: +t.toFixed(2), scenes, videos, sfx };
@@ -31,34 +26,31 @@ function film(list) {
 
 const films = {
   everyday: film([
-    { type: "footage", d: 2.9, captions: CAP_OPEN },
-    { type: "save", d: 5.4 },
-    { type: "footage", d: 2.2, captions: CAP_BACK },
-    { type: "end", d: 4.4, line: "One less thing on your mind." },
+    OPEN,
+    { type: "type", d: 5.0, sleep: true },
+    { type: "end", d: 3.9, line: "One less thing on your mind." },
   ]),
   product: film([
-    { type: "hero", d: 3.2 },
-    { type: "exploded", d: 5.0 },
+    { type: "hero", d: 4.2, line: "Less screen.", lineAt: 1.6, honest: "Concept render. Proposed printed case." },
+    { type: "macro", d: 3.2, line: "Real keys. Small screen." },
     { type: "colours", d: 3.4 },
-    { type: "size", d: 2.8 },
-    { type: "end", d: 4.2, line: "Less screen. More life." },
+    { type: "end", d: 3.9, line: "Less screen. More life." },
   ]),
   stills: film([
     { type: "still", d: 1, colour: "", tilt: 0 },
     { type: "still", d: 1, colour: "cream", tilt: 0 },
     { type: "still", d: 1, colour: "mint", tilt: 0 },
-    { type: "still", d: 1, colour: "", tilt: 22, state: "saved" },
-    { type: "exploded", d: 3, bare: true },
+    { type: "still", d: 1, colour: "", tilt: 30 },
+    { type: "exploded", d: 3 },
+    { type: "bare", d: 1 },
   ]),
   launch: film([
-    { type: "footage", d: 2.9, captions: CAP_OPEN },
-    { type: "uses", d: 3.2 },
-    { type: "save", d: 5.4 },
-    { type: "footage", d: 2.2, captions: CAP_BACK },
-    { type: "hero", d: 2.6, title: "Meet nod.", sub: "Less screen. More life." },
-    { type: "colours", d: 3.4 },
-    { type: "vision", d: 2.4 },
-    { type: "end", d: 4.4, line: "One less thing on your mind.", cta: "Follow the build · nod-kickstarter.vercel.app" },
+    OPEN,
+    { type: "type", d: 4.6, sleep: true },
+    { type: "hero", d: 3.6, line: "Less screen. More life.", lineAt: 0.8 },
+    { type: "colours", d: 3.0 },
+    { type: "macro", d: 2.6, line: "Real keys. Small screen." },
+    { type: "end", d: 4.2, line: "One less thing on your mind.", cta: "Follow the build · nod-kickstarter.vercel.app" },
   ]),
 };
 

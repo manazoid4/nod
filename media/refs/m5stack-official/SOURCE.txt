@@ -1,0 +1,3 @@
+Official M5Stack product photos and drawing (reference only, copyright M5Stack, not committed).
+Re-download: for i in 01..13: https://m5stack-doc.oss-cn-shenzhen.aliyuncs.com/1178/Cardputer-Adv_$i.webp ; drawing: https://m5stack-doc.oss-cn-shenzhen.aliyuncs.com/1178/K132-Adv-cardputer-ADV_page_01.png
+Overlay gate: media/refs/overlay-gate.png = render of face() at 10 px/mm blended 50% over Cardputer-Adv_05.webp (crop 132,248 638x411 of a 900px scale). Passed 7 Nov 2026 (within ~1 mm).

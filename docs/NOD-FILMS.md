@@ -1,84 +1,80 @@
-# Nod films: production record (7 Nov 2026)
+# Nod films: production record (7 Nov 2026, v2)
 
-Three vertical films (1080 x 1920, H.264, 30 fps, AAC 48 kHz) and website assets, built from one Google Flow clip plus accurate concept renders.
+Three vertical films (1080 x 1920, H.264, 30 fps, AAC 48 kHz) plus website assets.
 
-| File | Length | What it is |
+| File | Length | Story |
 |---|---|---|
-| `media/out/nod-everyday-final.mp4` | 14.9 s | "One less thing on your mind." Everyday moment, save a thought, back to the day |
-| `media/out/nod-product-final.mp4` | 18.6 s | "Less screen. More life." Product, what makes a Nod (exploded), three colours, real size |
-| `media/out/nod-launch-final.mp4` | 26.5 s | Problem → what Nod is for → save a thought → product → colours → vision → brand + follow CTA |
-| `media/out/nod-thumbnail.jpg` | | Vertical social thumbnail ("Meet nod.") |
-| `media/stills/*.png` | | Clean concept stills: orange, cream, mint, tilted "Saved to Notes", exploded (with and without labels) |
-| `site/media/` | | 720p web encodes (1.2–2.1 MB), posters, `nod-exploded.webp`, `nod-og.jpg` link preview |
-| `media/films/captions/*.srt` | | On-screen text as subtitle files (the films have no speech) |
+| `media/out/nod-everyday-final.mp4` | 12.1 s | "Bins out tonight." Typed on Nod, screen sleeps. "One less thing on your mind." |
+| `media/out/nod-product-final.mp4` | 14.7 s | Hero on a table ("Less screen."), close-up of the real keyboard, three proposed colours, "Less screen. More life." |
+| `media/out/nod-launch-final.mp4` | 21.2 s | Everyday moment, then the device, colours and close-up, ending on "One less thing on your mind." and the follow-the-build card |
+| `media/out/nod-thumbnail.jpg` | | Vertical thumbnail |
+| `media/stills/` | | Orange, cream and mint top-down stills, tilted concept still, label-free exploded view (Flow references) |
+| `site/media/` | | 720p web encodes (0.9–1.8 MB), posters, `nod-exploded.webp`, `nod-og.jpg` |
+| `media/films/captions/*.srt` | | On-screen text as subtitles (no speech in the films) |
 
-## Source audit (Google Flow clip `media/source/flow-original-01.mp4`, 8.04 s, 720 x 1280, 24 fps)
+## What changed in v2, and why
 
-Both "attached videos" were the same file (identical MD5), so there was one source.
+The owner judged v1 not production-ready: the device looked wrong, the exploded case looked like flat sheets, the films felt like slides and the copy was generic. Two independent reviews ran, then critiqued each other: a Claude Sonnet creative director (`docs/audits/NOD-CREATIVE-DIRECTION.md`) and DeepSeek via OpenRouter (`docs/audits/NOD-DEEPSEEK-AUDIT.md`, $0.0068 in total). Adopted:
 
-| Shot | Time | Verdict | Why |
-|---|---|---|---|
-| A: man in hallway with keys, pauses at the table | 0.00–2.08 | **Kept** (graded, upscaled, slowed to fill) | Natural, no device in frame, a relatable "about to forget" beat |
-| B: close-up, hand taps device | 2.13–4.00 | **Replaced** | Device is wrong: screen on the right, chunky toy keys, no Cardputer layout. Cropping it out would hide the device dishonestly |
-| C: three colourways on a table | 4.00–5.96 | **Replaced** | Oversized screen, invented D-pad and buttons, far fewer than 56 keys |
-| D: end card | 5.96–8.04 | **Replaced** | Same inaccurate device, truncated hex label "#EE5A3", design-file colour callouts |
-| Portrait still (`flow-still-portrait-REJECTED.png`) | | **Rejected** | Tall calculator shape, oversized screen: not a Cardputer ADV |
+- **Device rebuilt from the official M5Stack photos.** Two-tone grey body, raised screen block, white legend strips over black pill keys, coloured fn, Aa, opt and esc chips, both screws, the label panel and the Stamp board.
+  - **Overlay gate:** the render laid 50% over the official top view lines up within about 1 mm. Reproduce it with the "bare" scene in `stills`; the recipe is in `media/refs/m5stack-official/SOURCE.txt`.
+  - The photos themselves are M5Stack copyright and are kept out of git.
+- **Real thickness everywhere** (stacked CSS 3D layers).
+  - The case: 19.6 mm device + 2 mm case.
+  - The exploded view: front frame with a 5 mm skirt, the device's two-tone body, back tray with 2.4 mm walls, snap tabs, vents and a USB-C cut-out, matching `hardware/case/nod_case.scad`.
+- **No slides.** Title, "uses", "vision" and "size" cards are cut. Every shot is footage or a lit tabletop, with hard cuts and a camera move in every shot.
+- **Few words, one sentence per line**, 96–112 px.
+- **Honesty, once and readable.** "Concept film. Generated scene." / "Concept render. Proposed printed case." at the start (36 px), "Screen simulated" on the typing shot, "Proposed cases · not printed yet" on colours, and the end card.
+- **No fake confirmation.** The "Saved to Notes" tick is gone. The screen shows typing only, then sleeps.
+- **Sound on beats only.** Key clicks while typing, one soft note on the end card, room tone. Cuts are silent.
 
-Replacement: an HTML/CSS render of the Cardputer ADV in the proposed case, built from `hardware/case/DIMENSIONS.md` (84 x 54 mm body, 2 mm case wall, 24.9 x 15.5 mm screen window 8.85 mm left of centre, 4 x 14 keys at 5.8 x 7.5 mm pitch, Stamp window on the right, mic hole). Three colourways share the same geometry by construction (one function, one colour variable). The exploded view uses the real window cut-outs from the case SCAD.
+Rejected (with reasons in the audits): Flow shot count of three (one is enough), "sound on every cut", the handwritten note (the note is typed on Nod so the story connects), and DeepSeek's key sizes and raised-block position (both contradicted by the official photos). The three-colour beat is kept because the owner's brief asks for it.
 
-Honest limits: the hallway footage is 720p upscaled to 1080p, so it carries 720p detail. The renders are stylised (CSS, not ray-traced), and the case looks smoother than a real FDM print would.
+## Source audit (unchanged from v1)
 
-## What is generated, what is real, what is claimed
+One Google Flow clip, `media/source/flow-original-01.mp4` (8.04 s, 720p). Only shot A (hallway, 0–2.08 s) is used: graded, upscaled, slowed to 3.2 s. Shots B, C and D and the portrait still showed the wrong hardware and are not used. The hallway footage carries 720p detail.
 
-- **Generated (Google Flow):** the man in the hallway. Labelled on screen "Concept film · generated scene".
-- **Concept renders:** every device shot. Labelled on screen "Concept render", "screen simulated", "case not yet printed / fit-tested".
-- **Real:** the Cardputer ADV hardware and its published dimensions; the case design files in `hardware/case/` (not yet printed).
-- **Claims shown:** saving a typed note ("Saved to Notes", which matches the notes feature in v1.5, not yet confirmed on the device), three proposed colours, the real size. No prices, dates, orders, reminders, wake-word or "AI" claims. The "uses" scene ("Remember the thing…") is labelled "What we are building towards · in development".
-- **Not claimed:** the films never show a real hand on a real device. That needs real test footage (`docs/NOD-FILM-PLAN.md`).
+## Claims
 
-## Toolchain (chosen, and why)
+- **Generated:** the man in the hallway.
+- **Concept renders:** all device shots, labelled as such.
+- **Real:** the Cardputer ADV and its published size; the case CAD (not printed).
+- **Shown:** typing a short note (typed notes are in firmware v1.5, not yet confirmed on the device), the three proposed colours.
+- **Not shown or claimed:** confirmations, reminders, voice, prices, dates, orders, UK manufacture.
 
-| Tool | Licence | Use |
-|---|---|---|
-| **HyperFrames 0.9.20** (`npx hyperframes`, heygen-com/hyperframes) | Apache-2.0 | HTML → MP4 renderer: seekable GSAP timeline, `check` (lint, contrast, layout, reading-time), `snapshot` |
-| **GSAP 3.14.2** (vendored in `media/films/shared/`) | GreenSock standard licence (free, commercial use allowed) | Animation |
-| **FFmpeg** (scoop) | LGPL/GPL | Scene detection, grade/upscale of shot A, synthesised sound, mastering, web encodes |
+## Toolchain
 
-Not used: **Remotion** (its licence needs a paid company licence above a small team size, and HyperFrames already does the job); LosslessCut, auto-editor and PySceneDetect (FFmpeg's `select=gt(scene,…)` found the 3 cuts; nothing to trim by silence). No new installs: everything runs through `npx` and the existing FFmpeg.
+HyperFrames 0.9.20 (Apache-2.0) + GSAP 3.14.2 (vendored, free licence) + FFmpeg.
 
-Sound is fully synthesised (`media/films/shared/make-sfx.sh`): soft key clicks, a two-note "saved" chime, a warm room-tone bed, plus the hallway clip's own ambience. No music licence needed. Mastered with +6 dB and a −1.5 dBTP limiter (loudness normalisation would pump the room tone).
+Researched and not installed: brag/brag-slim, Remotion (company licence above 3 staff), Remocn, Cinetic, Motion Skills, Motion Canvas, Editly. They duplicate HyperFrames or target software launches, and the gap was direction and footage, not tooling. LosslessCut is recommended for trimming real device footage once it exists. Full comparison: `docs/audits/NOD-CREATIVE-DIRECTION.md` §B.
 
 ## Rebuild
 
 ```bash
-bash media/films/shared/make-sfx.sh   # only if sounds change
-bash media/films/render.sh            # node build.mjs + 3 renders + mastering → media/out/
+bash media/films/render.sh   # build.mjs → 3 renders → mastering → site/media web versions, posters, stills, exploded, og image
 ```
 
-- Scenes and timings: `media/films/build.mjs` (durations only; starts, footage clips and sound cues are derived).
-- Device and scene designs: `media/films/shared/nod.js` and `nod.css`.
-- Generated project folders (`product/`, `everyday/`, `launch/`, `stills/`) are git-ignored and rebuilt by `build.mjs`. Open one in HyperFrames Studio with `cd media/films/launch && npx hyperframes@0.9.20 preview`.
-- Web versions: see the FFmpeg block in the 7 Nov handover (720 x 1280, CRF 26, AAC 96k, faststart).
+- **Scene list and timings:** `media/films/build.mjs` (durations only; everything else is derived).
+- **Device, case and scene designs:** `media/films/shared/nod.js` and `nod.css`.
+- **Generated project folders** are git-ignored. To edit in Studio: `cd media/films/launch && npx hyperframes@0.9.20 preview`.
+- **Quality gates run:**
+  - `hyperframes check` passes on all three films.
+  - Real-time playback was captured in a 390 px browser, and every frame is readable.
+  - `node --test site/tests/site.test.mjs` passes 10/10.
 
-Quality gates run: `hyperframes check` passes on all three films (only warnings left are footnotes crossing during 0.35 s cross-fades); frames reviewed at 1–2 fps across each film; audio peaks at −6.3 dB with no clipping; `node --test site/tests/site.test.mjs` passes 10/10, including the new film-honesty test.
+## The one Google Flow shot worth generating (optional, pending Maz)
 
-## Google Flow: optional upgrades (pending Maz)
+It would add a real-looking hand. The films stand without it.
 
-The films are complete without these. Each one replaces a stand-in with better footage.
+- **Model:** Veo 3.1 Fast (or Lite) · **Mode:** Ingredients to Video · **Duration:** 8 s · **Aspect:** 9:16
+- **References:** `media/stills/nod-original-orange.png` and `media/flow-refs/F1-character-ref-hallway-first.png`
+- **Prompt:**
 
-**Shot F3: he actually leaves** (replaces the reused hallway frames after "Then let it go.")
-- Model: Veo 3.1 Fast (Lite is fine) · Mode: **Frames to Video** · Duration: 8 s · Aspect 9:16
-- Start frame: `media/flow-refs/F3-start-frame-hallway-last.png`
-- Prompt: `The same man in a navy wool coat glances at the note on the table, nods to himself, slips the keys into his coat pocket, turns and walks calmly down the hallway and out of the front door, which closes softly behind him. Static camera at chest height, soft overcast daylight from the door, muted warm colours, natural unhurried movement, realistic hands, no text, no logos, no devices visible.`
+  > Close-up on an oak hallway table in soft morning light. A man's hand in a navy wool coat sleeve picks up the small orange device from the reference image, exactly as shown: a landscape pocket device 84 by 54 millimetres and about 20 millimetres thick, in a rounded orange case. It has a small dark screen left of centre, a white module window on the right, and below them four rows of fourteen small black pill-shaped keys, each row under a white strip of printed letters. He types a few keys with his thumb, puts it down and his hand leaves the frame. Shallow depth of field, slow push-in, natural motion, five fingers, no readable text on the screen, no D-pad, no round game buttons, no logos.
 
-**Shot F1: a real-looking hand on an accurate Nod** (could replace the render-only typing beat)
-- Model: Veo 3.1 Fast · Mode: **Ingredients to Video** (reference images) · Duration: 8 s · Aspect 9:16
-- References: `media/stills/nod-original-orange.png` and `media/flow-refs/F1-character-ref-hallway-first.png`
-- Prompt: `Close-up on an oak kitchen counter in soft morning light. A man's hand in a navy wool coat sleeve picks up the small orange device from the reference image, exactly as shown: a landscape 84 by 54 millimetre pocket device with a small screen left of centre, a dark square window on the right, and a full four-row keyboard of 56 tiny cream keys on a dark plate. He presses a few keys with his thumb, puts it down and his hand leaves the frame. Shallow depth of field, slow push-in, natural motion, five fingers, no text overlays, no extra buttons, no D-pad.`
-- Reject the result if: the screen is bigger than about a third of the width, any D-pad or round game buttons appear, or the keyboard has fewer than four rows.
-
-After a Flow result: drop it in `media/source/`, add a footage scene in `build.mjs`, re-run `render.sh`.
+- **Reject the result if:** the screen is wider than about 35% of the device, there's a D-pad or round game buttons, there are fewer than four key rows, or the keys aren't black pills under white strips.
+- **After:** put the clip in `media/source/`, add a footage scene in `build.mjs` after the hallway shot, then run `render.sh`.
 
 ## Social description
 
-> Ever get to the front door and forget the thing? Nod is a small pocket device we're designing in the UK: tell it, and get on with your day. Less screen. More life. Early concept, built in the open. Follow the build: nod-kickstarter.vercel.app
+> Ever get to the front door and remember the bins? Nod is a small pocket device being designed in the UK: type it, put it away, get on with your evening. Less screen. More life. Early concept, built in the open: nod-kickstarter.vercel.app

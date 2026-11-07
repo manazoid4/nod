@@ -1,24 +1,21 @@
 1
-00:00:00,000 --> 00:00:03,200
-Meet nod.
-A small helper for everyday things.
+00:00:00,100 --> 00:00:01,600
+Concept render. Proposed printed case.
 
 2
-00:00:03,200 --> 00:00:08,200
-What makes a nod: a printed case front, the Cardputer ADV,
-a printed case back, plus free, open-source Nod software.
+00:00:01,600 --> 00:00:04,200
+Less screen.
 
 3
-00:00:08,200 --> 00:00:11,600
-Three colours. One shape.
-Nod Original, Nod Classic, Nod Mint.
+00:00:04,200 --> 00:00:07,400
+Real keys. Small screen.
 
 4
-00:00:11,600 --> 00:00:14,400
-Pocket-sized. Real keys.
-A small screen you don’t scroll.
+00:00:07,400 --> 00:00:10,800
+Orange. Cream. Mint.
+(Proposed cases, not printed yet.)
 
 5
-00:00:14,400 --> 00:00:18,600
+00:00:10,800 --> 00:00:14,700
 nod. Less screen. More life.
-Designed in the UK by Maz Works. Prototype in development.
+Designed in the UK by Maz Works. Concept film. Prototype in development.
