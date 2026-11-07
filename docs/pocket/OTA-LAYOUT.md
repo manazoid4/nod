@@ -15,7 +15,24 @@ nvs (0x9000) and otadata (0xe000) are required by Launcher's own table builder (
 
 How Launcher boots an app: it writes the image into the slot, verifies it, then calls the standard `esp_ota_set_boot_partition()` (otadata). So nod's standard `esp_ota_*` self-update is the same mechanism. Update image must stay under 1,507,328 bytes.
 
-Self-update (`fwUpdate`): refuses below 30% battery unless charging, erases the spare slot, downloads `/fw/latest.bin`, SHA-256 + `esp_ota_end` verify, `esp_ota_set_boot_partition`, 3-boot rollback guard (`fwBootGuard`).
+Self-update (`fwUpdate`): the 30% battery precheck was removed in PR #20 (commit 57c6161, open at time of writing, not yet on main); it erases the spare slot, downloads `/fw/latest.bin`, SHA-256 + `esp_ota_end` verify, `esp_ota_set_boot_partition`, 3-boot rollback guard (`fwBootGuard`).
+
+## Layout seen 7 Nov 2026 (Launcher partition manager)
+
+Read from Launcher's Partition Manager on the device, 7 Nov 2026. This is newer than the table above and differs from it; treat this section as the latest observation.
+
+| Name | Type | Offset | Size |
+|---|---|---|---|
+| app0 | app / test (Launcher, protected) | 0x10000 | 1,376,256 B |
+| coredump | data | 0x160000 | 64 KB |
+| spiffs | data | 0x170000 | 448 KB |
+| nodfw1 | app / ota_0 (Nod) | 0x1e0000 | 1,507,328 B |
+
+- Only ONE Nod OTA slot exists, so Nod's own Update fails with "No free slot: reinstall via Launcher" (code 5377).
+- Nod was installed via Launcher Web UI OTA; the install took about 13 s.
+- Free space starts at 0x350000.
+- To update: Launcher Web UI -> OTA Update -> choose the .bin -> Start Update.
+- For on-device Update to work: add a second OTA App partition in Launcher's Partition Manager (uses the free space from 0x350000).
 
 ## Remote diagnosis (no cable)
 
