@@ -18,6 +18,26 @@ For Core by itself, extract `MAZ-Core-v0.7.zip` and run `INSTALL-MAZ-CORE.cmd`. 
 
 All endpoints require the existing MAZ bearer token. Beam never becomes a remote shell.
 
+## SUBTITLES: local video to .srt
+
+Generates a timestamped `.srt` beside a local video with faster-whisper, then optionally opens it in VLC with the subtitle loaded. Local files only: no streaming, no DRM-protected content.
+
+Configure in `host/.env`:
+
+```
+MAZ_MEDIA_ROOTS=C:\Users\me\Videos;D:\Films   # default: your Videos folder
+MAZ_SUBTITLE_MODEL=base                       # multilingual; small/medium = slower, better
+MAZ_SUBTITLE_TIMEOUT_SECONDS=3600
+MAZ_VLC_PATH=                                 # optional; PATH and Program Files are checked
+```
+
+- `GET /subtitles/videos` lists recent videos in the media folders (newest first).
+- `POST /subtitles/job` with `{"path": "...", "language": "auto" | "en" | "de" ..., "open_vlc": true, "overwrite": false}` starts a job. `path` is absolute or relative to a media folder.
+- `GET /subtitles/job/{id}` reports `state` (`queued`, `extracting_audio`, `transcribing`, `done`, `failed`, `cancelled`), `progress` %, a short `label` (e.g. `TRANSCRIBING 42%`), `srt`, `detected_language`, `media_seconds`, and the measured `duration_ms`.
+- `POST /subtitles/job/{id}/cancel` cancels; `GET /subtitles/jobs` lists recent jobs.
+
+Safety: paths are resolved (symlinks followed) and must stay inside `MAZ_MEDIA_ROOTS` with a video extension. An existing `<name>.srt` is never overwritten unless `overwrite` is true (`<name>.nod.srt` is written instead). ffmpeg extracts 16 kHz mono audio when installed; otherwise faster-whisper decodes the file directly. Without VLC the job still succeeds and reports `vlc.reason = vlc_not_found`. One transcription runs at a time; further jobs queue.
+
 ## Local engines: Ollama or llama.cpp
 
 `MAZ_LOCAL_ENGINE` selects which local runtime answers LOCAL and the local half of AUTO. Routing, profiles, the primary/backup chain and the 160-token answer bound are identical on both.

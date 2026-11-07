@@ -9,6 +9,8 @@ normal computer, so logic is proven before it ever touches hardware.
 | `battery_curve.h` | LiPo voltage to percent. Capped at 99% while charging until Full is proven. |
 | `display_profiles.h` | **Swappable screens.** One entry per panel (size, offsets, invert). UI adapts; bad saved id falls back to the stock panel. |
 | `home_layout.h` | **Simpler Home:** SUBTITLES, ROUTINES, SAVE THIS, MORE as 4 big cards, arrow keys / 1-4. |
+| `talk_home.h` | **Talk-circle Home:** talk state machine (idle/listening/thinking/speaking, ESC always cancels), ring animation maths, layout and focus movement. |
+| `nod_theme.h` | **Palette in one place** (placeholder brand colours). |
 
 ```
 make test      # 343 checks

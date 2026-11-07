@@ -43,6 +43,9 @@ jobs:
       - name: Core tests
         run: python -m pytest host/tests -q
 
+      - name: Firmware logic tests (state machine, layout, theme)
+        run: make -C firmware/nod test
+
       - name: Build firmware
         run: pio run -e cardputer-adv
 
