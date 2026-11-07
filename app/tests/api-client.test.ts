@@ -54,4 +54,28 @@ describe('api client', () => {
     expect(friendly('dump_not_found', 'x')).toBe('dump not found');
     expect(friendly(undefined, 'fallback')).toBe('fallback');
   });
+
+  describe('compat (version/capability + token gate)', () => {
+    const health = { ok: true, name: 'nod Core', version: '0.8.1', git_sha: 'abcdef1234' };
+    const routed = (buddy: Response) => vi.fn(async (url: string) => (String(url).endsWith('/health') ? json(200, health) : buddy));
+
+    it('running: capability route answers', async () => {
+      expect(await mk(routed(json(200, { ok: true }))).compat()).toEqual({ status: 'ok', version: '0.8.1', gitSha: 'abcdef1234' });
+    });
+    it('outdated: /buddy/summary is 404 on an old host', async () => {
+      expect(await mk(routed(json(404, { detail: 'Not Found' }))).compat()).toMatchObject({ status: 'outdated', version: '0.8.1' });
+    });
+    it('token-mismatch: 401 even after token refresh', async () => {
+      expect(await mk(routed(json(401, { detail: 'authentication_required' }))).compat()).toMatchObject({ status: 'token-mismatch' });
+    });
+    it('down / transient errors never block: unknown', async () => {
+      expect(await mk(vi.fn().mockRejectedValue(new Error('refused'))).compat()).toMatchObject({ status: 'unknown' });
+      expect(await mk(routed(json(503, { detail: 'cardputer_unreachable' }))).compat()).toMatchObject({ status: 'unknown' });
+    });
+    it('health exposes version and git_sha, tolerates old hosts without them', async () => {
+      expect(await mk(vi.fn(async () => json(200, health))).health()).toEqual({ name: 'nod Core', version: '0.8.1', gitSha: 'abcdef1234' });
+      expect(await mk(vi.fn(async () => json(200, { name: 'nod Core' }))).health()).toEqual({ name: 'nod Core', version: undefined, gitSha: undefined });
+      expect(await mk(vi.fn().mockRejectedValue(new Error('x'))).health()).toBeNull();
+    });
+  });
 });

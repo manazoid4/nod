@@ -18,6 +18,21 @@ const FRIENDLY: Record<string, string> = {
   too_many_auth_failures: 'Too many failed attempts. Wait a minute and try again.',
 };
 
+export interface CoreHealth {
+  name: string;
+  version?: string;
+  gitSha?: string;
+}
+
+export type CompatResult =
+  | { status: 'ok'; version?: string; gitSha?: string }
+  | { status: 'outdated'; version?: string; gitSha?: string }
+  | { status: 'token-mismatch'; version?: string; gitSha?: string }
+  | { status: 'unknown'; version?: string; gitSha?: string };
+
+/** Route Core must serve for this app to work; an old host (e.g. Pocket v0.7) answers 404 here. */
+export const CAPABILITY_PATH = '/buddy/summary';
+
 export function friendly(detail: unknown, fallback: string): string {
   const obj = detail && typeof detail === 'object' ? (detail as Record<string, unknown>) : null;
   const raw = typeof detail === 'string' ? detail : obj ? String(obj.message ?? obj.error ?? '') : '';
@@ -77,15 +92,37 @@ export function createApiClient(deps: ApiClientDeps) {
     request: <T = unknown>(method: string, path: string, body?: unknown) => run<T>(method, path, body, false),
     bytes: (path: string, method = 'GET', body?: unknown) => run<Uint8Array>(method, path, body, true),
     /** Unauthenticated probe: is a nod Core listening here? */
-    async probe(): Promise<boolean> {
+    async health(): Promise<CoreHealth | null> {
       try {
         const res = await doFetch(deps.baseUrl() + '/health', { signal: AbortSignal.timeout(2500), cache: 'no-store' });
-        if (!res.ok) return false;
-        const j = (await res.json()) as { name?: string };
-        return typeof j.name === 'string' && /core/i.test(j.name);
+        if (!res.ok) return null;
+        const j = (await res.json()) as { name?: string; version?: unknown; git_sha?: unknown };
+        if (typeof j.name !== 'string' || !/core/i.test(j.name)) return null;
+        return {
+          name: j.name,
+          version: typeof j.version === 'string' ? j.version : undefined,
+          gitSha: typeof j.git_sha === 'string' ? j.git_sha : undefined,
+        };
       } catch {
-        return false;
+        return null;
       }
+    },
+    async probe(): Promise<boolean> {
+      return (await this.health()) !== null;
+    },
+    /**
+     * One authenticated call to a route new Cores serve:
+     * 404 = Core too old, 401 = saved token not accepted, anything else = fine
+     * (503/timeouts are not a compatibility problem, so they never block the app).
+     */
+    async compat(): Promise<CompatResult> {
+      const h = await this.health();
+      const id = { version: h?.version, gitSha: h?.gitSha };
+      const r = await run<unknown>('GET', CAPABILITY_PATH, undefined, false);
+      if (!r.ok && r.status === 404) return { status: 'outdated', ...id };
+      if (!r.ok && r.status === 401) return { status: 'token-mismatch', ...id };
+      if (r.ok) return { status: 'ok', ...id };
+      return { status: 'unknown', ...id };
     },
   };
 }

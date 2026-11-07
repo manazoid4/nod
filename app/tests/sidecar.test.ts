@@ -121,4 +121,23 @@ describe('CoreSidecar', () => {
     expect(child.kill).toHaveBeenCalledTimes(1);
     expect(sc.isManaged).toBe(false);
   });
+
+  it.each([
+    ['ok', 'running'],
+    ['outdated', 'outdated'],
+    ['token-mismatch', 'token-mismatch'],
+    ['unknown', 'running'],
+  ] as const)('compat %s -> phase %s', async (status, phase) => {
+    const { sc } = make({ probe: async () => true, compat: async () => ({ status, version: '0.7.0' }) });
+    const s = await sc.ensure();
+    expect(s.phase).toBe(phase);
+    if (status === 'outdated') expect(s.message).toBe('Core needs updating.');
+    if (status === 'token-mismatch') expect(s.message).toMatch(/token/);
+  });
+
+  it('an old Core that comes up after our spawn is also gated', async () => {
+    let up = false;
+    const { sc } = make({ probe: async () => up, sleep: async () => { up = true; }, compat: async () => ({ status: 'outdated' }) });
+    expect((await sc.ensure()).phase).toBe('outdated');
+  });
 });

@@ -56,6 +56,7 @@ function logTail(): string {
 
 const sidecar = new CoreSidecar({
   probe: () => api.probe(),
+  compat: () => api.compat(),
   locate,
   hasToken: () => token() !== '',
   port,

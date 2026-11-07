@@ -4,6 +4,8 @@ export type CorePhase =
   | 'checking'
   | 'starting'
   | 'running'
+  | 'outdated' // Core answers but lacks routes this app needs (old host)
+  | 'token-mismatch' // Core is up but rejects the saved token
   | 'not-installed' // no Core files / venv on this PC
   | 'no-python' // Core files exist but Python 3 is missing, so Core cannot be set up
   | 'needs-setup' // venv exists but no .env / token yet

@@ -2,6 +2,7 @@
 import { EventEmitter } from 'node:events';
 import type { CoreState } from '../shared/types';
 import type { CoreLocation } from './core-locator';
+import type { CompatResult } from './api-client';
 
 export interface ChildLike {
   pid?: number;
@@ -11,6 +12,8 @@ export interface ChildLike {
 
 export interface SidecarDeps {
   probe(): Promise<boolean>;
+  /** Optional: version/capability + token check once Core answers. */
+  compat?(): Promise<CompatResult>;
   locate(): CoreLocation;
   hasToken(): boolean;
   port(): number;
@@ -55,7 +58,7 @@ export class CoreSidecar extends EventEmitter {
   private async run(): Promise<CoreState> {
     this.set(this.make('checking', 'Looking for Nod Core...', undefined, this.state.managed));
     if (await this.deps.probe()) {
-      return this.set(this.make('running', 'Nod Core is running.', undefined, this.child !== null && !this.exited));
+      return this.verified(this.child !== null && !this.exited);
     }
     const loc = this.deps.locate();
     if (!loc.python || !loc.sourceDir) {
@@ -70,6 +73,21 @@ export class CoreSidecar extends EventEmitter {
       return this.set(this.make('needs-setup', 'Nod Core needs its first-time setup.', 'The settings file or token is missing. Run setup to create them.'));
     }
     return this.spawnAndWait(loc);
+  }
+
+  /** Core answers /health: confirm it is new enough and accepts our token before calling it running. */
+  private async verified(managed: boolean): Promise<CoreState> {
+    const c = this.deps.compat ? await this.deps.compat() : ({ status: 'ok' } as CompatResult);
+    const ver = [c.version && `v${c.version}`, c.gitSha && c.gitSha.slice(0, 8)].filter(Boolean).join(' ');
+    if (c.status === 'outdated') {
+      return this.set(this.make('outdated', 'Core needs updating.', `The Core on this PC${ver ? ` (${ver})` : ''} is too old for this app. Run setup to update it.`, managed));
+    }
+    if (c.status === 'token-mismatch') {
+      return this.set(
+        this.make('token-mismatch', 'Core rejected the saved token.', 'Nod Core is running but does not accept the token in its settings file. Restart Core, or run setup again to re-pair.', managed),
+      );
+    }
+    return this.set(this.make('running', 'Nod Core is running.', undefined, managed));
   }
 
   private async spawnAndWait(loc: CoreLocation): Promise<CoreState> {
@@ -94,7 +112,7 @@ export class CoreSidecar extends EventEmitter {
     for (let waited = 0; waited < deadline; waited += 500) {
       if (this.exited) break;
       await this.deps.sleep(500);
-      if (await this.deps.probe()) return this.set(this.make('running', 'Nod Core is running.', undefined, true));
+      if (await this.deps.probe()) return this.verified(true);
     }
     const tail = this.deps.logTail?.() ?? '';
     this.stop();

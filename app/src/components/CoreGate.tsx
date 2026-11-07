@@ -37,6 +37,8 @@ export function CoreGate() {
     'not-installed': { title: 'Nod Core is not set up yet', body: 'Nod Core is the small local service that connects this app to your Nod. Setting it up takes a couple of minutes and runs on this PC only.' },
     'no-python': { title: 'Python is needed first', body: 'Nod Core runs on Python 3.11 or newer, which is not installed on this PC. Install it once, then come back.' },
     'needs-setup': { title: 'Finish setting up Nod Core', body: 'Core is installed but its settings file is missing, so it cannot start. Run setup to create it.' },
+    outdated: { title: 'Core needs updating', body: 'The Core on this PC is older than this app expects, so some features would fail. Update it to continue.' },
+    'token-mismatch': { title: 'Core rejected the saved token', body: 'Core is running but does not accept the token this app has saved.' },
     failed: { title: 'Nod Core would not start', body: core.message },
   };
   const c = copy[core.phase] ?? copy.failed;
@@ -50,9 +52,9 @@ export function CoreGate() {
       <p>{c.body}</p>
       {core.detail && <p className="meta selectable">{core.detail}</p>}
       <div className="row wrap" style={{ justifyContent: 'center' }}>
-        {(core.phase === 'not-installed' || core.phase === 'needs-setup') && (
+        {(core.phase === 'not-installed' || core.phase === 'needs-setup' || core.phase === 'outdated') && (
           <button className="btn primary" disabled={busy} onClick={install}>
-            {core.phase === 'needs-setup' ? 'Run setup' : 'Set up Nod Core'}
+            {core.phase === 'needs-setup' || core.phase === 'outdated' ? (core.phase === 'outdated' ? 'Update Core' : 'Run setup') : 'Set up Nod Core'}
           </button>
         )}
         {core.phase === 'no-python' && (
