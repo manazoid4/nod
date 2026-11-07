@@ -1,4 +1,4 @@
-"""Free context + guards that make nod answer instead of refusing."""
+"""Free context + guards that make Piblo answer instead of refusing."""
 
 from __future__ import annotations
 

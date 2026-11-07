@@ -42,7 +42,7 @@ _COLS = "caption, description, notes, author, collection, tags, id, kind, url, p
 _UNINDEXED = {"id", "kind", "url", "project", "saved", "path"}
 _HEADER = """# Library
 
-Reference material saved by nod (Instagram saves, URLs, text). Plain files, no server needed.
+Reference material saved by Piblo (Instagram saves, URLs, text). Plain files, no server needed.
 
 1. Search: `python host/nodinbox.py search "words" [--project X] [--limit N]`
    (or `GET /library/search?q=words` on Core). Results give the item file path: open it for the full item.

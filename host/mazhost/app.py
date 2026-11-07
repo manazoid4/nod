@@ -234,7 +234,7 @@ def create_app(
 
     @api.on_event("startup")
     def start_bridge() -> None:
-        logging.getLogger("uvicorn.error").info("nod Core v%s starting", CORE_VERSION)
+        logging.getLogger("uvicorn.error").info("Piblo Core v%s starting", CORE_VERSION)
         bridge_worker.start()
         threading.Thread(target=getattr(speech, "warm", lambda: None), daemon=True).start()
 

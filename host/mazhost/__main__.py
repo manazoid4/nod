@@ -1,4 +1,4 @@
-"""nod Core entry point: python -m mazhost (works under pythonw: logs go to logs/core.log)."""
+"""Piblo Core entry point: python -m mazhost (works under pythonw: logs go to logs/core.log)."""
 import logging
 import sys
 from pathlib import Path

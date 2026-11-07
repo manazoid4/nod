@@ -68,7 +68,7 @@ PAGE = r"""<!doctype html>
 <div class="pane" id="pane-voice">
 <div class="hero"><h1>Reply voice</h1><p id="voiceNow" class="muted">Loading...</p></div>
 <div class="sec"><h2>SEARCH FISH LIBRARY</h2><div class="card"><div class="row"><input id="voiceQ" data-testid="voice-search" placeholder="Search voices (needs Fish key)" onkeydown="if(event.key==='Enter')searchVoices()"><button onclick="searchVoices()">SEARCH</button></div><div id="voiceSearchRes"></div></div></div>
-<div class="sec"><h2>SAY</h2><div class="card"><div class="row"><input id="sayText" data-testid="say-text" maxlength="300" placeholder="Type something for nod to say" onkeydown="if(event.key==='Enter')sayIt()"><button class="yes" data-testid="say-btn" onclick="sayIt()">SAY</button></div><div id="sayStatus" class="muted"></div></div></div>
+<div class="sec"><h2>SAY</h2><div class="card"><div class="row"><input id="sayText" data-testid="say-text" maxlength="300" placeholder="Type something for Piblo to say" onkeydown="if(event.key==='Enter')sayIt()"><button class="yes" data-testid="say-btn" onclick="sayIt()">SAY</button></div><div id="sayStatus" class="muted"></div></div></div>
 <div class="sec"><h2>VOICES</h2><div id="voiceList"></div><div id="voiceStatus" class="muted"></div></div>
 </div>
 <script>

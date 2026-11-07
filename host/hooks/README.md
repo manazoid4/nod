@@ -1,4 +1,4 @@
-# nod permission hook
+# Piblo permission hook
 
 Claude Code `PermissionRequest` hook. Sends tool + one-line summary to Core
 `/buddy/request`, long-polls `/buddy/state`. Device allow/deny -> decision JSON.
@@ -27,7 +27,7 @@ Device endpoints: `GET /buddy/pending`, `POST /buddy/decide {id, decision: allow
 Every approval is for one request only: `allow_all` and `POST /buddy/allow-all` are rejected (HTTP 400)
 and each request expires after 60 s (see `docs/APPROVALS.md`).
 
-## nod stop hook (done ping)
+## Piblo stop hook (done ping)
 
 `nod_stop_hook.py` is a Claude Code `Stop` hook. It POSTs `kind=done` (text = first line of the
 last assistant message, else "Claude finished") to Core `/buddy/event`; the device chirps and

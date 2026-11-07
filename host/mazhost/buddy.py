@@ -1,4 +1,4 @@
-"""Agent approval queue: Claude Code hook -> Core -> device (nod)."""
+"""Agent approval queue: Claude Code hook -> Core -> device (Piblo)."""
 from __future__ import annotations
 
 import threading
@@ -18,7 +18,7 @@ TIMEOUT_S = 60      # hook falls back to the terminal after this
 WORKING_S = 90      # agent counts as 'working' this long after the last request
 HALT_DEFAULT_MIN = 30
 HALT_MAX_MIN = 480
-HALT_REASON = "Halted from nod (permission request denied; running processes unaffected)"
+HALT_REASON = "Halted from Piblo (permission request denied; running processes unaffected)"
 MAX_AGENTS = 8
 OTHER = "other"
 KIND_KEY = {"done": "done", "needs": "needs", "error": "errors", "usage": "usage"}
