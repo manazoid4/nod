@@ -452,3 +452,4 @@ h2 { max-width: 20ch; text-wrap: balance; }
   .board .chip { flex: 0 0 8.2em; }
   .hero { padding-block: var(--space-5) var(--space-6); }
 }
+.waitlist-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }

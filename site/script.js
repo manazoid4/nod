@@ -16,22 +16,43 @@ document.querySelectorAll("video[data-autoplay]").forEach(video => {
   watcher.observe(video);
 });
 
-// Waitlist form: builds a mailto link from the fields so the form works as a real signup
-// while we build automated backend integration. The email includes name, message and consent.
-document.getElementById("waitlist-form")?.addEventListener("submit", function (e) {
+// Waitlist form: posts to /api/waitlist (Resend). Without JavaScript the form posts natively
+// and the API redirects back with ?subscribed=1 or 0, handled below.
+const waitlist = document.getElementById("waitlist-form");
+const waitlistStatus = waitlist?.querySelector(".waitlist-status");
+const setWaitlistStatus = (text, ok) => {
+  waitlistStatus.textContent = text;
+  waitlistStatus.classList.toggle("ok", ok);
+};
+waitlist?.addEventListener("submit", async function (e) {
   e.preventDefault();
-  const name = this.querySelector('input[name="name"]').value.trim();
-  const email = this.querySelector('input[name="email"]').value.trim();
-  const consent = this.querySelector('input[name="consent"]').checked;
-  if (!name || !email || !consent) return;
-  const subject = encodeURIComponent("NOD launch updates — " + name);
-  const body = encodeURIComponent(
-    "Hi,\n\nPlease keep me updated about NOD.\n\nName: " + name +
-    "\nEmail: " + email +
-    "\n\nI consent to receiving NOD updates by email.\n\n" +
-    "(This is a pre-addressed email. An automated signup is coming.)"
-  );
-  window.location.href = "mailto:info@mazworks.uk?subject=" + subject + "&body=" + body;
-  this.querySelector(".waitlist-status").textContent = "✓ Email app opened. Send the message and you are on the list.";
-  this.querySelector(".waitlist-status").classList.add("ok");
+  const button = this.querySelector("button[type=submit]");
+  const data = Object.fromEntries(new FormData(this));
+  if (!data.first_name?.trim() || !data.email?.trim() || !data.consent) {
+    return setWaitlistStatus("Please add your name, email and tick the box.", false);
+  }
+  button.disabled = true;
+  setWaitlistStatus("Sending...", false);
+  try {
+    const res = await fetch("/api/waitlist", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(data),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (res.ok && out.ok) {
+      this.reset();
+      setWaitlistStatus("You're on the list. We'll only email you about Nod.", true);
+    } else {
+      setWaitlistStatus(out.reason === "invalid-email" ? "That email address doesn't look right." : "Sorry, that didn't go through. Please try again in a minute.", false);
+    }
+  } catch {
+    setWaitlistStatus("Sorry, that didn't go through. Please check your connection and try again.", false);
+  }
+  button.disabled = false;
 });
+if (waitlistStatus) {
+  const result = new URLSearchParams(location.search).get("subscribed");
+  if (result === "1") setWaitlistStatus("You're on the list. We'll only email you about Nod.", true);
+  if (result === "0") setWaitlistStatus("Sorry, that didn't go through. Please try again.", false);
+}
