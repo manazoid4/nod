@@ -18,6 +18,16 @@ For Core by itself, extract `MAZ-Core-v0.7.zip` and run `INSTALL-MAZ-CORE.cmd`. 
 
 All endpoints require the existing MAZ bearer token. Beam never becomes a remote shell.
 
+## Running the tests
+
+From `host/` (no venv setup needed; uses the same pins as the live Core plus pytest):
+
+```powershell
+uv run -p 3.12 --with pytest --with-requirements requirements.txt pytest -q
+```
+
+`pytest` is also listed in the `dev` dependency group in `pyproject.toml` (`uv run --group dev pytest -q`). The live Core's runtime dependencies are `requirements.txt` only.
+
 ## Local engines: Ollama or llama.cpp
 
 `MAZ_LOCAL_ENGINE` selects which local runtime answers LOCAL and the local half of AUTO. Routing, profiles, the primary/backup chain and the 160-token answer bound are identical on both.

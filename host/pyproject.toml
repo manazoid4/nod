@@ -4,6 +4,10 @@ version = "0.2.0"
 description = "MAZ Host — speech-to-text and model routing for MAZ Pocket"
 requires-python = ">=3.10"
 
+[dependency-groups]
+# Test-only; the live Core installs from requirements.txt and never reads this.
+dev = ["pytest>=8"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
