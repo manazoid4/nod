@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""nod_notify: send one notify-only ping to your nod. Any agent, any script.
+"""nod_notify: send one notify-only ping to your Piblo. Any agent, any script.
 
     nod_notify.py <done|usage|needs|error> "text" [--source NAME]
     echo '{"message": "build ok"}' | nod_notify.py done --source codex
