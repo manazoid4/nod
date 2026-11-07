@@ -16,7 +16,7 @@ void talkOrb(M5Canvas& g, int cx, int cy, int r, nod::TalkState s, float micLeve
     if (s == TALK_SPEAKING) level = 350 + triangle(ms, 480, 400);
 
     const bool live = s == TALK_LISTENING || s == TALK_SPEAKING;
-    const uint16_t fill = live ? nt::LIVE : s == TALK_THINKING ? nt::rgb565(nt::mix(nt::TALK_RGB, nt::BG_RGB, 110)) : nt::TALK;
+    const uint16_t fill = live ? nt::TALK_BLUE_HI : s == TALK_THINKING ? nt::TALK_BLUE_DIM : nt::TALK_BLUE;
     const uint16_t ring = live ? nt::LIVE : nt::TALK;
 
     g.fillCircle(cx, cy, r, fill);
@@ -32,7 +32,7 @@ void talkOrb(M5Canvas& g, int cx, int cy, int r, nod::TalkState s, float micLeve
 
     if (r >= 30 && label) {
         g.setTextDatum(middle_center);
-        g.setTextColor(s == TALK_THINKING ? nt::TEXT : nt::BG, fill);
+        g.setTextColor(nt::TEXT, fill);
         g.setFont(sub ? &fonts::Font4 : &fonts::Font2);
         g.drawString(label, cx, sub ? cy - 8 : cy);
         if (sub) {
