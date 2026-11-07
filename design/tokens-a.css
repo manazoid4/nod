@@ -1,0 +1,38 @@
+/* Nod concept A, "Toy-shop warm". Reusable by the site, Nod Core (Windows) and device screens.
+   Contrast (WCAG AA) is checked by site/tests/site.test.mjs. Keep in sync: site/concepts/a/tokens.css. */
+:root {
+  /* colour: paper + ink */
+  --paper: #fff4e0;
+  --paper-2: #fbe3bd;
+  --card: #fffaf0;
+  --ink: #2a1a12;
+  --ink-soft: #5b4336;
+  /* colour: accents. Fills take ink text; the -deep shades are safe as text on paper */
+  --tomato: #ee5a36;
+  --tomato-deep: #b3301a;
+  --mint: #8fdcb8;
+  --mint-deep: #0d6e4f;
+  --sun: #ffc93c;
+  /* device screen (Cardputer 240x135) */
+  --screen-bg: #2a1a12;
+  --screen-ink: #fff4e0;
+  --screen-talk: #ee5a36;
+  --screen-ring: #8fdcb8;
+  /* type */
+  --font-display: "Bricolage Grotesque", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  /* shape */
+  --radius-s: 14px;
+  --radius-m: 24px;
+  --radius-l: 40px;
+  --radius-pill: 999px;
+  /* tactile shadow: a solid ink offset, not a blur */
+  --shadow-s: 0 3px 0 var(--ink);
+  --shadow-m: 0 6px 0 var(--ink);
+  --shadow-l: 0 10px 0 var(--ink);
+  --stroke: 3px solid var(--ink);
+  /* spacing scale */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 72px; --space-9: 112px;
+}

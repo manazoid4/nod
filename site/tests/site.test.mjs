@@ -64,11 +64,11 @@ test("21 unique published roadmap packages, four stages, no misleading shipped c
 
 test("homepage refuses fake device statuses and nonfunctional signup claims", () => {
   const html = contents["/"];
-  assert.match(html, /display-connect">CONCEPT/);
-  assert.doesNotMatch(html, /display-connect">.*READY/);
+  assert.match(html, /screen-concept">CONCEPT/);
+  assert.doesNotMatch(html, /screen-concept">.*READY/);
   assert.match(html, /there is no automated signup yet/);
   assert.match(html, /mailto:info@mazworks.uk\?subject=NOD%20launch%20updates/);
-  assert.match(html, /NOT YET IMPLEMENTED/);
+  assert.match(html, /not yet implemented/i);
   assert.match(html, /human|person|You check the printer/i);
   assert.match(html, /href="\/roadmap\/"/);
 });
@@ -102,4 +102,20 @@ test("Vercel defensive headers and sitemap exclude private-readiness indexing", 
   const sitemap=readFileSync(join(root,"sitemap.xml"),"utf8");
   assert.match(sitemap, /\/roadmap\//);assert.doesNotMatch(sitemap, /\/readiness\//);
   assert.match(contents["/readiness/"], /noindex,follow/);
+});
+test("live site (concept A) and concept B: labelled concept, CSP-safe, honest waitlist, tokens in sync, AA contrast", () => {
+  const lum = h => { const c = [1,3,5].map(i => parseInt(h.slice(i,i+2),16)/255).map(v => v <= .03928 ? v/12.92 : ((v+.055)/1.055)**2.4); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
+  const ratio = (a,b) => { const [x,y] = [lum(a),lum(b)]; return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+  const pairs = { a: [["#2a1a12","#fff4e0"],["#5b4336","#fbe3bd"],["#2a1a12","#ee5a36"],["#b3301a","#fff4e0"],["#0d6e4f","#fff4e0"],["#2a1a12","#ffc93c"]],
+                  b: [["#202328","#ece9e1"],["#4a4e57","#dcd8cc"],["#202328","#f2b705"],["#0b6666","#ece9e1"],["#2fd3c0","#202328"],["#f2b705","#202328"]] };
+  for (const [dir, k] of [["", "a"], ["concepts/b", "b"]]) {
+    const html = readFileSync(join(root, dir, "index.html"), "utf8");
+    assert.match(html, /CONCEPT/);
+    assert.match(html, /mailto:info@mazworks.uk\?subject=NOD%20launch%20updates/);
+    assert.match(html, /not an automatic mailing list yet/);
+    assert.doesNotMatch(html, /\son[a-z]+\s*=|\sstyle=|<style|<script(?![^>]*\ssrc=)/i);
+    assert.equal(readFileSync(join(root, dir, "tokens.css"), "utf8"), readFileSync(join(root, "..", "design", "tokens-" + k + ".css"), "utf8"));
+    assert.match(readFileSync(join(root, dir, "styles.css"), "utf8"), /prefers-reduced-motion/);
+    for (const [fg,bg] of pairs[k]) assert.ok(ratio(fg,bg) >= 4.5, k + " " + fg + " on " + bg);
+  }
 });

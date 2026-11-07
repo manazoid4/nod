@@ -3,235 +3,197 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#f7f8f3">
-  <meta name="description" content="Meet NOD, a pocket interface for your AI. Explore the open prototype and proposed saved-video knowledge and Reel-to-3D-print workflows.">
-  <meta property="og:title" content="NOD — Your AI. One press away.">
-  <meta property="og:description" content="Your AI, one press away. Explore NOD’s open prototype and ideas for learning from saved videos and preparing a 3D print.">
+  <meta name="theme-color" content="#fff4e0">
+  <meta name="description" content="Nod is a pocket AI device. Hold a key and talk, save a thought, check your day, approve what your PC does. Open source, heading to Kickstarter.">
+  <meta property="og:title" content="Nod. Ask. Listen. Nod.">
+  <meta property="og:description" content="A pocket device that puts your AI one press away. Open source prototype, heading to Kickstarter.">
   <meta property="og:type" content="website">
   <link rel="canonical" href="https://nod-kickstarter.vercel.app/">
   <meta property="og:url" content="https://nod-kickstarter.vercel.app/">
   <meta name="twitter:card" content="summary">
-  <title>NOD — Your AI. One press away.</title>
+  <title>Nod. Ask. Listen. Nod.</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/tokens.css">
   <link rel="stylesheet" href="/styles.css">
   <script defer src="/script.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="header">
-  <div class="container header-inner">
-    <a class="logo" href="/" aria-label="NOD home"><span class="logo-symbol" aria-hidden="true"><i></i></span>nod<span class="logo-period">.</span></a>
+  <div class="wrap header-inner">
+    <a class="logo" href="/" aria-label="Nod home"><span class="logo-dot" aria-hidden="true"></span>nod</a>
     <nav class="nav" aria-label="Main navigation">
-      <a href="#why">The idea</a>
-      <a href="#how">How it works</a>
-      <a href="#future">What’s next</a>
-      <a href="/roadmap/">Roadmap</a>
-      <a href="#status">Build status</a>
+      <a href="/#does">What it does</a><a href="/#how">How it works</a><a href="/#status">Build status</a><a href="/#open">Open source</a>
     </nav>
-    <a class="header-link" href="#follow">Follow the build <span aria-hidden="true">↗</span></a>
+    <a class="btn btn-sun btn-small" href="/#waitlist">Join the waitlist</a>
   </div>
-<details class="mobile-menu"><summary>Menu <span aria-hidden="true">☰</span></summary><nav class="mobile-menu-links" aria-label="Mobile navigation"><a href="/#why">The idea</a><a href="/#future">Concepts</a><a href="/roadmap/">Product roadmap</a><a href="/readiness/">Launch checks</a><a href="/#follow">Follow the build</a></nav></details></header>
+  <details class="mobile-menu"><summary>Menu</summary><nav class="mobile-menu-links" aria-label="Mobile navigation"><a href="/#does">What it does</a><a href="/#how">How it works</a><a href="/#ideas">Ideas in research</a><a href="/#status">Build status</a><a href="/roadmap/">Roadmap</a><a href="/readiness/">Launch checks</a><a href="/#open">Open source</a></nav></details>
+</header>
 
 <main id="main">
-  <section class="hero container">
+  <section class="hero wrap" id="top">
     <div class="hero-text">
-      <div class="kicker"><span class="status-light" aria-hidden="true"></span> OPEN-SOURCE PROTOTYPE <span class="kicker-divider">/</span> IN DEVELOPMENT</div>
-      <h1>Your AI.<br><span>One press away.</span></h1>
-      <p class="hero-description">A little device for big ideas. Ask your AI, save a thought or approve your next move—without disappearing into your phone.</p>
+      <p class="sticker sticker-mint">Open source · heading to Kickstarter</p>
+      <h1><span class="h-ask">Ask.</span> <span class="h-listen">Listen.</span> <span class="h-nod">Nod.</span></h1>
+      <p class="lede">A pocket device that puts your AI one press away. Hold a key and talk. Save a thought before it vanishes. Check your day. Say yes or no when your PC wants to do something.</p>
       <div class="actions">
-        <a class="button button-dark" href="mailto:info@mazworks.uk?subject=NOD%20launch%20updates&body=Hi%2C%20please%20keep%20me%20updated%20about%20NOD.">Ask for launch updates <span aria-hidden="true">↗</span></a>
-        <a class="button button-light" href="#future">Explore the ideas <span aria-hidden="true">→</span></a>
+        <a class="btn btn-tomato" href="mailto:info@mazworks.uk?subject=NOD%20launch%20updates&amp;body=Hi%2C%20please%20keep%20me%20updated%20about%20NOD.">Join the Kickstarter waitlist</a>
+        <a class="btn btn-ghost" href="#does">See what it does</a>
       </div>
-      <div class="hero-subnote">Built around the M5Stack Cardputer ADV. A connected PC handles the heavier work. Launch updates open your email app; there is no automated signup yet.</div><div class="hero-shortcuts"><a href="#vault">Video knowledge ↗</a><a href="#print">Reel-to-Print ↗</a><span>Both in research</span></div>
+      <p class="fine">Opens your email app; there is no automated signup yet. Built around the M5Stack Cardputer ADV, with a connected PC for the heavier work.</p>
     </div>
-    <div class="hero-preview" id="preview">
-      <div class="preview-caption"><span>01 — THE INTERACTION</span><span class="preview-concept">INTERFACE CONCEPT, NOT FINAL HARDWARE</span></div>
-      <div class="preview-surface">
-        <div class="device-display" aria-label="Illustrative screen interface for NOD">
-          <div class="device-toolbar"><span class="display-wordmark">nod<span>.</span></span><span class="display-connect">CONCEPT</span></div>
-          <div class="device-content" aria-live="polite" aria-atomic="true">
-            <div class="device-category" id="display-label">01 / ASK</div>
-            <div class="device-heading" id="display-heading">What's next?</div>
-            <div class="device-description" id="display-description">Get a quick answer from your connected AI.</div>
+    <figure class="hero-device">
+      <div class="device" role="img" aria-label="Concept illustration of the Nod device. The screen shows a large orange talk circle with the words Hold to talk, and shortcuts for Save, Today and PC.">
+        <div class="device-body">
+          <div class="screen">
+            <div class="screen-top"><span>nod</span><span class="screen-concept">CONCEPT</span><span class="battery"></span></div>
+            <div class="talk"><span class="talk-ring"></span><span class="talk-circle"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span></div>
+            <div class="screen-say">Hold to talk</div>
+            <div class="screen-chips"><span>Save</span><span>Today</span><span>PC</span></div>
           </div>
-          <div class="device-bottom"><span id="display-action">HOLD TO SPEAK</span><div class="equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><span>NOD / 01</span></div>
+          <div class="keys" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         </div>
-        <div class="device-base" aria-hidden="true"><div class="device-controls"><i></i><i></i><i class="key-wide"></i><i></i><i></i></div></div>
       </div>
-      <div class="preview-tabs" role="tablist" aria-label="Explore NOD's three core uses">
-        <button type="button" class="preview-tab active" role="tab" aria-selected="true" aria-controls="preview-detail" id="tab-ask" data-preview="ask"><span>01</span> Ask</button>
-        <button type="button" class="preview-tab" role="tab" aria-selected="false" aria-controls="preview-detail" id="tab-capture" tabindex="-1" data-preview="capture"><span>02</span> Capture</button>
-        <button type="button" class="preview-tab" role="tab" aria-selected="false" aria-controls="preview-detail" id="tab-approve" tabindex="-1" data-preview="approve"><span>03</span> Approve</button>
-      </div>
-      <div class="preview-detail" id="preview-detail" role="tabpanel" aria-labelledby="tab-ask" tabindex="0"><span class="detail-mark" aria-hidden="true">↳</span><p id="preview-copy">Hold a key, ask a question, and hear or read a reply from the AI connected to your computer.</p></div>
-    </div>
+      <figcaption>Concept: the new Home screen. A big circle you hold to talk. Interface concept, not final hardware.</figcaption>
+    </figure>
   </section>
 
-  <section class="use-cases section" id="why">
-    <div class="container">
-      <div class="section-top"><span class="section-number">01 / WHY NOD</span><h2>Less switching.<br>More doing.</h2><p>Three moments where a dedicated button makes more sense than another app.</p></div>
-      <div class="features">
-        <article class="feature">
-          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 42 42" fill="none"><path d="M12 22v-4a9 9 0 0 1 18 0v4a9 9 0 0 1-18 0Z" stroke="currentColor" stroke-width="1.8"/><path d="M7 21v2a14 14 0 0 0 28 0v-2M21 37v-5M15 37h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-          <span class="feature-num">01</span>
-          <h3>Ask aloud.</h3>
-          <p>Get the answer you need, without opening a chat window.</p>
+  <section class="does band-paper" id="does">
+    <div class="wrap">
+      <p class="eyebrow">What Nod does</p>
+      <h2>Four things. One press each.</h2>
+      <div class="does-grid">
+        <article class="block block-talk">
+          <span class="num">1</span>
+          <h3>Talk, don't type</h3>
+          <p>Hold a key, say what you need, let go. Nod sends it to the AI on your computer and gives you the answer, out loud or on the little screen.</p>
+          <span class="tag tag-wip">In progress</span>
         </article>
-        <article class="feature">
-          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 42 42" fill="none"><rect x="9" y="7" width="24" height="28" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M14 16h14M14 22h14M14 28h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-          <span class="feature-num">02</span>
-          <h3>Catch a thought.</h3>
-          <p>Capture an idea while it’s fresh. Sort it out later.</p>
+        <article class="block block-save">
+          <span class="num">2</span>
+          <h3>Save a thought</h3>
+          <p>Got an idea in the shower, or mid-conversation? Say it. It is saved for later and tidied up when you are ready.</p>
+          <span class="tag tag-wip">In progress</span>
         </article>
-        <article class="feature">
-          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 42 42" fill="none"><rect x="7" y="7" width="28" height="28" rx="6" stroke="currentColor" stroke-width="1.8"/><path d="m14 21 5 5 10-11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <span class="feature-num">03</span>
-          <h3>Stay in control.</h3>
-          <p>Review an AI agent’s request before anything important happens.</p>
+        <article class="block block-today">
+          <span class="num">3</span>
+          <h3>Today</h3>
+          <p>One calm screen for what is next and what is waiting on you.</p>
+          <span class="tag tag-concept">Concept</span>
         </article>
-      </div>
-      <p class="footnote">These are intended NOD workflows, not a claim that all three are currently verified on NOD hardware.</p>
-    </div>
-  </section>
-
-  <section class="connect section" id="how">
-    <div class="container connect-layout">
-      <div><span class="section-number light-number">02 / HOW IT WORKS</span><h2>Small device.<br><span>Big capability.</span></h2><p>NOD is the interface. Your computer is the engine. Connect it to the AI tools and workflows you already use.</p><p class="connect-note">A computer, local connection and setup are required. Some external AI services may charge separately.</p></div>
-      <div class="flow" aria-label="NOD architecture: physical press, companion PC, connected AI tools">
-        <div class="flow-row"><span class="flow-num">01</span><div><strong>You press NOD</strong><small>Speak, capture or make a decision.</small></div><span class="flow-shape">●</span></div>
-        <div class="flow-arrow" aria-hidden="true">↓</div>
-        <div class="flow-row"><span class="flow-num">02</span><div><strong>Your computer hub</strong><small>Handles the work over a private connection.</small></div><span class="flow-shape">▣</span></div>
-        <div class="flow-arrow" aria-hidden="true">↓</div>
-        <div class="flow-row"><span class="flow-num">03</span><div><strong>Your AI and tools</strong><small>Return an answer or request permission.</small></div><span class="flow-shape">✳</span></div>
-      </div>
-    </div>
-  </section>
-
-  
-  <!-- Exploratory features below are proposals, not product demonstrations. -->
-  <section class="possibilities section" id="future" aria-labelledby="future-title">
-    <div class="container">
-      <div class="future-intro">
-        <div>
-          <span class="section-number">03 / THE BIGGER POSSIBILITY</span>
-          <h2 id="future-title">See it. Save it.<br><span>Make it real.</span></h2>
-        </div>
-        <div class="future-intro-right">
-          <p>What if the things you save online didn't just sit in a folder? We're exploring ways for NOD to turn useful videos into searchable knowledge—and even prepare a real 3D print.</p>
-          <span class="future-status"><span class="future-status-dot" aria-hidden="true"></span> RESEARCH &amp; PROTOTYPING · NOT AVAILABLE YET</span>
-        </div>
-      </div>
-      <div class="future-selector" role="tablist" aria-label="Explore two proposed NOD workflows">
-        <button id="future-tab-learn" class="future-select active" type="button" role="tab" aria-controls="future-panel" aria-selected="true" tabindex="0" data-future="learn"><span class="future-select-number">01</span><span>Learn from saved videos<small>Save it. Understand it. Find it again.</small></span><span class="future-select-arrow" aria-hidden="true">↗</span></button>
-        <button id="future-tab-make" class="future-select" type="button" role="tab" aria-controls="future-panel" aria-selected="false" tabindex="-1" data-future="make"><span class="future-select-number">02</span><span>Reel to 3D print<small>Find the file. Prepare a real object.</small></span><span class="future-select-arrow" aria-hidden="true">↗</span></button>
-      </div>
-      <div class="future-panel" id="future-panel" role="tabpanel" aria-labelledby="future-tab-learn" tabindex="0">
-        <div class="future-panel-copy">
-          <span class="future-eyebrow" id="future-overline">CONCEPT 01 / YOUR VIDEO LIBRARY</span>
-          <h3 id="future-heading">Your saved videos.<br><em>Finally useful.</em></h3>
-          <p id="future-text">Instead of just saving a Reel, imagine searching what was said, shown and demonstrated—then asking NOD to turn the best parts into a useful brief.</p>
-          <ul class="future-steps" id="future-steps" aria-live="polite" aria-atomic="true">
-            <li><span>01</span> Import an accessible video</li>
-            <li><span>02</span> Understand speech, scenes and text</li>
-            <li><span>03</span> Ask NOD, with original sources</li>
-          </ul>
-          <a class="future-link" href="#questions">What would this actually require? <span aria-hidden="true">↗</span></a>
-        </div>
-        <div class="future-panel-art" aria-label="Concept illustration: an accessible saved video becomes a source-backed knowledge card or 3D print preparation">
-          <div class="future-art-meta"><span>THE EXPERIENCE / CONCEPT</span><span>NOT LIVE SOFTWARE</span></div>
-          <div class="source-reel" aria-hidden="true">
-            <div class="source-reel-header"><span class="reel-rec">●</span> SAVED VIDEO <span>00:28</span></div>
-            <div class="reel-grid"><span class="reel-motif reel-motif-a"></span><span class="reel-motif reel-motif-b"></span><span class="reel-motif reel-motif-c"></span></div>
-            <div class="source-reel-foot">Narration + visible steps + on-screen text</div>
+        <article class="block block-pc">
+          <div class="block-pc-text">
+            <span class="num">4</span>
+            <h3>Your PC asks. You decide.</h3>
+            <p>When an AI agent wants to do something that matters, Nod shows you exactly what and waits. Nothing happens until you press yes.</p>
+            <span class="tag tag-verify">Still to verify</span>
           </div>
-          <div class="future-connector" aria-hidden="true"><span></span><i>→</i><span></span></div>
-          <div class="result-surface">
-            <div class="result-top"><span class="result-dot"></span><span id="future-art-badge">KNOWLEDGE CARD</span><span class="result-mini">NOD / IDEA 01</span></div>
-            <div class="result-lines">
-              <span id="future-art-title">A lesson worth keeping.</span>
-              <span id="future-art-line1">What was shown, explained and why it matters</span>
-              <span id="future-art-line2">Original video + timestamps retained</span>
-            </div>
-            <div class="result-bar"><span id="future-art-action">ASK NOD ABOUT THIS</span><span aria-hidden="true">↗</span></div>
+          <div class="mini" role="img" aria-label="Concept illustration of an approval screen. It reads: Nod Core wants to open your Downloads folder. Buttons: No, and Yes go.">
+            <div class="mini-label">CONCEPT</div>
+            <div class="mini-q">Nod Core wants to</div>
+            <div class="mini-a">Open your Downloads folder</div>
+            <div class="mini-btns"><span class="no">No</span><span class="yes">Yes, go</span></div>
           </div>
-        </div>
+        </article>
       </div>
-      <p class="future-disclosure">This is an interactive illustration of proposed workflows, not an Instagram integration or functional 3D-print tool. NOD would only analyse video media you can legitimately provide or access. A saved-link export alone does not contain the video.</p>
+      <p class="footnote">These are intended Nod workflows, not a claim that all four are verified on Nod hardware today.</p>
     </div>
   </section>
 
-  <section class="possibility-detail section" id="vault" aria-labelledby="vault-title">
-    <div class="container possibility-layout">
-      <div class="possibility-copy">
-        <span class="section-number">04 / SAVED-VIDEO MEMORY</span>
-        <h2 id="vault-title">The internet taught you something.<br><span>What if it stuck?</span></h2>
-        <p>Save a cooking tip, workshop trick or 3D-printing tutorial. The planned NOD Video Vault could combine speech transcripts with what actually appears on screen, so you can find the useful moment later.</p>
-        <div class="detail-points"><div><span class="detail-point-num">01</span><strong>Understand the video</strong><p>Narration, visible actions and written instructions—not a guess based on the URL.</p></div><div><span class="detail-point-num">02</span><strong>Remember with evidence</strong><p>Answers point back to the original source and relevant timestamps.</p></div><div><span class="detail-point-num">03</span><strong>Turn it into work</strong><p>Create a private summary, a research brief or a task you choose to act on.</p></div></div>
-        <p class="scope-note">Planned. Some Instagram Reels cannot be retrieved; videos must be accessible and used with appropriate rights.</p>
-      </div>
-      <div class="vault-art" aria-label="Illustrative video-analysis timeline and knowledge notes">
-        <div class="vault-art-head"><span>VIDEO → KNOWLEDGE</span><span>VISUAL CONCEPT</span></div>
-        <div class="vault-art-frame"><span class="vault-play" aria-hidden="true">▶</span><div class="vault-scan">FRAME ANALYSIS <span>00:12</span></div></div>
-        <div class="vault-timeline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="vault-art-note"><span>01 / HEARD</span><p>“First, adjust the print orientation…”</p></div>
-        <div class="vault-art-note"><span>02 / SEEN</span><p>Object rotation and a support comparison</p></div>
-        <div class="vault-art-note"><span>03 / REMEMBERED</span><p>A source-backed note you can ask NOD about</p></div>
-      </div>
+  <section class="how band-mint" id="how">
+    <div class="wrap">
+      <p class="eyebrow">How it works</p>
+      <h2>A small device. A proper brain next to it.</h2>
+      <ol class="path">
+        <li><span class="orb orb-1" aria-hidden="true">1</span><h3>Nod</h3><p>The pocket device. A Cardputer ADV running Nod firmware. You press, talk and approve here.</p></li>
+        <li><span class="orb orb-2" aria-hidden="true">2</span><h3>Nod Core</h3><p>A Windows app on your PC. It does the heavy lifting over your own connection.</p></li>
+        <li><span class="orb orb-3" aria-hidden="true">3</span><h3>Your AI</h3><p>The assistant and tools you already use. They answer, or ask for your okay.</p></li>
+      </ol>
+      <p class="note">You need a Windows PC and a setup step. Some AI services charge separately. Custom Nod hardware is not yet a finished product.</p>
     </div>
   </section>
 
-  <section class="print-story section" id="print" aria-labelledby="print-title">
-    <div class="container">
-      <div class="print-head">
-        <div><span class="section-number light-number">05 / FROM PIXELS TO PHYSICAL</span><h2 id="print-title">Saw it in a Reel?<br><span>Make it real.</span></h2></div>
-        <div><p>We're designing a path from a 3D-printing video to a real, printable model. The clever part isn't magically inventing the object. It's finding the original file—and checking the result before anything moves.</p><span class="print-tag">PROPOSED · NOT YET IMPLEMENTED</span></div>
+  <section class="ideas band-cream" id="ideas" aria-labelledby="ideas-title">
+    <div class="wrap">
+      <p class="eyebrow">Ideas in research</p>
+      <h2 id="ideas-title">Bigger ideas. Clearly not built yet.</h2>
+      <div class="ideas-grid">
+        <article class="ticket ticket-vault" id="vault">
+          <span class="tag tag-concept">Research · not available yet</span>
+          <h3>Your saved videos, finally useful</h3>
+          <p>Save a cooking tip or a 3D-printing tutorial. A planned Video Vault could combine what was said with what appears on screen, so you can find the useful moment later, with the original source and timestamps.</p>
+          <p class="scope">Planned. Some Instagram Reels cannot be retrieved; videos must be accessible and used with appropriate rights.</p>
+        </article>
+        <article class="ticket ticket-print" id="print">
+          <span class="tag tag-concept">Proposed · not yet implemented</span>
+          <h3>Saw it in a Reel? Make it real.</h3>
+          <ol class="steps">
+            <li><strong>Find the model.</strong> Look for the creator's real STL or 3MF.</li>
+            <li><strong>Match the right file.</strong> Compare it with what the video shows.</li>
+            <li><strong>Slice for your printer.</strong> Preview layers, fit, material and time.</li>
+            <li><strong>Your call.</strong> You check the printer and choose when to start.</li>
+          </ol>
+          <p class="scope">Not a promise that every video contains a downloadable model. A person always starts the print.</p>
+        </article>
       </div>
-      <div class="print-pipeline" aria-label="Proposed four-step Reel-to-Print process">
-        <div class="print-step"><span class="print-index">01 / DISCOVER</span><span class="print-glyph" aria-hidden="true">↗</span><h3>Find the model</h3><p>Search the creator's links, captions and legitimate model listings for the actual STL or 3MF.</p></div>
-        <div class="print-step"><span class="print-index">02 / VERIFY</span><span class="print-glyph" aria-hidden="true">◇</span><h3>Match the right file</h3><p>Compare what the Reel shows with candidate models. Clearly label originals versus alternatives.</p></div>
-        <div class="print-step"><span class="print-index">03 / PREPARE</span><span class="print-glyph" aria-hidden="true">▤</span><h3>Slice for your printer</h3><p>Use a confirmed machine profile and preview the layers, fit, material and expected time.</p></div>
-        <div class="print-step"><span class="print-index">04 / YOUR CALL</span><span class="print-glyph" aria-hidden="true">✓</span><h3>Approve the print</h3><p>Queue a reviewed file in a connected print manager. You check the printer and choose when to start.</p></div>
-      </div>
-      <div class="print-bottom"><p><strong>The aim:</strong> a real creator-linked model → a verified slice → a supervised physical print. Not a promise that every video contains a downloadable model.</p><a href="#follow" class="button button-print">Follow the experiment <span aria-hidden="true">↗</span></a></div>
-    </div>
-  </section>
-
-  <section class="reality section" id="questions" aria-labelledby="reality-title">
-    <div class="container reality-layout">
-      <div><span class="section-number">06 / BUILDING WITH HONESTY</span><h2 id="reality-title">Ambitious ideas.<br><span>Clear limits.</span></h2><p>We're exploring these experiences in the open. Here is what the prototype actually is—and what hasn't been built yet.</p><a href="/readiness/" class="text-link">Read our Kickstarter readiness review <span aria-hidden="true">↗</span></a></div>
-      <div class="reality-faq">
-        <details><summary>Does NOD already analyse my saved Instagram Reels?</summary><p>No. Video Vault is planned. We still need to prove importing accessible video, analysing both sound and visuals, and returning accurate source-backed answers. Instagram's saved-data export may provide links but not the video files.</p></details>
-        <details><summary>Can NOD already slice and start a 3D print?</summary><p>No. Reel-to-Print is a development concept. The proposed system would find a legitimate STL/3MF, verify its licence and suitability, slice on the connected computer and upload the prepared file to a print manager. A real person must inspect the printer and explicitly start the print.</p></details>
-        <details><summary>What hardware and services would I need?</summary><p>The current prototype uses an M5Stack Cardputer ADV with a companion computer running MAZ Core. AI services can have separate costs. The 3D-printing concept also requires your own compatible printer, a confirmed slicer profile and print management software. Custom NOD hardware is not yet a finished product.</p></details>
+      <h3 class="faq-title" id="questions">Straight answers</h3>
+      <div class="faq">
+        <details><summary>Does Nod already analyse my saved Instagram Reels?</summary><p>No. Video Vault is planned. We still need to prove importing accessible video, analysing both sound and visuals, and returning accurate source-backed answers. Instagram's saved-data export may provide links but not the video files.</p></details>
+        <details><summary>Can Nod already slice and start a 3D print?</summary><p>No. Reel-to-Print is a development concept. The proposed system would find a legitimate STL/3MF, verify its licence and suitability, slice on the connected computer and upload the prepared file to a print manager. A real person must inspect the printer and explicitly start the print.</p></details>
+        <details><summary>What hardware and services would I need?</summary><p>The current prototype uses an M5Stack Cardputer ADV with a companion Windows computer running Nod Core. AI services can have separate costs. The 3D-printing idea also needs your own compatible printer, a confirmed slicer profile and print management software.</p></details>
         <details><summary>Is there a Kickstarter date or price?</summary><p>Not confirmed. A reliable physical prototype, safety testing, manufacturing quotes and realistic delivery costs must come before crowdfunding commitments. You can follow the source and ask for email updates below.</p></details>
       </div>
     </div>
   </section>
 
-  <section class="progress section" id="status">
-    <div class="container progress-layout">
-      <div class="progress-intro"><span class="section-number">07 / BUILDING IN PUBLIC</span><h2>Proof over<br>promises.</h2><p>NOD is at prototype stage. Here's what we know—and what still needs real-world testing.</p><a href="/readiness/" class="text-link">See the full readiness audit <span aria-hidden="true">↗</span></a><p><a href="/roadmap/" class="text-link">Explore the 21-work-package roadmap <span aria-hidden="true">↗</span></a></p></div>
-      <div class="milestones">
-        <div class="milestone"><span class="milestone-icon complete" aria-label="Documented as verified">✓</span><div><strong>Connected foundation</strong><p>Wi-Fi, a companion hub and firmware updates are documented as verified in the MAZ Pocket prototype.</p></div><span class="milestone-state">DOCUMENTED</span></div>
-        <div class="milestone"><span class="milestone-icon developing" aria-label="In development">◌</span><div><strong>Voice and capture</strong><p>End-to-end physical testing and a simpler first-use experience are still in progress. Saved-video learning and Reel-to-Print remain research concepts.</p></div><span class="milestone-state">IN PROGRESS</span></div>
-        <div class="milestone"><span class="milestone-icon upcoming" aria-label="Not yet verified">○</span><div><strong>Agent approvals</strong><p>The complete remote approval loop still needs repeatable device and security tests.</p></div><span class="milestone-state">TO VERIFY</span></div>
+  <section class="status band-paper" id="status">
+    <div class="wrap status-layout">
+      <div>
+        <p class="eyebrow">Honest build status</p>
+        <h2>What is real, and what is not yet.</h2>
+        <p>Nod is a prototype. We would rather show you the gaps than hide them.</p>
+        <p><a class="link" href="/roadmap/">Read the 21-step roadmap</a><br><a class="link" href="/readiness/">Kickstarter readiness review</a></p>
       </div>
+      <ul class="board">
+        <li><span class="chip chip-done">Documented</span><div><strong>Connected foundation</strong><p>Wi-Fi, the PC hub and firmware updates are documented as verified in the MAZ Pocket prototype.</p></div></li>
+        <li><span class="chip chip-wip">In progress</span><div><strong>Voice and capture</strong><p>End-to-end physical testing and a simpler first-use experience are still in progress.</p></div></li>
+        <li><span class="chip chip-concept">Concept</span><div><strong>New Home and Today screens</strong><p>The designs on this page. Drawn, not yet running on hardware.</p></div></li>
+        <li><span class="chip chip-verify">To verify</span><div><strong>PC actions with approval</strong><p>The complete remote approval loop still needs repeatable device and security tests.</p></div></li>
+        <li><span class="chip chip-none">Not set</span><div><strong>Kickstarter date and price</strong><p>None confirmed. A working prototype and real manufacturing quotes come first.</p></div></li>
+      </ul>
     </div>
   </section>
 
-  <section class="follow section" id="follow">
-    <div class="container">
-      <div class="follow-panel">
-        <div><span class="section-number">THE NEXT CHAPTER</span><h2>Good things<br>take making.</h2><p>From pocket conversations to ideas made real, we’re building and testing NOD in public. Follow the prototype before any crowdfunding commitments.</p><div class="actions"><a class="button button-dark" href="mailto:info@mazworks.uk?subject=NOD%20launch%20updates&body=Hi%2C%20please%20keep%20me%20updated%20about%20NOD.">Ask for launch updates <span aria-hidden="true">↗</span></a><a class="button button-outline" href="https://github.com/manazoid4/nod" target="_blank" rel="noopener noreferrer">Watch on GitHub <span aria-hidden="true">↗</span></a></div><p class="small-disclosure">Email link opens your email app. This is not an automatic mailing-list signup. No launch date or reward price is confirmed.</p></div>
-        <div class="follow-mark" aria-hidden="true"><div class="mark-ring"><span></span></div><span>NOD — IN THE MAKING</span></div>
+  <section class="open band-tomato" id="open">
+    <div class="wrap open-layout">
+      <div>
+        <p class="eyebrow eyebrow-ink">Open source</p>
+        <h2>Built in the open. MIT licensed.</h2>
+        <p>The firmware, Nod Core and this website are all on GitHub. Read it, change it, make your own version. It is early days and mostly one maker so far, so a second pair of hands really counts.</p>
+        <a class="btn btn-paper" href="https://github.com/manazoid4/nod" target="_blank" rel="noopener noreferrer">Look at the code on GitHub</a>
       </div>
+      <ul class="stickers" aria-label="Ways to join in">
+        <li class="st st-1">Open an issue</li><li class="st st-2">Test the firmware</li><li class="st st-3">Suggest a screen</li><li class="st st-4">Fork it</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="join wrap" id="waitlist">
+    <div class="join-card">
+      <h2>Be there when the Kickstarter opens.</h2>
+      <p>Send us an email and we will write back when there is something real to show: a date, a price, a working video. Nothing is promised before it exists.</p>
+      <a class="btn btn-tomato btn-big" href="mailto:info@mazworks.uk?subject=NOD%20launch%20updates&amp;body=Hi%2C%20please%20keep%20me%20updated%20about%20NOD.">Join the Kickstarter waitlist</a>
+      <p class="fine">This opens your email app. It is not an automatic mailing list yet. No launch date or reward price is confirmed.</p>
     </div>
   </section>
 </main>
-<footer class="footer container">
-  <div><a class="logo" href="/">nod<span class="logo-period">.</span></a><p>Independent open-source project by MazWorks.</p></div>
-  <div class="footer-links"><a href="/roadmap/">Product roadmap</a><a href="/readiness/">Kickstarter readiness</a><a href="https://github.com/manazoid4/nod" target="_blank" rel="noopener noreferrer">GitHub</a><a href="mailto:info@mazworks.uk">Contact</a><a href="/privacy/">Privacy</a></div>
-  <p class="legal">Prototype in development · Concepts are not shipping features · Not affiliated with or endorsed by Anthropic, M5Stack, Meta or Instagram.</p>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div><a class="logo" href="/"><span class="logo-dot" aria-hidden="true"></span>nod</a><p>An independent open-source project by MazWorks, made in the UK.</p></div>
+    <nav class="footer-links" aria-label="Footer"><a href="/roadmap/">Roadmap</a><a href="/readiness/">Readiness</a><a href="https://github.com/manazoid4/nod" target="_blank" rel="noopener noreferrer">GitHub</a><a href="mailto:info@mazworks.uk">Contact</a><a href="/privacy/">Privacy</a></nav>
+    <p class="legal">Prototype in development. Screens and ideas shown are concepts, not shipping features. Not affiliated with or endorsed by Anthropic, M5Stack, Meta or Instagram.</p>
+  </div>
 </footer>
 </body>
 </html>
