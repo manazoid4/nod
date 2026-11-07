@@ -416,8 +416,6 @@ bool fwFail(const char* stage, const char* why, esp_err_t code = ESP_OK, size_t 
     return false;
 }
 
-constexpr int kFwMinBattery = 30;  // percent; erase + Wi-Fi + flash writes need real headroom
-
 }  // namespace
 
 // Fragment for /api/status: ,"fw_...": fields (starts with a comma).
@@ -441,8 +439,6 @@ String fwStatusJson() {
 }
 
 bool fwUpdate() {
-    if (Sys.batteryPct >= 0 && Sys.batteryPct < kFwMinBattery && !Sys.charging)
-        return fwFail("precheck", "Charge first");
     WiFi.setSleep(false);  // steady throughput while the flash is busy erasing/writing
     NodHttp m;
     if (!coreBegin(m, "/fw/manifest", false)) return fwFail("manifest", "Update needs home Wi-Fi");
