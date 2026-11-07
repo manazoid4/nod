@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased (Nod)
+## v1.5.0 — nod v1.5 (7 Nov 2026)
+
+- Home: blue talk dot inside the Toy-shop warm palette (theme.h); talk circle kept.
+- Update from Core no longer blocked by battery level (#20).
+
+## Earlier (Nod)
 
 - Nod repo now carries MAZ Pocket **v1.0.2** (tag nod-v1.0.2-b25, the build on the physical device), replacing the v0.8.0 import.
 - Added Charging mode and display profiles (standard 240x135, large 480x320 template). See docs/NOD-DEVICE-AND-CORE.md.
