@@ -119,3 +119,21 @@ test("live site (concept A) and concept B: labelled concept, CSP-safe, honest wa
     for (const [fg,bg] of pairs[k]) assert.ok(ratio(fg,bg) >= 4.5, k + " " + fg + " on " + bg);
   }
 });
+test("films: muted, labelled as concepts, lazy, and small enough for mobile", async () => {
+  const { statSync } = await import("node:fs");
+  const html = contents["/"];
+  const videos = html.match(/<video\b[^>]*>/g) || [];
+  assert.ok(videos.length >= 3);
+  for (const tag of videos) {
+    assert.match(tag, /\smuted\b/, "no video may play with sound by default");
+    assert.match(tag, /\splaysinline\b/);
+    assert.match(tag, /poster="\/media\/[^"]+\.jpg"/);
+    assert.match(tag, /preload="(none|metadata)"/);
+    assert.doesNotMatch(tag, /\sautoplay\b/, "autoplay is handled in script.js so reduced-motion is respected");
+  }
+  assert.match(html, /screen-concept">CONCEPT<\/span> film/);
+  assert.match(html, /Not printed or fit-tested yet/);
+  assert.match(html, /screen is simulated/);
+  assert.match(html, /isn't made in Britain/);
+  for (const src of html.match(/\/media\/[\w.-]+\.(mp4|webp|jpg)/g)) assert.ok(statSync(join(root, src)).size < 3_000_000, src + " is over 3 MB");
+});

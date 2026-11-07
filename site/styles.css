@@ -349,3 +349,27 @@ p { margin: 0 0 var(--space-4); max-width: 60ch; }
 .join-card p.founder-aside { font-size:1rem; font-weight:600; }
 @media (max-width:900px) { .journey-steps { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:560px) { .journey-steps { grid-template-columns:1fr; } .shell-preview { flex-direction:column; align-items:flex-start; } }
+
+/* ---- launch films + what makes a Nod ---- */
+.hero-film { margin: 0; justify-self: center; width: min(100%, 380px); }
+.film { display: block; width: 100%; aspect-ratio: 9 / 16; background: var(--paper-2); border: var(--stroke); border-radius: var(--radius-m); box-shadow: var(--shadow-l); object-fit: cover; }
+.hero-film figcaption, .film-card figcaption, .inside-figure figcaption { font-size: .9rem; line-height: 1.45; color: var(--ink-soft); margin-top: var(--space-4); }
+.hero-film .screen-concept { font: 800 .78rem/1 var(--font-mono); letter-spacing: .06em; padding: 4px 8px; border: 2px dashed var(--ink); border-radius: var(--radius-pill); color: var(--ink); }
+.inside { padding-block: var(--space-9); }
+.inside-layout { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-7); align-items: center; margin-top: var(--space-6); }
+.inside-figure { margin: 0; }
+.inside-figure img { display: block; width: 100%; height: auto; border-radius: var(--radius-l); border: var(--stroke); background: var(--paper); }
+.inside-parts { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-5); }
+.inside-parts li { border: var(--stroke); border-radius: var(--radius-m); padding: var(--space-5); background: var(--card); box-shadow: var(--shadow-s); }
+.inside-parts h3 { margin: var(--space-3) 0 var(--space-2); }
+.inside-parts p { margin: 0; }
+.tag-real { background: var(--mint); }
+.films { display: grid; grid-template-columns: repeat(2, minmax(0, 320px)); gap: var(--space-6); justify-content: center; margin-top: var(--space-8); }
+.film-card { margin: 0; }
+@media (max-width: 900px) {
+  .inside { padding-block: var(--space-8); }
+  .inside-layout { grid-template-columns: 1fr; gap: var(--space-6); }
+  .hero-film { width: min(100%, 340px); }
+}
+@media (max-width: 560px) { .films { grid-template-columns: 1fr; justify-items: center; } .film-card { width: min(100%, 320px); } }
+.tag-wip { background: var(--sun); }
