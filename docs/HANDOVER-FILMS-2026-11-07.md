@@ -20,7 +20,7 @@ Then:
 1. `bash media/films/render.sh`
 2. `node --test site/tests/site.test.mjs`
 3. Push, wait for CI, merge PR #34, and verify https://nod-kickstarter.vercel.app/ serves `/media/nod-everyday.mp4`.
-4. Update `unified-memory-database/projects/nod/STATUS.md`. A worktree already exists at `C:\Users\Maz\repos\umd-nod-films`, branch `nod/films-2026-11-07`, with no edits yet.
+4. Update `unified-memory-database/projects/nod/STATUS.md`. A worktree already exists at `%USERPROFILE%\repos\umd-nod-films`, branch `nod/films-2026-11-07`, with no edits yet.
 
 ## Optional
 
