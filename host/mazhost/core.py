@@ -48,6 +48,9 @@ SECRET_EXTENSIONS = {".key", ".pem", ".p12", ".pfx", ".kdbx"}
 SUMMARY_TTL_SECONDS = 12.0
 
 
+_PC_WORDS = re.compile(r"focus|priorit|work|next|project|repo|code|git|branch|commit|build|folder|file|pc\b|computer|laptop|model|ollama|llama|core", re.I)
+
+
 class CoreError(RuntimeError):
     pass
 
@@ -491,15 +494,17 @@ class MazCore:
 
         # No Git fan-out for generic chat. Only projects explicitly named by
         # the user get deep branch/status/recent-commit evidence.
-        evidence: dict[str, Any] = {
-            "pc": {
+        evidence: dict[str, Any] = {}
+        # ~300 prompt tokens that LFM3 re-reads on every turn (no prompt cache): only send the PC/project
+        # overview when the question is about the machine or code, not for generic chat.
+        if matched_paths or _PC_WORDS.search(lower):
+            evidence["pc"] = {
                 "hostname": socket.gethostname(),
                 "ollama_model": self._selected_local_model(),
-            },
-            "known_projects": [
+            }
+            evidence["known_projects"] = [
                 {"name": path.name, "kind": self._project_kind(path)} for path in paths[:20]
-            ],
-        }
+            ]
         if matched_paths:
             detailed = []
             for path in matched_paths[:2]:

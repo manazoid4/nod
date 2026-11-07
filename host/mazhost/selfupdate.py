@@ -24,7 +24,7 @@ from . import fw
 
 log = logging.getLogger("uvicorn.error.selfupdate")
 
-REPO = "manazoid4/maz-pocket"
+REPO = "manazoid4/nod"
 RELEASES_URL = f"https://api.github.com/repos/{REPO}/releases?per_page=10"
 BRANCH = "deploy/local"
 FW_ASSET = "nod-fw.bin"

@@ -213,6 +213,10 @@ def create_app(
                 inflight["n"] -= 1
 
     @api.on_event("startup")
+    def warm_tts() -> None:
+        threading.Thread(target=speech_out.warm, name="tts-warm", daemon=True).start()
+
+    @api.on_event("startup")
     def start_remote_detect() -> None:
         remote_info.start()
 

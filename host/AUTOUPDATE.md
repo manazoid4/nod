@@ -1,6 +1,6 @@
 # Core auto-update
 
-Core polls GitHub Releases (`manazoid4/maz-pocket`, tags `nod-v{VERSION}-b{build}`) and updates itself with no PC interaction.
+Core polls GitHub Releases (`manazoid4/nod`, tags `nod-v{VERSION}-b{build}`) and updates itself with no PC interaction.
 
 ## How it works
 Every `MAZ_UPDATE_INTERVAL_S` (default 300) Core picks the newest non-draft `nod-v*` release and reads `nod-manifest.json`.
@@ -27,3 +27,17 @@ curl -H "Authorization: Bearer $TOKEN" http://PC:8787/core/update
 curl -X POST -H "Authorization: Bearer $TOKEN" http://PC:8787/core/update/check
 ```
 `/health` also carries `git_sha` and `update`. Every step logs one `selfupdate:` line to `logs/core.log`.
+
+## Serving the right firmware (7 Nov 2026)
+Core serves whatever sits in `host/fw` (`/fw/manifest`). A hand copy once left an old build there, so stage only with the guard:
+```
+python scripts/stage_fw.py [out_dir]   # latest green main build; refuses if its sha is not origin/main HEAD, size >= 1,507,328 B, or not an ESP32 image
+```
+Copy the printed `latest.bin` + `manifest.json` into the PC's `host\fw` (bin first, manifest last), then check `GET /fw/manifest`.
+
+## Plan: run Core from a tracked main checkout (needs Maz: touches MAZPC tasks)
+Today the `nod-core` task runs `C:\Users\manaz\nod\host`, an untracked copy inside an old docs checkout, and the old "nod Core" task still exists.
+1. `git clone https://github.com/manazoid4/nod C:\Users\manaz\nod-main`; copy `host\.env`, `host\fw`, `host\.venv` (or recreate) from the old folder.
+2. Point `C:\Users\manaz\bin\nod-core.cmd` at `nod-main\host`; restart the `nod-core` task.
+3. Disable (do not delete) the old "nod Core" and "nod Core restart" tasks; confirm one listener on :8787 and `/health` 200.
+4. Rollback: point `nod-core.cmd` back at the old folder (kept untouched).

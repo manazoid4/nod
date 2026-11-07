@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 import shutil
 import tempfile
 import threading
@@ -46,6 +47,27 @@ def _norm(text: str) -> str:
     return " ".join(text.lower().split())
 
 
+def _use_cuda_if_present() -> None:
+    """GPU Kokoro: use CUDA only when onnxruntime-gpu AND the pip nvidia-*-cu12 DLLs (cuDNN 9) are present.
+
+    A missing cuDNN DLL kills the whole process natively, so check the files first and fall back to CPU.
+    Use the fp32 kokoro model with CUDA; the int8 model is slower on GPU than on CPU.
+    """
+    os.environ.setdefault("ONNX_PROVIDER", "CPUExecutionProvider")
+    try:
+        import nvidia, onnxruntime
+        libs = list(Path(list(nvidia.__path__)[0]).glob("*/bin"))
+        if ("CUDAExecutionProvider" not in onnxruntime.get_available_providers()
+                or not any(lib.glob("cudnn_graph64_9.dll") for lib in libs)):
+            return
+        for lib in libs:
+            os.add_dll_directory(str(lib))
+            os.environ["PATH"] = str(lib) + os.pathsep + os.environ["PATH"]
+        os.environ["ONNX_PROVIDER"] = "CUDAExecutionProvider"
+    except (ImportError, OSError, AttributeError):
+        pass  # CPU path still works
+
+
 class SpeechOut:
     def __init__(self, settings: Settings, voices: VoiceService | None = None) -> None:
         self.settings = settings
@@ -74,6 +96,15 @@ class SpeechOut:
                 old.unlink(missing_ok=True)
         except OSError:
             log.warning("tts cache write failed", exc_info=True)
+
+    def warm(self) -> None:
+        """Load the TTS model and run one short synth so the first spoken turn is not the slow one."""
+        if not self.settings.tts_enabled or self.settings.tts_provider != "kokoro":
+            return
+        try:
+            self.synthesize("Ready.").unlink(missing_ok=True)
+        except Exception:
+            log.warning("tts warmup failed", exc_info=True)
 
     def available(self) -> bool:
         return self.settings.tts_enabled
@@ -124,8 +155,10 @@ class SpeechOut:
         # ONNX session and voice resources are reused; inference is serialized.
         with self._kokoro_lock:
             if self._kokoro_model is None:
+                _use_cuda_if_present()
                 from kokoro_onnx import Kokoro
                 self._kokoro_model = Kokoro(str(model_path), str(voices_path))
+                log.info("kokoro providers=%s", self._kokoro_model.sess.get_providers())
             import soundfile as sf
             audio, rate = self._kokoro_model.create(
                 text, voice=self.settings.kokoro_voice,
