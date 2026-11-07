@@ -6,6 +6,7 @@ import type { AppSettings, EnvKey } from '../shared/types';
 import { createApiClient } from './api-client';
 import { discoverPort, discoverToken, locateCore, type FsLike } from './core-locator';
 import { applyEnvEdit, validateEnvEdit, viewEnv } from './env-file';
+import { isSafeTaskName, planInstall } from './install-plan';
 import { CoreSidecar } from './sidecar';
 
 const realFs: FsLike = {
@@ -193,6 +194,16 @@ function setupIpc() {
   ipcMain.handle('shell:open-external', (_e, url: string) => (/^https?:\/\//.test(url) ? shell.openExternal(url) : undefined));
 }
 
+/** Names of scheduled tasks on this PC (empty if the query fails). */
+function listScheduledTasks(): string[] {
+  const r = spawnSync('powershell.exe', ['-NoLogo', '-NoProfile', '-Command', '(Get-ScheduledTask -ErrorAction SilentlyContinue).TaskName'], {
+    timeout: 10_000,
+    windowsHide: true,
+    encoding: 'utf8',
+  });
+  return r.status === 0 ? r.stdout.split(/[\r\n]+/).filter(Boolean) : [];
+}
+
 /** Copy the bundled host into the install dir (never touching .env or .venv) and run the existing installer in a visible console. */
 async function installCore(): Promise<{ ok: boolean; message: string }> {
   const loc = locate();
@@ -206,6 +217,15 @@ async function installCore(): Promise<{ ok: boolean; message: string }> {
       });
       const ver = path.join(loc.bundledDir, 'VERSION');
       if (fs.existsSync(ver)) fs.copyFileSync(ver, path.join(loc.installDir, 'VERSION'));
+    }
+    // An existing Core scheduled task already keeps Core alive: restart it instead of adding a second (Startup-folder) autostart.
+    const plan = planInstall(listScheduledTasks());
+    if (plan.kind === 'reuse-task' && isSafeTaskName(plan.task)) {
+      sidecar.stop();
+      spawnSync('schtasks.exe', ['/End', '/TN', plan.task], { timeout: 10_000, windowsHide: true });
+      const run = spawnSync('schtasks.exe', ['/Run', '/TN', plan.task], { timeout: 10_000, windowsHide: true, encoding: 'utf8' });
+      if (run.status !== 0) return { ok: false, message: `Core files were updated, but the "${plan.task}" scheduled task would not start. Start it from Task Scheduler.` };
+      return { ok: true, message: `Core files updated and the existing "${plan.task}" task restarted. Choose Check again in a few seconds.` };
     }
     const ps1 = path.join(loc.installDir, 'install-core.ps1');
     spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-NoExit', '-File', ps1, '-NoBrowser'], {
