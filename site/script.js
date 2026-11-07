@@ -28,8 +28,8 @@ waitlist?.addEventListener("submit", async function (e) {
   e.preventDefault();
   const button = this.querySelector("button[type=submit]");
   const data = Object.fromEntries(new FormData(this));
-  if (!data.first_name?.trim() || !data.email?.trim() || !data.consent) {
-    return setWaitlistStatus("Please add your name, email and tick the box.", false);
+  if (!data.email?.trim() || !data.consent) {
+    return setWaitlistStatus("Please add your email and tick the box.", false);
   }
   button.disabled = true;
   setWaitlistStatus("Sending...", false);
