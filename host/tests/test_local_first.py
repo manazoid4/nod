@@ -183,3 +183,14 @@ def test_every_auto_turn_logs_stage_and_latency(caplog):
     with caplog.at_level("INFO", logger="uvicorn.error.brain"):
         m.chat(MSG, "auto")
     assert "active=local_fast ok=True" in caplog.text and "local_fast:ok:" in caplog.text
+
+
+def test_9router_cloud_is_the_failback_when_it_is_the_only_cloud_hop():
+    # Core PC shape: no Groq/OpenRouter keys, CLOUD pointed at the 9router URL,
+    # no separate MAZLATEST key. Local-first must still have somewhere to go.
+    gw = "http://localhost:20128/v1"
+    m = Models(settings(groq_key="", openrouter_api_key="", cloud_key="c", cloud_url=gw, mazlatest_url=gw))
+    assert m._effective_auto_chain() == ("local_fast", "cloud")
+    both = Models(settings(groq_key="", openrouter_api_key="", cloud_key="c", cloud_url=gw,
+                           mazlatest_url=gw, mazlatest_key="k"))
+    assert both._effective_auto_chain() == ("local_fast", "mazlatest")  # same endpoint never tried twice

@@ -498,17 +498,26 @@ class Models:
                 chain = tuple(stage for stage in chain if stage != "local_smart")
             if not self.settings.cloud_key:  # paid CLOUD only when a key is configured
                 chain = tuple(stage for stage in chain if stage != "cloud")
-        else:
-            chain = AUTO_CHAIN
+            chain = self._drop_unkeyed(chain)
+            # CLOUD sharing 9router's endpoint is only redundant when the
+            # MAZLATEST stage is actually in the chain; otherwise it is the one
+            # cloud hop left after local.
+            if "mazlatest" in chain and not self._cloud_is_independent_of_mazlatest():
+                chain = tuple(stage for stage in chain if stage != "cloud")
+            return chain
+        chain = self._drop_unkeyed(AUTO_CHAIN)
+        if self._cloud_is_independent_of_mazlatest():
+            return chain
+        return tuple(stage for stage in chain if stage != "cloud")
+
+    def _drop_unkeyed(self, chain: tuple[Route, ...]) -> tuple[Route, ...]:
         if not self.settings.groq_key:
             chain = tuple(stage for stage in chain if not stage.startswith("groq"))
         if not self.settings.mazlatest_key:  # keyless 9router stage only burns ~2 s before local
             chain = tuple(stage for stage in chain if stage != "mazlatest")
         if not self.settings.openrouter_api_key:
             chain = tuple(stage for stage in chain if stage != "openrouter")
-        if self._cloud_is_independent_of_mazlatest():
-            return chain
-        return tuple(stage for stage in chain if stage != "cloud")
+        return chain
 
     def _auto(self, messages: list[dict[str, str]], started: float) -> tuple[str, str]:
         chain = self._effective_auto_chain()
