@@ -319,3 +319,33 @@ p { margin: 0 0 var(--space-4); max-width: 60ch; }
   .proof-layout .proof-points > div { grid-template-columns: 1fr; }
   .road-large span { font-size: 4.5rem; }
 }
+
+/* Homepage — everyday Nod, short roadmap and early supporters (November 2026) */
+.hero-promise { font:800 clamp(1.35rem,3vw,2rem)/1.15 var(--font-display); color:var(--tomato-deep); margin-bottom:var(--space-3); }
+.journey { padding-block:var(--space-9); background:var(--paper); }
+.journey h2 { max-width:22ch; }
+.journey-intro { max-width:67ch; font-size:1.12rem; }
+.journey-steps { list-style:none; padding:0; margin:var(--space-7) 0 var(--space-6); display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--space-4); }
+.journey-steps li { min-width:0; background:var(--card); border:var(--stroke); border-radius:var(--radius-m); padding:var(--space-5); box-shadow:var(--shadow-s); }
+.journey-steps li:nth-child(2) { background:var(--sun); }
+.journey-steps li:nth-child(3) { background:var(--paper-2); }
+.journey-steps li:nth-child(4) { background:var(--mint); }
+.journey-number { display:block; font:800 2rem/1 var(--font-display); margin-bottom:var(--space-4); }
+.journey-state { display:inline-block; font:800 .72rem/1.2 var(--font-mono); text-transform:uppercase; border:2px solid var(--ink); border-radius:99px; padding:7px 9px; margin-bottom:var(--space-3); }
+.journey-steps h3 { font-size:1.35rem; line-height:1.15; }
+.journey-steps p { font-size:.95rem; margin:0; }
+.shell-preview { display:flex; align-items:center; justify-content:space-between; gap:var(--space-5); padding:var(--space-5); background:var(--paper-2); border:var(--stroke); border-radius:var(--radius-m); }
+.shell-preview-copy { display:grid; gap:6px; }
+.shell-preview-copy strong { font:700 1.3rem/1.15 var(--font-display); }
+.shell-preview-copy span { max-width:55ch; }
+.shell-palette { display:flex; gap:12px; flex-shrink:0; }
+.shell-dot { display:block; width:46px; height:46px; border-radius:15px; border:3px solid var(--ink); box-shadow:3px 3px 0 var(--ink); transform:rotate(-8deg); }
+.shell-dot:nth-child(2) { transform:rotate(7deg); }
+.shell-dot:nth-child(3) { transform:rotate(-3deg); }
+.shell-orange { background:var(--tomato); }
+.shell-cream { background:var(--paper); }
+.shell-mint { background:var(--mint); }
+.journey-detail { margin:var(--space-5) 0 0; }
+.join-card p.founder-aside { font-size:1rem; font-weight:600; }
+@media (max-width:900px) { .journey-steps { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:560px) { .journey-steps { grid-template-columns:1fr; } .shell-preview { flex-direction:column; align-items:flex-start; } }
