@@ -1,4 +1,4 @@
-# Nod case for the M5Stack Cardputer ADV
+# Piblo case for the M5Stack Cardputer ADV
 
 **Status: NOT test-printed.** The geometry renders cleanly in OpenSCAD 2021.01 (STLs are manifold-simple),
 but nobody has fitted a real Cardputer ADV in it yet. Several port positions are scaled estimates; see

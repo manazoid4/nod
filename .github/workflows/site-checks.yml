@@ -1,4 +1,4 @@
-name: NOD Site Quality
+name: Piblo Site Quality
 on:
   push:
     branches: [main]
