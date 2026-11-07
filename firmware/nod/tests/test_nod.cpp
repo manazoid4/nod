@@ -5,6 +5,9 @@
 #include "../include/home_layout.h"
 #include "../include/talk_home.h"
 #include "../include/nod_theme.h"
+#include "../include/safe_file.h"
+#include <map>
+#include <string>
 using namespace nod;
 static int fails = 0, checks = 0;
 #define CHECK(c) do { checks++; if (!(c)) { fails++; printf("FAIL line %d: %s\n", __LINE__, #c); } } while (0)
@@ -15,6 +18,18 @@ static void feedRun(ChargeMonitor& m, uint32_t& t, int startMv, float mvPerMin, 
         m.feed(t, startMv + (int)(mvPerMin * (s / 6.0f)), vbus);
     }
 }
+
+// In-memory FS for safe_file.h. failRename makes the Nth rename fail (restart between renames).
+struct FakeFs {
+    std::map<std::string, std::string> files;
+    int renames = 0, failRename = -1;
+    bool exists(const char* p) { return files.count(p) != 0; }
+    bool remove(const char* p) { return files.erase(p) != 0; }
+    bool rename(const char* a, const char* b) {
+        if (renames++ == failRename || !files.count(a)) return false;
+        files[b] = files[a]; files.erase(a); return true;
+    }
+};
 
 int main() {
     // battery curve
@@ -127,6 +142,26 @@ int main() {
     CHECK(theme::TALK == 0x2B5F);  // talk-circle blue #2E6BFF
     CHECK(theme::TALK_BLUE_HI == 0x649F && theme::TALK_BLUE_DIM == 0x1ABC);
     CHECK(theme::mix(0x000000, 0xFFFFFF, 128) == 0x7F7F7F);
+    // safe saves: a failed or interrupted save never loses the old file
+    { FakeFs fs; fs.files["/r.tsv"] = "old";
+      auto put = [&fs](const char* v) { return [&fs, v](const std::string& t) { fs.files[t] = v; return true; }; };
+      CHECK(replaceFile(fs, "/r.tsv", put("new")) && fs.files["/r.tsv"] == "new" && fs.files.size() == 1);
+      CHECK(!replaceFile(fs, "/r.tsv", [](const std::string&) { return false; }));
+      CHECK(fs.files["/r.tsv"] == "new" && fs.files.size() == 1);
+      fs.failRename = fs.renames + 1;  // old moved to .bak, then the swap fails: roll back
+      CHECK(!replaceFile(fs, "/r.tsv", put("newer")) && fs.exists("/r.tsv") && fs.files["/r.tsv"] == "new");
+      // restart between the renames: only .bak is left, the next read restores it
+      fs.files.clear(); fs.files["/r.tsv.bak"] = "new"; fs.failRename = -1;
+      recoverFile(fs, "/r.tsv");
+      CHECK(fs.exists("/r.tsv") && fs.files["/r.tsv"] == "new" && !fs.exists("/r.tsv.bak"));
+      CHECK(replaceFile(fs, "/fresh.tsv", put("a")) && fs.files["/fresh.tsv"] == "a"); }
+    // unique note names: the same pre-clock-sync timestamp after a restart gets -1, -2
+    { FakeFs fs; auto ex = [&fs](const std::string& p) { return fs.exists(p.c_str()); };
+      CHECK(uniquePath("/maz/notes/19700101-000012", "txt", ex) == "/maz/notes/19700101-000012.txt");
+      fs.files["/maz/notes/19700101-000012.txt"] = "a";
+      CHECK(uniquePath("/maz/notes/19700101-000012", "txt", ex) == "/maz/notes/19700101-000012-1.txt");
+      fs.files["/maz/notes/19700101-000012-1.txt"] = "b";
+      CHECK(uniquePath("/maz/notes/19700101-000012", "txt", ex) == "/maz/notes/19700101-000012-2.txt"); }
     printf("%d checks, %d failed\n", checks, fails);
     return fails ? 1 : 0;
 }

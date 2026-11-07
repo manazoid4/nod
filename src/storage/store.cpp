@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <limits>
 
+#include <safe_file.h>
+
 #include "../core/settings.h"
 
 namespace maz {
@@ -42,6 +44,7 @@ void ensureTree(fs::FS& f) {
     }
     for (const char* path : {"/maz/tasks/tasks.tsv", "/maz/records/records.tsv",
                              "/maz/snippets/snippets.tsv"}) {
+        nod::recoverFile(f, path);
         File data = f.open(path, FILE_APPEND);
         if (data) data.close();
     }
@@ -187,10 +190,12 @@ std::string newPath(const char* sub, const char* ext) {
     localtime_r(&t, &tmv);
     // Timestamped names sort chronologically in any file browser, which
     // matters when these files are later pulled onto a laptop for OpenFlowKit.
-    snprintf(buf, sizeof(buf), "/maz/%s/%04d%02d%02d-%02d%02d%02d.%s", sub,
+    snprintf(buf, sizeof(buf), "/maz/%s/%04d%02d%02d-%02d%02d%02d", sub,
              tmv.tm_year + 1900, tmv.tm_mon + 1, tmv.tm_mday, tmv.tm_hour,
-             tmv.tm_min, tmv.tm_sec, ext);
-    return buf;
+             tmv.tm_min, tmv.tm_sec);
+    return nod::uniquePath(buf, ext, [](const std::string& p) {
+        return active && active->exists(p.c_str());
+    });
 }
 
 std::vector<Entry> list(const char* sub, const char* ext, size_t limit) {
@@ -230,18 +235,21 @@ std::vector<Entry> list(const char* sub, const char* ext, size_t limit) {
 
 bool writeText(const std::string& path, const std::string& text) {
     if (!active) return false;
-    File f = active->open(path.c_str(), FILE_WRITE);
-    if (!f) {
-        ESP_LOGE("store", "open for write failed: %s", path.c_str());
-        return false;
-    }
-    const size_t n = f.print(text.c_str());
-    f.close();
-    return n == text.size();
+    return nod::replaceFile(*active, path, [&](const std::string& tmp) {
+        File f = active->open(tmp.c_str(), FILE_WRITE);
+        if (!f) {
+            ESP_LOGE("store", "open for write failed: %s", tmp.c_str());
+            return false;
+        }
+        const size_t n = f.print(text.c_str());
+        f.close();
+        return n == text.size();
+    });
 }
 
 bool appendText(const std::string& path, const std::string& text) {
     if (!active) return false;
+    nod::recoverFile(*active, path);
     File f = active->open(path.c_str(), FILE_APPEND);
     if (!f) return false;
     f.print(text.c_str());
@@ -251,7 +259,9 @@ bool appendText(const std::string& path, const std::string& text) {
 
 std::string readText(const std::string& path, size_t maxBytes) {
     std::string out;
-    if (!active || !active->exists(path.c_str())) return out;
+    if (!active) return out;
+    nod::recoverFile(*active, path);
+    if (!active->exists(path.c_str())) return out;
     File f = active->open(path.c_str(), FILE_READ);
     if (!f) return out;
     const size_t n = f.size() > maxBytes ? maxBytes : f.size();
@@ -262,7 +272,11 @@ std::string readText(const std::string& path, size_t maxBytes) {
 }
 
 bool remove(const std::string& path) {
-    return active && active->remove(path.c_str());
+    if (!active) return false;
+    // Drop crash leftovers too, or a later read would bring the note back.
+    nod::removeIfThere(*active, path + ".bak");
+    nod::removeIfThere(*active, path + ".tmp");
+    return active->remove(path.c_str());
 }
 bool rename(const std::string& from, const std::string& to) {
     return active && active->rename(from.c_str(), to.c_str());
