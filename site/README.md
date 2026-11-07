@@ -1,11 +1,11 @@
-# nod pre-launch site
+# piblo pre-launch site
 A static, accessible site under `site/`. Separate from firmware. Optimised for easy migration of copy and truthful, demonstrated footage to Kickstarter.
 
 ## Deploy
 Create a Vercel project connected to `manazoid4/nod` with **Root Directory** `site`, **Framework Preset** Other (no build step), Production Branch `main`. Git pushes to main deploy automatically. No dependencies or secret keys required.
 
 ## Routes
-- `/` — early NOD interest page with three core interface scenarios, two interactive **non-functional proposed-workflow** illustrations (saved-video knowledge / Reel-to-Print), transparent limitations, FAQ and source links.
+- `/` — early Piblo interest page with three core interface scenarios, two interactive **non-functional proposed-workflow** illustrations (saved-video knowledge / Reel-to-Print), transparent limitations, FAQ and source links.
 - `/readiness/` — noindex founder audit and launch gates. Public URL, not a private portal.
 - `/roadmap/` — public, interactive four-stage roadmap displaying 21 proposed delivery packages and proof criteria, with no private-security exploit details or fake shipped-feature statuses.
 
@@ -42,9 +42,9 @@ Lead with **"Less screen. More life."** and explain everyday value before techno
 - The homepage now includes a short four-step roadmap at `/#journey`. The existing detailed `/roadmap/` stays in place.
 - The early-supporter paragraph invites ideas but does not invent a paid founders programme, priority perks or an automated mailing-list signup.
 - Orange, cream and mint are **proposed** removable FDM-printed enclosure colours. No custom case has yet been built, printed, or physically fit-tested.
-- **Designed in the UK** refers to Nod/Maz Works product development. The Cardputer ADV electronics are manufactured elsewhere. Never say the physical electronics are UK-manufactured.
-- Current hardware is the M5Stack Cardputer ADV connected to a Windows PC, not a finished or standalone custom Nod device.
-- Creative inspiration can come from Kode Dot's clear photography and modularity, but Nod focuses on everyday usefulness rather than maker gadgetry. Do not copy product designs or claim NFC/RFID functionality.
+- **Designed in the UK** refers to Piblo/Maz Works product development. The Cardputer ADV electronics are manufactured elsewhere. Never say the physical electronics are UK-manufactured.
+- Current hardware is the M5Stack Cardputer ADV connected to a Windows PC, not a finished or standalone custom Piblo device.
+- Creative inspiration can come from Kode Dot's clear photography and modularity, but Piblo focuses on everyday usefulness rather than maker gadgetry. Do not copy product designs or claim NFC/RFID functionality.
 - Site previews are not real photographs or tested demos. The user plans to supply approved image/video assets later; do not publish mobile-app screenshots as product imagery.
 - Claims about capabilities must be grounded in `NOD_STATUS.md` and physical test evidence. No funding, launch date, shipping deadline, finished hardware or price is promised.
 - Homepage CTAs remain `mailto:` links; there is no automatic email subscription or waitlist backend yet.

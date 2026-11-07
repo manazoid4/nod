@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 Disallow: /readiness/
-Sitemap: https://nod-kickstarter.vercel.app/sitemap.xml
+Sitemap: https://piblo.co.uk/sitemap.xml
