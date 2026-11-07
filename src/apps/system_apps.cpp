@@ -273,7 +273,7 @@ public:
         g.setTextDatum(top_left);
         if (_text.empty()) {
             g.setTextColor(DIM, BG);
-            g.drawString("Type what nod should say", PAD, BODY_Y + 22);
+            g.drawString("Type what Piblo should say", PAD, BODY_Y + 22);
         } else {
             // Last two lines of 38 chars; the cursor sits on the newest one.
             const size_t n = _text.size();
@@ -776,7 +776,7 @@ const char* HELP_LINES[] = {
     "up/down move   ENTER open",
     "D twice     delete",
     "#ABOUT",
-    "nod v" NOD_FW_VERSION " on Cardputer ADV",
+    "Piblo v" NOD_FW_VERSION " on Cardputer ADV",
     "by Maz Works  mazworks.uk",
     "Bruce and Nemo stay available",
     "through M5Launcher.",

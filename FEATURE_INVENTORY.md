@@ -1,11 +1,11 @@
-# Nod feature inventory
+# Piblo feature inventory
 
-Source of truth for "nothing useful gets silently removed". Base: MAZ Pocket **v1.0.2** (tag `nod-v1.0.2-b25`, the build on the physical Cardputer), recovered into Nod in [PR #16](https://github.com/manazoid4/nod/pull/16).
+Source of truth for "nothing useful gets silently removed". Base: MAZ Pocket **v1.0.2** (tag `nod-v1.0.2-b25`, the build on the physical Cardputer), recovered into Piblo in [PR #16](https://github.com/manazoid4/nod/pull/16).
 
 **Columns:** Code = present in this repo · Build = firmware/Core CI green · Tests = unit tests exist and pass · Device = physically verified (link to [test ledger](docs/evidence/TEST-LEDGER-2026-10-11.md)).
 ✅ yes · 🟡 partial · ❌ failed · ⬜ not yet checked
 
-**Status:** Preserved (kept as-is) · Restored (was missing from Nod, brought back) · Improved · Renamed · Moved (now under More/Advanced) · Experimental (branch only, unproven) · Retired (with reason)
+**Status:** Preserved (kept as-is) · Restored (was missing from Piblo, brought back) · Improved · Renamed · Moved (now under More/Advanced) · Experimental (branch only, unproven) · Retired (with reason)
 
 ## Device (Cardputer firmware)
 
@@ -39,7 +39,7 @@ Source of truth for "nothing useful gets silently removed". Base: MAZ Pocket **v
 | Legacy Connections | `wifi` | Moved (Advanced, kept for old setups) | ✅ | ⬜ | — | ⬜ |
 | New Home: big talk circle | — | Planned (owner pick 7 Nov) | ⬜ | ⬜ | ⬜ | ⬜ |
 
-## Nod Core (Windows host, `host/`)
+## Piblo Core (Windows host, `host/`)
 
 | Feature | Where | Status | Code | Build | Tests | Device |
 |---|---|---|---|---|---|---|

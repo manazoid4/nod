@@ -23,7 +23,7 @@ _STARTER_PROJECTS = [
 ]
 _HEADER = """# Dump inbox
 
-Voice brain dumps saved by nod. Any agent can use this folder, no server needed.
+Voice brain dumps saved by Piblo. Any agent can use this folder, no server needed.
 
 1. Read the open list below (newest first). Open the linked file for the full transcript.
 2. Claim before working so nobody else picks it up:

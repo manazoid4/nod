@@ -1,4 +1,4 @@
-// Nod consumer Home: four big plain-language cards. Layout is computed from the
+// Piblo consumer Home: four big plain-language cards. Layout is computed from the
 // screen size so every display profile gets a usable, non-overlapping UI.
 #pragma once
 #include <stdint.h>

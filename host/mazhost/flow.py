@@ -1,4 +1,4 @@
-"""nod Flow: dictation cleanup, spoken-prefix routing, personal dictionary, paste."""
+"""Piblo Flow: dictation cleanup, spoken-prefix routing, personal dictionary, paste."""
 from __future__ import annotations
 
 import logging
@@ -10,7 +10,7 @@ import httpx
 
 log = logging.getLogger("mazhost.flow")
 
-DEFAULT_WORDS = ["nod", "Maz Works", "Cardputer", "Claude", "MAZos", "FlowLens", "Groq", "Fish"]
+DEFAULT_WORDS = ["Piblo", "nod", "Maz Works", "Cardputer", "Claude", "MAZos", "FlowLens", "Groq", "Fish"]
 GROQ_URL = "https://api.groq.com/openai/v1"
 CLEAN_MODEL = "openai/gpt-oss-20b"
 

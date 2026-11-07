@@ -1,4 +1,4 @@
-// Nod Home, talk-circle version: pure logic (no hardware) so it is unit tested
+// Piblo Home, talk-circle version: pure logic (no hardware) so it is unit tested
 // on a PC. The firmware draws; this decides WHAT to draw and WHERE.
 #pragma once
 #include <stdint.h>

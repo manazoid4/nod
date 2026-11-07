@@ -1,4 +1,4 @@
-name: nod CI
+name: Piblo CI
 
 on:
   pull_request:

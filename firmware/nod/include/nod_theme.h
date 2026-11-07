@@ -1,4 +1,4 @@
-// Nod device palette in ONE place. Change a value here and the device Home, the
+// Piblo device palette in ONE place. Change a value here and the device Home, the
 // preview and the tests all follow. Values are
 // concept A (Toy-shop warm, design/tokens-a.css on site/two-concepts); nothing else in the firmware should hard-code them.
 #pragma once

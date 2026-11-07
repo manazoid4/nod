@@ -495,7 +495,7 @@ bool fwUpdate() {
         if (we != ESP_OK) { esp_ota_abort(ota); http.end(); return fwFail("write", "flash write failed", we, done); }
         mbedtls_sha256_update(&sha, buf, n);
         done += n;
-        if (millis() - shown > 400) { shown = millis(); fwProgress("Updating nod...", static_cast<int>(done * 100 / size)); }
+        if (millis() - shown > 400) { shown = millis(); fwProgress("Updating Piblo...", static_cast<int>(done * 100 / size)); }
     }
     http.end();
     uint8_t out[32];
@@ -552,7 +552,7 @@ void fwMarkGood() {
     p.begin("nodfw", false);
     if (p.isKey("prev")) {
         // Launcher lists every slot that holds a valid image. Now this build has run
-        // stable, blank the header of the slot we updated FROM so Launcher shows one Nod.
+        // stable, blank the header of the slot we updated FROM so Launcher shows one Piblo.
         // Only that slot (saved by fwUpdate), never another app's partition.
         const esp_partition_t* run = esp_ota_get_running_partition();
         const esp_partition_t* old = esp_partition_find_first(

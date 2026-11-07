@@ -34,7 +34,7 @@ void wordmark(M5Canvas& g, int cx, int y, uint16_t colour) {
     g.setTextDatum(top_center);
     g.setTextColor(colour, BG);
     g.setFont(&fonts::Font4);
-    g.drawString("nod", cx, y);
+    g.drawString("Piblo", cx, y);
     g.setTextDatum(top_left);
 }
 

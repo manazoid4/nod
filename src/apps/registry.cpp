@@ -8,7 +8,7 @@ namespace apps {
 namespace {
 const Descriptor TABLE[] = {
     {"home",       "Home",        nullptr,   "home menu now quick actions field",                    0,     false, makeHome},
-    {"talk",       "Call nod",    "CALL",   "call maz voice assistant conversation playback cloud local context ask", KEY_T, true,  makeComm},
+    {"talk",       "Call Piblo",  "CALL",   "call maz voice assistant conversation playback cloud local context ask", KEY_T, true,  makeComm},
     {"capturehub", "Capture",     "CAPTURE","capture teach demo brain dump voice recorder screen workflow", KEY_B, true, makeCaptureHub},
     {"agents",     "Agents",      "AGENTS", "agents plan crew retro nudge status assurance sync",   KEY_N, true,  makeAgentsHub},
     {"desk",       "Control",     "CONTROL","control wifi pc device storage settings core laptop debug pairing phone", KEY_O, true, makeDesk},

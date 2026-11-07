@@ -37,7 +37,7 @@ COMMON_PHRASES = frozenset(p.lower() for p in (
     "Sorry, my brain is offline",
     "Okay.", "Okay", "Done.", "Done", "Got it.", "Got it", "Sure.", "Sure", "Noted.",
     "On it.", "One moment.", "Sorry, I didn't catch that.", "Sorry, I did not catch that.",
-    "I couldn't reach the PC.", "Something went wrong, try again.", "Hi, I'm nod.",
+    "I couldn't reach the PC.", "Something went wrong, try again.", "Hi, I'm Piblo.",
 ))
 CACHE_MAX_CHARS = 40
 CACHE_MAX_FILES = 300

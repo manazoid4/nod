@@ -1,4 +1,4 @@
-# nod firmware core (device-independent)
+# Piblo firmware core (device-independent)
 
 Dependency-free C++11 headers the Cardputer firmware includes. Tested on a
 normal computer, so logic is proven before it ever touches hardware.

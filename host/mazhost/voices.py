@@ -27,7 +27,7 @@ log = logging.getLogger("uvicorn.error")
 
 ADRIAN_ID = "bf322df2096a46f18c579d0baa36f41d"
 ID_RE = re.compile(r"^[0-9a-f]{32}$")
-PREVIEW_TEXT = "Hi, I'm nod."
+PREVIEW_TEXT = "Hi, I'm Piblo."
 SEARCH_TTL_S = 600
 
 # Verified against GET https://api.fish.audio/model (public, type=tts, en) on 2026-10-07.

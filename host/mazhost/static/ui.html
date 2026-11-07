@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>nod inbox</title>
+<title>Piblo inbox</title>
 <style>
 /* One accent. Change --accent to re-theme. --ctl is the border for every interactive control (>=3:1 on --bg and --panel); --line is for faint dividers only. */
 :root {
@@ -134,7 +134,7 @@ body.view-needs #app, body.view-device #app { display: none; }
 </head>
 <body>
 <header>
-  <h1><span>nod</span> inbox</h1>
+  <h1><span>Piblo</span> inbox</h1>
   <nav class="chips" id="tabs" role="group" aria-label="View" style="margin:0">
     <button class="chip" type="button" id="tab-inbox" aria-pressed="true">Inbox</button>
     <button class="chip" type="button" id="tab-needs" aria-pressed="false">Needs you <span id="needn"></span></button>
@@ -157,14 +157,14 @@ body.view-needs #app, body.view-device #app { display: none; }
 </section>
 
 <section id="device" aria-label="Device" hidden>
-  <p id="devline" role="status">Looking for nod...</p>
+  <p id="devline" role="status">Looking for Piblo...</p>
   <div id="devsub" class="hint"></div>
   <div class="row"><button id="devupd" class="btn primary" type="button" disabled>Update device</button><button id="devcheck" class="btn" type="button">Check for a new build</button></div>
-  <canvas id="screen" width="240" height="135" tabindex="0" aria-label="Live nod screen. Focus it and type to press keys on nod."></canvas>
+  <canvas id="screen" width="240" height="135" tabindex="0" aria-label="Live Piblo screen. Focus it and type to press keys on Piblo."></canvas>
   <div class="row" id="devkeys">
     <button class="btn" type="button" data-k="41">Esc</button><button class="btn" type="button" data-k="80">&larr;</button><button class="btn" type="button" data-k="82">&uarr;</button><button class="btn" type="button" data-k="81">&darr;</button><button class="btn" type="button" data-k="79">&rarr;</button><button class="btn" type="button" data-k="40">Enter</button>
   </div>
-  <p class="hint">Click the screen, then type: your keys go to nod. Agent approvals still need a press on nod itself.</p>
+  <p class="hint">Click the screen, then type: your keys go to Piblo. Agent approvals still need a press on Piblo itself.</p>
 </section>
 
 <main id="app">
@@ -527,7 +527,7 @@ $("discard").onclick = discardPending;
 $("dl").onclick = () => {
   if (!R.pending) return;
   const a = document.createElement("a"), u = URL.createObjectURL(R.pending);
-  a.href = u; a.download = "nod-" + new Date().toISOString().replace(/[:.]/g, "-") + (R.pending.type.includes("wav") ? ".wav" : ".webm");
+  a.href = u; a.download = "piblo-" + new Date().toISOString().replace(/[:.]/g, "-") + (R.pending.type.includes("wav") ? ".wav" : ".webm");
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
 };
 // Core's STT upload only accepts WAV (mono, 16-bit), but browsers record webm/opus. Decode and re-wrap as WAV
@@ -554,10 +554,10 @@ async function refreshDevice() {
   let r; try { r = await API.device(); needToken(false); } catch (e) { $("devline").textContent = fail(e); return; }
   D.info = r; const d = r.device || {}, hub = r.hub_fw;
   const line = $("devline"); line.replaceChildren();
-  if (r.online) line.append("nod ", el("b", "v" + d.version + " (" + short(d.fw_build) + ")"), " · battery " + (d.battery < 0 ? "?" : d.battery + "%") + " · " + (d.app || ""));
-  else line.append("nod is not answering. Is it on and on home Wi-Fi?");
+  if (r.online) line.append("Piblo ", el("b", "v" + d.version + " (" + short(d.fw_build) + ")"), " · battery " + (d.battery < 0 ? "?" : d.battery + "%") + " · " + (d.app || ""));
+  else line.append("Piblo is not answering. Is it on and on home Wi-Fi?");
   const sub = [];
-  if (hub) sub.push("Hub has " + hub.version + " (" + short(hub.sha) + ")" + (r.update_available ? ": newer than nod." : ": nod is up to date."));
+  if (hub) sub.push("Hub has " + hub.version + " (" + short(hub.sha) + ")" + (r.update_available ? ": newer than Piblo." : ": Piblo is up to date."));
   else sub.push("Hub has no firmware staged yet.");
   const hu = r.hub_update || {}; if (hu.latest_tag) sub.push("Latest release " + hu.latest_tag + (hu.last_check ? ", checked " + age(hu.last_check) : "") + ".");
   const rep = r.last_report; if (rep && rep.stage && rep.stage !== "ok" && rep.error) sub.push("Last device update stopped at " + rep.stage + ": " + rep.error + ".");
@@ -604,7 +604,7 @@ $("screen").addEventListener("click", () => $("screen").focus());
 for (const b of document.querySelectorAll("#devkeys [data-k]")) b.onclick = () => { sendKey(+b.dataset.k, 0, 0); $("screen").focus(); };
 $("devupd").onclick = async () => {
   const hub = D.info && D.info.hub_fw;
-  if (!confirm("Install " + (hub ? hub.version + " (" + short(hub.sha) + ")" : "the new build") + " on nod? It restarts when done. Keep it on Wi-Fi, 30%+ battery or charging.")) return;
+  if (!confirm("Install " + (hub ? hub.version + " (" + short(hub.sha) + ")" : "the new build") + " on Piblo? It restarts when done. Keep it on Wi-Fi, 30%+ battery or charging.")) return;
   $("devupd").disabled = true;
   try { const r = await API.devAction("update"); toast(r.text || "Update started"); } catch (e) { toast(fail(e)); }
   setTimeout(refreshDevice, 4000);
@@ -622,7 +622,7 @@ let spaceHeld = false;
 document.addEventListener("keydown", (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key === "Escape") { if (cancelRec() || (!typing() && closeDetail())) e.preventDefault(); return; }
-  if (D.on) return; // Device tab: keys only go to nod when the screen is focused (handled above)
+  if (D.on) return; // Device tab: keys only go to Piblo when the screen is focused (handled above)
   if (e.code === "Space" && !typing() && !N.on) {
     e.preventDefault(); // also stops a focused button from scrolling/clicking on keydown
     if (!e.repeat) { spaceHeld = true; R.holdStart = true; startRec(); }

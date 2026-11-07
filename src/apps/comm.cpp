@@ -61,13 +61,13 @@ const char* controlLabel(const std::string& action) {
 class CommApp : public App {
 public:
     const char* id() const override { return "talk"; }
-    const char* title() const override { return "CALL NOD"; }
+    const char* title() const override { return "CALL PIBLO"; }
 
     const char* hints() const override {
         if (_controlMode) return _confirm ? "Y send to PC  N cancel" : "</> choose  ENTER send  C back";
         if (voice::state() == voice::State::Listening)
             return field::contextArmed() ? "SPACE release to ask" : "SPACE release to send";
-        if (working()) return canCancel() ? "ESC cancel" : "ESC leave, nod keeps going";
+        if (working()) return canCancel() ? "ESC cancel" : "ESC leave, Piblo keeps going";
         if (voice::isPlaying()) return "SPACE stop  P replay";
         if (!_err.empty()) return "SPACE retry  W wifi";
         if (!_reply.empty()) return "SPACE talk  P replay  ENTER say";
@@ -129,7 +129,7 @@ public:
             if (voice::isPlaying()) voice::stopPlayback();
             consumeWorkerResult();
             if (working()) {
-                notify::post(Note::Info, "nod is thinking", canCancel() ? "ESC cancels" : "result will wait for you");
+                notify::post(Note::Info, "Piblo is thinking", canCancel() ? "ESC cancels" : "result will wait for you");
                 return true;
             }
             if (voice::state() != voice::State::Listening) beginTake();
@@ -189,7 +189,7 @@ public:
             Cfg.ttsEnabled = !Cfg.ttsEnabled;
             Cfg.save();
             if (!Cfg.ttsEnabled) voice::stopPlayback();
-            notify::post(Note::Info, "Voice replies", Cfg.ttsEnabled ? "ON - nod will speak" : "OFF - text only");
+            notify::post(Note::Info, "Voice replies", Cfg.ttsEnabled ? "ON - Piblo will speak" : "OFF - text only");
             invalidate();
             return true;
         }
@@ -213,8 +213,8 @@ public:
     }
 
     std::string contextSnapshot() const override {
-        if (!_reply.empty()) return "Call nod last reply: " + _reply.substr(0, 180);
-        return field::contextArmed() ? "Call nod preparing screen question" : "Call nod voice line";
+        if (!_reply.empty()) return "Call Piblo last reply: " + _reply.substr(0, 180);
+        return field::contextArmed() ? "Call Piblo preparing screen question" : "Call Piblo voice line";
     }
 
     void render(M5Canvas& g) override {
@@ -234,7 +234,7 @@ public:
             drawCommWrapped(g, early, REPLY_Y, 0);
         } else if (busy) {
             state(g, Phase::Thinking,
-                  host_worker::state() == host_worker::State::Queued ? "waiting for hub" : "nod is working on it");
+                  host_worker::state() == host_worker::State::Queued ? "waiting for hub" : "Piblo is working on it");
         } else if (voice::isPlaying()) {
             state(g, Phase::Speaking, "SPACE stops the voice");
             drawCommWrapped(g, _reply, REPLY_Y, _scroll);
@@ -447,7 +447,7 @@ private:
         store::Record answer;
         answer.kind = "inbox";
         answer.status = "open";
-        answer.title = result.context.empty() ? "CALL NOD" : "ASK SCREEN";
+        answer.title = result.context.empty() ? "CALL PIBLO" : "ASK SCREEN";
         answer.body = result.reply.text;
         answer.source = result.reply.provider;
         answer.ref = result.wavPath;
@@ -470,7 +470,7 @@ private:
             voice::holdOpen(false);
         }
         sfx::confirm();
-        notify::post(Note::Success, result.context.empty() ? "nod answered" : "Screen answer ready",
+        notify::post(Note::Success, result.context.empty() ? "Piblo answered" : "Screen answer ready",
                      result.reply.provider.empty() ? "hub" : result.reply.provider);
         invalidate();
     }
@@ -539,7 +539,7 @@ private:
         store::Record queued;
         queued.kind = "outbox";
         queued.status = "queued";
-        queued.title = context.empty() ? "Call nod voice turn" : "Ask Screen voice turn";
+        queued.title = context.empty() ? "Call Piblo voice turn" : "Ask Screen voice turn";
         queued.body = context.empty() ? reason : context;
         queued.source = context.empty() ? "talk" : "talk-context";
         queued.ref = path;
