@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import logging
 import time
-from typing import Literal
+from typing import Any, Literal
 
 import httpx
 
@@ -18,6 +19,14 @@ Route = Literal["local", "local_fast", "local_smart", "auto", "cloud", "mazlates
 # genuinely separate from the 9router endpoint MAZLATEST uses, it does not
 # add independence — see diagnostics()["independent_fallback_configured"].
 AUTO_CHAIN: tuple[Route, ...] = ("groq", "groq_alt", "groq_3", "mazlatest", "openrouter", "cloud", "local_fast", "local_smart")
+# MAZ_BRAIN_ORDER=local_first: the local model first, then free cloud (Groq,
+# OpenRouter free), then 9router, then paid CLOUD (only when configured and
+# independent), then the optional second local model.
+LOCAL_FIRST_CHAIN: tuple[Route, ...] = ("local_fast", "groq", "groq_alt", "groq_3", "openrouter", "mazlatest", "cloud", "local_smart")
+# A loopback health check either answers in milliseconds or the server is down.
+LOCAL_HEALTH_TIMEOUT_SECONDS = 0.25
+
+log = logging.getLogger("uvicorn.error.brain")
 
 # Per-stage ceiling while AUTO is hopping through the chain. A user who
 # explicitly picks one route (mazlatest/cloud/local_fast/...) keeps the
@@ -38,7 +47,7 @@ class Models:
         self.settings = settings
         self.client = client or httpx.Client(timeout=90, limits=httpx.Limits(keepalive_expiry=300))
         self._last_usage: dict[str, int | float | str] = {}
-        self._last_route: dict[str, str | int | bool | None] = {}
+        self._last_route: dict[str, Any] = {}
 
     @staticmethod
     def _auth_headers(key: str) -> dict[str, str]:
@@ -99,6 +108,20 @@ class Models:
             if response.is_success:
                 online = True
         return online, set(self._local_models()) if online else set()
+
+    def _local_stage_healthy(self, stage: str) -> bool:
+        # Fast skip for a dead local server: one loopback GET with a 250 ms
+        # ceiling instead of waiting out the generation timeout. llama-server
+        # answers 503 on /health while the model is still loading, which is
+        # also "not usable now".
+        if self.settings.local_engine == "llamacpp":
+            url = f"{self._llamacpp_url(self._local_stage_model(stage))}/health"
+        else:
+            url = f"{self.settings.ollama_url.rstrip('/')}/api/tags"
+        try:
+            return self.client.get(url, timeout=LOCAL_HEALTH_TIMEOUT_SECONDS).is_success
+        except Exception:
+            return False
 
     def status(self) -> dict:
         engine = self.settings.local_engine
@@ -433,6 +456,10 @@ class Models:
         raise ValueError(f"unknown route stage: {stage}")
 
     def _dispatch_one_bounded(self, stage: Route, messages: list[dict[str, str]]) -> tuple[str, str]:
+        if self.settings.brain_order == "local_first" and stage in ("local_fast", "local_smart"):
+            if not self._local_stage_healthy(stage):
+                raise RouteError(ErrorCode.LOCAL_UNAVAILABLE, stage, retryable=True)
+            return self._local_stage(stage, messages, timeout=self.settings.local_first_timeout_s)
         if stage == "openrouter":
             return self._openrouter(messages, timeout=AUTO_STAGE_TIMEOUT_SECONDS)
         if stage.startswith("groq"):
@@ -454,8 +481,25 @@ class Models:
         # NOT treated as independent; only a genuinely different endpoint is.
         return self.settings.cloud_url.rstrip("/") != self.settings.mazlatest_url.rstrip("/")
 
+    def _local_smart_is_distinct(self) -> bool:
+        # On llama.cpp a "backup" label pointing at the same server is the same
+        # model; trying it again after local_fast failed only doubles the wait.
+        backup = self._local_stage_model("local_smart")
+        if not backup or backup == self._local_stage_model("local_fast"):
+            return False
+        if self.settings.local_engine == "llamacpp":
+            return self._llamacpp_url(backup) != self.settings.llamacpp_url.rstrip("/")
+        return True
+
     def _effective_auto_chain(self) -> tuple[Route, ...]:
-        chain = AUTO_CHAIN
+        if self.settings.brain_order == "local_first":
+            chain = LOCAL_FIRST_CHAIN
+            if not self._local_smart_is_distinct():
+                chain = tuple(stage for stage in chain if stage != "local_smart")
+            if not self.settings.cloud_key:  # paid CLOUD only when a key is configured
+                chain = tuple(stage for stage in chain if stage != "cloud")
+        else:
+            chain = AUTO_CHAIN
         if not self.settings.groq_key:
             chain = tuple(stage for stage in chain if not stage.startswith("groq"))
         if not self.settings.mazlatest_key:  # keyless 9router stage only burns ~2 s before local
@@ -470,12 +514,17 @@ class Models:
         chain = self._effective_auto_chain()
         last_error: RouteError | None = None
         refused: tuple[str, tuple[str, str]] | None = None
+        attempts: list[dict[str, str | int]] = []
         for stage in chain:
+            stage_started = time.perf_counter()
             try:
                 result = self._dispatch_one_bounded(stage, messages)
             except Exception as error:
                 last_error = normalize_upstream_error(error, route=stage, local=stage.startswith("local"))
+                attempts.append({"stage": stage, "error": last_error.code.value,
+                                 "ms": round((time.perf_counter() - stage_started) * 1000)})
                 continue
+            attempts.append({"stage": stage, "ms": round((time.perf_counter() - stage_started) * 1000)})
             # Refusal guard: a "can't / no access" reply gets exactly one retry on the next stage.
             if refused is None and is_refusal(result[0]) and stage != chain[-1]:
                 refused = (stage, result)
@@ -488,14 +537,20 @@ class Models:
                 "fallback": fallback,
                 "fallback_reason": last_error.code.value if fallback and last_error else None,
                 "latency_ms": round((time.perf_counter() - started) * 1000),
+                "order": self.settings.brain_order,
+                "attempts": attempts,
             }
+            self._log_route()
             return result
         if refused is not None:  # retry stages all failed: a refusal still beats an outage
             self._last_route = {
                 "requested": "auto", "active": refused[0], "ok": True, "fallback": False,
                 "refusal_retry_failed": True,
                 "latency_ms": round((time.perf_counter() - started) * 1000),
+                "order": self.settings.brain_order,
+                "attempts": attempts,
             }
+            self._log_route()
             return refused[1]
         # Every stage in the chain failed. Explicit DEGRADED, never an
         # unhandled 500 — the caller gets the last real failure as context.
@@ -507,10 +562,23 @@ class Models:
             "fallback": True,
             "fallback_reason": degraded_reason,
             "latency_ms": round((time.perf_counter() - started) * 1000),
+            "order": self.settings.brain_order,
+            "attempts": attempts,
         }
+        self._log_route()
         raise RouteError(
             ErrorCode.ROUTE_UNAVAILABLE, "degraded", retryable=False, requested_route="auto"
         ) from last_error
+
+    def _log_route(self) -> None:
+        # One line per AUTO turn: which stage answered, total latency, and
+        # every stage tried on the way (with its error code and time).
+        route = self._last_route
+        trail = " ".join(
+            f"{a['stage']}:{a.get('error', 'ok')}:{a['ms']}ms" for a in route.get("attempts", [])
+        )
+        log.info("brain: order=%s active=%s ok=%s latency_ms=%s trail=[%s]",
+                 route.get("order"), route.get("active"), route.get("ok"), route.get("latency_ms"), trail)
 
     def chat(self, messages: list[dict[str, str]], route: Route) -> tuple[str, str]:
         started = time.perf_counter()
@@ -647,7 +715,8 @@ class Models:
             },
             "auto": {
                 "chain": list(self._effective_auto_chain()),
-                "configured_chain": list(AUTO_CHAIN),
+                "configured_chain": list(LOCAL_FIRST_CHAIN if self.settings.brain_order == "local_first" else AUTO_CHAIN),
+                "order": self.settings.brain_order,
                 "available": auto_available,
                 "degraded": not mazlatest_available and not independent_cloud,
                 "independent_fallback_configured": independent_cloud or local_fast_available,

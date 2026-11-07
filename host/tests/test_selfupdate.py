@@ -187,3 +187,23 @@ def test_fw_report_is_logged_and_readable(tmp_path, monkeypatch, caplog):
     last = api.get("/core/update", headers=AUTH).json()["fw_report"]
     assert last["stage"] == "begin" and last["code"] == 0x1502 and last["next_slot"] == "nodfw0" and last["at"]
     assert api.post("/fw/report", json={"error": "x"}, headers=AUTH).status_code == 422  # stage required
+
+
+def test_origin_without_deploy_branch_skips_quietly(tmp_path, monkeypatch):
+    # A plain clone of main (no deploy/local on origin) must not log
+    # "check failed: git fetch failed: couldn't find remote ref" every 5 min.
+    monkeypatch.setenv("MAZ_FW_DIR", str(tmp_path / "fw"))
+    origin = tmp_path / "origin.git"
+    work = tmp_path / "work"
+    git(tmp_path, "init", "--bare", "-b", "main", str(origin))
+    git(tmp_path, "clone", str(origin), str(work))
+    git(work, "checkout", "-B", "main")
+    (work / "a.txt").write_text("1")
+    git(work, "add", "."); git(work, "commit", "-m", "one"); git(work, "push", "origin", "main")
+    git(work, "commit", "--allow-empty", "-m", "two")
+    target = git(work, "rev-parse", "HEAD")
+    git(work, "reset", "--hard", "HEAD~1")
+    u = updater(work, http_for(release("nod-v1.2.3-b5", target)))
+    status = u.check()
+    assert status["last_error"] is None
+    assert status["last_result"].endswith("code_skipped_no_deploy_branch")

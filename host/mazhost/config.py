@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     # LOCAL_SMART: optional, larger/slower. Never the AUTO reliability default.
     ollama_backup_model: str = "lfm2.5-8b-a1b-gpu:latest"
     local_model_policy: Literal["auto", "primary", "backup"] = "auto"
+    # AUTO order. cloud_first (default): Groq/OpenRouter/9router, local last.
+    # local_first: the local model answers first, bounded by local_first_timeout_s
+    # and skipped in <300 ms when its server is down, then the free cloud chain.
+    brain_order: Literal["cloud_first", "local_first"] = "cloud_first"
+    local_first_timeout_s: float = Field(default=6.0, ge=1.0, le=60.0)
     ai_profile: Literal["smart", "save", "fast"] = "smart"
 
     # Free fast brain for conversation: Groq first (key from env/.env). Each model has its
