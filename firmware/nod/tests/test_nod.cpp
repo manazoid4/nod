@@ -124,6 +124,7 @@ int main() {
     // theme: brand constants convert correctly
     CHECK(theme::rgb565(0xFFFFFF) == 0xFFFF && theme::rgb565(0x000000) == 0);
     CHECK(theme::rgb565(0xFF5A36) == 0xFAC6 && theme::TALK != theme::LIVE);
+    CHECK(theme::TALK == 0xEAC6);  // concept A tomato #EE5A36
     CHECK(theme::mix(0x000000, 0xFFFFFF, 128) == 0x7F7F7F);
     printf("%d checks, %d failed\n", checks, fails);
     return fails ? 1 : 0;

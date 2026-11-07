@@ -3,7 +3,7 @@
 <div class="g" id="g"></div>
 <script>
 // MOCKUP drawn from the same numbers the unit tests pin (firmware/nod/tests/test_nod.cpp). Not a device screenshot.
-const C={bg:'#0B0D10',text:'#F3EBDD',talk:'#FF5A36',live:'#3DDC97',think:'#FFB020',btn:'#1B2026',dim:'#9AA4AE',panel:'#14181D'};
+const C={bg:'#2A1A12',text:'#FFF4E0',talk:'#EE5A36',live:'#8FDCB8',think:'#FFC93C',btn:'#3A261B',dim:'#C9B59E',panel:'#1F130D'};
 const S=2,L={cx:56,cy:68,r:44,btn:[[112,19],[112,49],[112,79]],bw:122,bh:26,sy:109};
 function tri(ms,p,a){const q=ms%p,h=p/2;return (q<h?q:p-q)*a/h}
 function frame(state,t,focus,line,wifi){
@@ -14,7 +14,7 @@ function frame(state,t,focus,line,wifi){
   x.fillStyle=C.live;x.beginPath();x.arc(172,7,3,0,7);x.fill();
   x.fillStyle=C.dim;x.fillText('<ESC',4,130);x.fillText(wifi?'ENTER pick  SPACE save  W wifi':'ENTER pick  hold SPACE save',40,130);
   const live=state=='listening'||state=='speaking';
-  const fill=state=='thinking'?'#7a2d1b':live?C.live:C.talk;
+  const fill=state=='thinking'?'#7a3322':live?C.live:C.talk;
   let lvl=state=='listening'?0.55+0.35*Math.sin(t*5):state=='speaking'?(350+tri(t*1000,480,400))/1000:0;
   x.fillStyle=fill;x.beginPath();x.arc(L.cx,L.cy,L.r,0,7);x.fill();
   x.lineWidth=2;
