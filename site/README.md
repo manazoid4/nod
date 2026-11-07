@@ -34,3 +34,17 @@ The homepage contains a **concept-only** video learning and Reel-to-Print story.
 - Concept screen now says CONCEPT, not falsely READY.
 - Primary updates CTA explicitly opens email rather than claiming a signup service.
 - Canonical URL metadata, colour contrast and 21-item roadmap proof labels strengthened.
+
+## November 2026 — public-facing product language
+
+Lead with **"Less screen. More life."** and explain everyday value before technology. The homepage talks about quick questions, saved thoughts and keeping control of important PC actions; it avoids repeatedly using the term "AI". Developer-facing technical information remains in the detailed 21-work-package roadmap and GitHub docs.
+
+- The homepage now includes a short four-step roadmap at `/#journey`. The existing detailed `/roadmap/` stays in place.
+- The early-supporter paragraph invites ideas but does not invent a paid founders programme, priority perks or an automated mailing-list signup.
+- Orange, cream and mint are **proposed** removable FDM-printed enclosure colours. No custom case has yet been built, printed, or physically fit-tested.
+- **Designed in the UK** refers to Nod/Maz Works product development. The Cardputer ADV electronics are manufactured elsewhere. Never say the physical electronics are UK-manufactured.
+- Current hardware is the M5Stack Cardputer ADV connected to a Windows PC, not a finished or standalone custom Nod device.
+- Creative inspiration can come from Kode Dot's clear photography and modularity, but Nod focuses on everyday usefulness rather than maker gadgetry. Do not copy product designs or claim NFC/RFID functionality.
+- Site previews are not real photographs or tested demos. The user plans to supply approved image/video assets later; do not publish mobile-app screenshots as product imagery.
+- Claims about capabilities must be grounded in `NOD_STATUS.md` and physical test evidence. No funding, launch date, shipping deadline, finished hardware or price is promised.
+- Homepage CTAs remain `mailto:` links; there is no automatic email subscription or waitlist backend yet.
