@@ -1,11 +1,19 @@
-
 # Changelog
 
 ## Unreleased (Nod)
 
-- Nod repo now carries MAZ Pocket **v1.0.2** (tag nod-v1.0.2-b25, the build on the physical device), replacing the v0.8.0 import. Added Charging mode and display profiles (standard 240x135, large 480x320 template). See docs/NOD-DEVICE-AND-CORE.md.
+- Nod repo now carries MAZ Pocket **v1.0.2** (tag nod-v1.0.2-b25, the build on the physical device), replacing the v0.8.0 import.
+- Added Charging mode and display profiles (standard 240x135, large 480x320 template). See docs/NOD-DEVICE-AND-CORE.md.
 
-## v1.0.0 â€” WORK CONSISTENCY
+## v1.0.2 — nod (build on the device, 11 Oct 2026)
+
+- nod Home, One Lamp look, hold SPACE = brain dump, T = talk; Needs-you queue; Library search.
+- Today screen, Quiet mode (approval chime never muted), Fn+H Pause Asks (fail closed).
+- Security: blanket approvals disabled, expired requests rejected, agent isolation fails closed.
+- Voice: short spoken replies, optional local Kokoro, 16 kHz mono WAV.
+- Device tab in Core: live screen, remote keys, one-click update.
+
+## v1.0.0 — WORK CONSISTENCY
 
 - Home remains exactly six surfaces and now reads CALL / CAPTURE / AGENTS / CONTROL / MEMORY / WORK; the stable internal `flow` ID is unchanged.
 - WORK opens directly to a Cardputer glance for JOB HUNT, MAZ WORKS and pinned custom tracks, with current/target values, a fixed seven-day strip, and last-known data labelled STALE after three missed Host polls.
@@ -13,13 +21,13 @@
 - The authenticated phone control centre is now `WORK | AUTHORITY`, with WORK as the default tab, one-tap Application logging, raw event breakdowns, Undo Last, seven-day history and Manage Tracks.
 - Added a versioned WAL/foreign-key SQLite store with idempotent template seeding, stable event IDs, retry-safe writes, session-scoped reversals, archive-safe history, daily/weekly local-time aggregation and crash/interruption coverage.
 - Added bounded Cardputer JSON and streaming firmware parsing: at most four pinned tracks, exactly seven history entries, 4096-byte ceiling, and no fake zero replacement on malformed/offline data.
-- Added custom track creation/edit/reorder/pin/pause/archive, stable event-type renames, bounded input validation, mobile 360â€“430 px coverage and server-source-of-truth refresh.
+- Added custom track creation/edit/reorder/pin/pause/archive, stable event-type renames, bounded input validation, mobile 360–430 px coverage and server-source-of-truth refresh.
 - Added v0.8-to-v1 upgrade verification proving `.env`, authority/pairing state and WORK data survive the shipped installer/update path.
 - Release packaging excludes machine-local runtime logs in addition to tests, caches, bytecode and `.env` state.
 - Added an explicit fourth MAZLATEST route from Cardputer to MAZ Core, using loopback-only 9router model `MazLatest` with no silent fallback or device-side credentials.
 - Preserved CALL, CAPTURE, AGENTS, CONTROL/AUTHORITY, MEMORY, pairing, Beam, screen mirror, firmware staging, M5Launcher hand-back, AI routing and installer behavior.
 
-## v0.8.0 â€” CONTROL
+## v0.8.0 — CONTROL
 
 - CALL MAZ: renamed COMM experience, spoken reply playback on fresh installs, P replay, V voice toggle, A cloud/local/auto route.
 - CAPTURE + Teach-by-Demonstration: TEACH DEMO / BRAIN DUMP / VOICE RECORDER; host-side display recording with microphone narration and MARK events, extracted to Results Inbox.
@@ -28,23 +36,23 @@
 - Phone-approved full PC authority: external authority broker with READ ONLY / PROJECT FULL / PC FULL / ADMIN grants, approved/denied from the authenticated phone `/control/` page; signed grants gate PowerShell/cmd execution and coding-agent subprocess launches.
 - Pairing + Token ID: safe 12-character fingerprint, hidden pairing token with on-device reveal, phone-control URL.
 - `mazpocket.local` rebuilt as a phone-first control centre.
-- Fixed the M5Launcher self-deletion bug â€” MAZ no longer invalidates its own running firmware when returning to Launcher; boot partition is switched via `esp_ota_set_boot_partition()` instead, with a CI regression guard against destructive running-app flash writes.
+- Fixed the M5Launcher self-deletion bug — MAZ no longer invalidates its own running firmware when returning to Launcher; boot partition is switched via `esp_ota_set_boot_partition()` instead, with a CI regression guard against destructive running-app flash writes.
 - Debug Capsules: bounded, redacted project/Git/Core/device/system/model/job/authority snapshot for troubleshooting.
 - `START-HERE.cmd` installer changes are now explicitly opt-in at every destructive step (MAZ Core install/update, Cardputer SD copy, browser launch); never formats media or writes Cardputer flash directly.
 
-## v0.7.1 â€” installer hotfix, speed pass and packaging cleanup
+## v0.7.1 — installer hotfix, speed pass and packaging cleanup
 
 - Fixed the Windows install path. `START-HERE.cmd` runs `powershell.exe`, and Windows PowerShell 5.1 decodes a BOM-less script with the ANSI code page. Two em dashes in `setup-all.ps1` therefore arrived as cp1252 text ending in `0x94`, a smart closing quote that PowerShell accepts as a string delimiter, which unbalanced the quoting and produced misleading `}` / `elseif` parse errors at lines 85-92.
 - Executed installer scripts are now plain ASCII and are packaged with a UTF-8 BOM, so neither PowerShell edition can mis-decode them.
 - `START-HERE.cmd` prefers `pwsh.exe` when present and still falls back to Windows PowerShell 5.1.
 - CI now builds the release package, extracts the generated `MAZ-Pocket-v<version>-Install.zip` and validates the scripts users actually download by parsing and dry-running them under real `powershell.exe`, on both the 5.1 fallback and the preferred shell.
 - Speed pass: Pocket boot animation cut from 900 ms to 250 ms, the stale v0.5 system prompt replaced with a compact v0.7 one, retained history halved from 24 to 12 turns, SMART/FAST Ollama keep-alive raised to 15/60 minutes, and handheld local generation capped at 160 tokens.
-- Packaging cleanup: `MAZ-Core-vX.Y.zip` now ships runtime files only â€” `tests/`, `.pytest_cache`, `__pycache__` and `*.pyc` are excluded, and that is a permanent release rule.
+- Packaging cleanup: `MAZ-Core-vX.Y.zip` now ships runtime files only — `tests/`, `.pytest_cache`, `__pycache__` and `*.pyc` are excluded, and that is a permanent release rule.
 - No firmware behaviour, product surface or MAZ Core capability changed.
 
-## v0.7 â€” FIELD (release candidate)
+## v0.7 — FIELD (release candidate)
 
-- Home NOW priority strip and programmable quick actions 1â€“4.
+- Home NOW priority strip and programmable quick actions 1–4.
 - Global Fn+Space Context Ask with bounded current-screen context.
 - Durable auto-retrying Outbox for voice, Context Ask and Beam.
 - Beam short text/URL transfer with durable Core queue and Windows clipboard handoff.

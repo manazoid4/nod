@@ -1,3 +1,5 @@
+v1.0.2 (nod build on the device). See CHANGELOG.md for details.
+
 # MAZ Pocket v1.0.0 — WORK CONSISTENCY
 
 v1.0.0 adds a durable WORK consistency layer to the proven CONTROL foundation without turning the Cardputer into an app drawer.
