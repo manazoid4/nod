@@ -1,0 +1,20 @@
+/* Shared brand for Nod marketing assets. Edit the HTML files, then run render.mjs. Tokens mirror site/tokens.css. */
+@font-face{font-family:"Bricolage Grotesque";src:url(../../site/fonts/bricolage-grotesque-bold.ttf);font-weight:700 800}
+@font-face{font-family:"Manrope";src:url(../../site/fonts/manrope-variable.ttf);font-weight:200 800}
+:root{--paper:#fff4e0;--paper-2:#fbe3bd;--ink:#2a1a12;--ink-soft:#5b4336;--tomato:#ee5a36;--mint:#8fdcb8;--mint-deep:#0d6e4f;--sun:#ffc93c;--blue:#3b7cf0}
+*{box-sizing:border-box;margin:0}
+body{width:var(--w);height:var(--h);overflow:hidden;background:var(--paper);color:var(--ink);font-family:Manrope,system-ui,sans-serif;position:relative}
+h1,h2,h3,.logo{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;letter-spacing:-.03em;line-height:.95}
+.logo{display:inline-flex;align-items:center;gap:.28em;font-size:56px}
+.logo i{width:.5em;height:.5em;border-radius:50%;background:var(--blue);border:.08em solid var(--ink);display:block}
+.pill{display:inline-block;font-weight:800;font-size:26px;padding:.35em .9em;border:4px solid var(--ink);border-radius:999px;box-shadow:0 6px 0 var(--ink);background:var(--sun)}
+.pill.t{background:var(--tomato)}
+.tag{display:inline-block;font:700 22px ui-monospace,Consolas,monospace;padding:.3em .7em;border:3px dashed var(--ink);border-radius:999px;background:var(--paper);text-transform:uppercase;letter-spacing:.04em}
+.fine{font-size:20px;color:var(--ink-soft);font-weight:600}
+.ask{color:var(--tomato)}.listen{color:var(--mint-deep)}.nod{text-decoration:underline;text-decoration-color:var(--sun);text-decoration-thickness:.12em;text-underline-offset:.08em}
+.dev{position:absolute}
+/* concept silhouettes: simple, clearly labelled, not renders */
+.cn{position:absolute;border:5px solid var(--ink);border-radius:30px;background:var(--mint);box-shadow:0 10px 0 var(--ink)}
+.cn .scr{position:absolute;background:var(--ink);border-radius:10px}
+.cn .scr::after{content:"";position:absolute;left:50%;top:50%;width:34%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:var(--tomato);box-shadow:0 0 0 6px var(--mint)}
+.cn .keys{position:absolute;background:repeating-linear-gradient(90deg,var(--ink) 0 12px,transparent 12px 20px);opacity:.85;border-radius:8px}

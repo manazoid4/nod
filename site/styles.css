@@ -402,3 +402,18 @@ p { margin: 0 0 var(--space-4); max-width: 60ch; }
 .waitlist-status { margin-top: var(--space-4); }
 .waitlist-status.ok { color: var(--mint-deep); font-weight: 700; }
 @media (max-width: 520px) { .waitlist-form { max-width: 100%; } .waitlist-fields { gap: var(--space-3); } }
+
+/* Visual sprint polish: tighter vertical rhythm so the page reads as one short story */
+.does, .how, .ideas, .status, .open { padding-block: var(--space-8); }
+.concepts, .inside, .journey { padding-block: var(--space-8); }
+h2 { max-width: 20ch; text-wrap: balance; }
+.lede, .hero p { text-wrap: pretty; }
+.btn { transition: transform .15s ease, box-shadow .15s ease; }
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(2px); box-shadow: none; }
+@media (max-width: 640px) {
+  .does, .how, .ideas, .status, .open, .concepts, .inside, .journey { padding-block: var(--space-7); }
+  h2 { margin-bottom: var(--space-5); }
+  .hero { padding-block: var(--space-6) var(--space-7); }
+}
+@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
