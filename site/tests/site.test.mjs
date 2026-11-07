@@ -62,15 +62,15 @@ test("21 unique published roadmap packages, four stages, no misleading shipped c
   assert.doesNotMatch(html, /NOT CLAIMED AS SHIPPED/);
 });
 
-test("homepage refuses fake device statuses and nonfunctional signup claims", () => {
+test("homepage refuses fake device statuses and is honest about signup", () => {
   const html = contents["/"];
   assert.match(html, /screen-concept">CONCEPT/);
-  assert.doesNotMatch(html, /screen-concept">.*READY/);
-  assert.match(html, /there is no automated signup yet/);
-  assert.match(html, /mailto:info@mazworks.uk\?subject=NOD%20launch%20updates/);
-  assert.match(html, /not yet implemented/i);
-  assert.match(html, /human|person|You check the printer/i);
-  assert.match(html, /href="\/roadmap\/"/);
+    assert.doesNotMatch(html, /screen-concept">.*READY/);
+    assert.match(html, /automated signup|pre-addressed email/);
+    assert.match(html, /mailto:info@mazworks.uk/);
+    assert.match(html, /not yet implemented/i);
+    assert.match(html, /human|person|You check the printer/i);
+    assert.match(html, /href="\/roadmap\/"/);
 });
 
 test("all authored JS passes parse validation and no inline event handlers ship", () => {
@@ -111,9 +111,9 @@ test("live site (concept A) and concept B: labelled concept, CSP-safe, honest wa
   for (const [dir, k] of [["", "a"], ["concepts/b", "b"]]) {
     const html = readFileSync(join(root, dir, "index.html"), "utf8");
     assert.match(html, /CONCEPT/);
-    assert.match(html, /mailto:info@mazworks.uk\?subject=NOD%20launch%20updates/);
-    assert.match(html, /not an automatic mailing list yet/);
-    assert.doesNotMatch(html, /\son[a-z]+\s*=|\sstyle=|<style|<script(?![^>]*\ssrc=)/i);
+        assert.match(html, /mailto:info@mazworks.uk/);
+        assert.match(html, /We are working on an automated signup|not an automatic mailing list yet|pre-addressed email/);
+    assert.doesNotMatch(html, /\son[a-z]+\s*=|style=|<style|<script(?![^>]*(?:\ssrc=|\s+type="application\/ld\+json"))/i);
     assert.equal(readFileSync(join(root, dir, "tokens.css"), "utf8"), readFileSync(join(root, "..", "design", "tokens-" + k + ".css"), "utf8"));
     assert.match(readFileSync(join(root, dir, "styles.css"), "utf8"), /prefers-reduced-motion/);
     for (const [fg,bg] of pairs[k]) assert.ok(ratio(fg,bg) >= 4.5, k + " " + fg + " on " + bg);
