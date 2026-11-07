@@ -114,7 +114,7 @@ jobs:
       - name: Validate M5Launcher app image
         shell: pwsh
         run: |
-          python -c "from pathlib import Path; b=Path('dist/maz-pocket-app.bin').read_bytes(); assert len(b)>=65536 and b[0]==0xE9, 'invalid ESP32 app image'; assert len(b)<=0x180000, f'{len(b)} exceeds known Launcher slot'; print('ESP image OK',len(b),'bytes')"
+          python -c "from pathlib import Path; b=Path('dist/maz-pocket-app.bin').read_bytes(); assert len(b)>=65536 and b[0]==0xE9, 'invalid ESP32 app image'; assert len(b)<0x170000, f'{len(b)} does not fit the 1,507,328 B nodfw slot'; print('ESP image OK',len(b),'bytes')"
 
       - name: Prepare full client + Cardputer packages
         shell: pwsh

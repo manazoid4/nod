@@ -27,37 +27,39 @@ constexpr int TABLE_CELL_W = SCREEN_W / TABLE_COLS;
 constexpr int TABLE_CELL_H = 30;
 constexpr int TABLE_PAGE   = TABLE_COLS * TABLE_ROWS;
 
-// RGB565 — One Lamp: white/grey on black. LIVE (orange) is lit ONLY while the
-// mic is live. ACCENT is the bright-white emphasis; selection is an inverse
-// block. OK (green) means SAVED, ERR (red) means error and nothing else.
-constexpr uint16_t BG      = 0x0862;  // #0B0D10
-constexpr uint16_t PANEL   = 0x10A3;  // #14181D
-constexpr uint16_t LINE    = 0x2124;  // #202428
-constexpr uint16_t TEXT    = 0xE73D;  // #E6E9EC
-constexpr uint16_t DIM     = 0x9D35;  // #9AA4AE
-constexpr uint16_t HINT    = 0xC659;  // #C3CAD1
-constexpr uint16_t LIVE    = 0xFBC0;  // #FF7A18 mic is live
-constexpr uint16_t ACCENT  = 0xFFFF;  // #FFFFFF
-constexpr uint16_t ACCENT2 = TEXT;
-constexpr uint16_t OK      = 0x3E90;  // #3DDC84
-constexpr uint16_t WARN    = TEXT;
-constexpr uint16_t ERR     = 0xFA4A;  // #FF4D50
+// RGB565 — Concept A "Toy-shop warm" (single source of truth: design/tokens-a.css).
+// Warm paper+ink base with the three brand accents: tomato = talk/live, mint =
+// saved/ok, sun = selection/emphasis. PANEL, DIM and ERR are lighten/darken
+// derivations of the token colours so the 240x135 screen keeps a readable ramp.
+constexpr uint16_t BG      = 0x28C2;  // ink #2A1A12 (screen-bg)
+constexpr uint16_t PANEL   = 0x3943;  // derived #3B281A (between ink and ink-soft)
+constexpr uint16_t LINE    = 0x5A06;  // ink-soft #5B4336
+constexpr uint16_t TEXT    = 0xFFBC;  // cream #FFF4E0 (screen-ink)
+constexpr uint16_t DIM     = 0xBCCD;  // derived muted tan #B89A6E
+constexpr uint16_t HINT    = 0xFF17;  // paper-2 #FBE3BD
+constexpr uint16_t LIVE    = 0xEAC6;  // tomato #EE5A36 (screen-talk) — mic is live
+constexpr uint16_t ACCENT  = 0xFE47;  // sun #FFC93C
+constexpr uint16_t ACCENT2 = TEXT;    // cream
+constexpr uint16_t OK      = 0x8EF7;  // mint #8FDCB8 (screen-ring) — saved
+constexpr uint16_t WARN    = 0xFE47;  // sun #FFC93C
+constexpr uint16_t ERR     = 0xE245;  // derived bright warm red #E04A2E (tomato-deep lightened)
+// The talk dot stays blue inside the warm palette (Maz, 7 Nov).
 constexpr uint16_t TALK_BLUE     = 0x2B5F;  // #2E6BFF
 constexpr uint16_t TALK_BLUE_HI  = 0x649F;  // #6090FF
 constexpr uint16_t TALK_BLUE_DIM = 0x1ABC;  // #1E56E0
 
 namespace rgb {
-constexpr uint32_t BG     = 0x0B0D10;
-constexpr uint32_t PANEL  = 0x14181D;
-constexpr uint32_t LINE   = 0x202428;
-constexpr uint32_t TEXT   = 0xE6E9EC;
-constexpr uint32_t DIM    = 0x9AA4AE;
-constexpr uint32_t LIVE   = 0xFF7A18;
-constexpr uint32_t ACCENT = 0xFFFFFF;
-constexpr uint32_t ACCENT2 = 0xE6E9EC;
-constexpr uint32_t OK     = 0x3DDC84;
-constexpr uint32_t WARN   = 0xE6E9EC;
-constexpr uint32_t ERR    = 0xFF4D50;
+constexpr uint32_t BG     = 0x2A1A12;
+constexpr uint32_t PANEL  = 0x3B281A;
+constexpr uint32_t LINE   = 0x5B4336;
+constexpr uint32_t TEXT   = 0xFFF4E0;
+constexpr uint32_t DIM    = 0xB89A6E;
+constexpr uint32_t LIVE   = 0xEE5A36;
+constexpr uint32_t ACCENT = 0xFFC93C;
+constexpr uint32_t ACCENT2 = 0xFFF4E0;
+constexpr uint32_t OK     = 0x8FDCB8;
+constexpr uint32_t WARN   = 0xFFC93C;
+constexpr uint32_t ERR    = 0xE04A2E;
 constexpr uint32_t TALK_BLUE     = 0x2E6BFF;
 constexpr uint32_t TALK_BLUE_HI  = 0x6090FF;
 constexpr uint32_t TALK_BLUE_DIM = 0x1E56E0;
