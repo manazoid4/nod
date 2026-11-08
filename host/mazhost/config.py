@@ -82,6 +82,8 @@ class Settings(BaseSettings):
     # live voice: digital gain on device mic audio before VAD + model. Cardputer ADV speech arrives at
     # rms ~100-290 (peak ~1k of 32k, measured 8 Nov 2026), far below normal speech levels.
     live_mic_gain: float = Field(default=10.0, ge=0.1, le=64.0)
+    # live voice: ignore the mic this long after Piblo stops talking (speaker tail / room echo caused false turns)
+    live_listen_holdoff_ms: int = Field(default=600, ge=0, le=3000)
     max_upload_mb: int = Field(default=12, ge=1, le=64)
     max_audio_seconds: int = Field(default=900, ge=1, le=3600)
     session_ttl_minutes: int = Field(default=120, ge=1, le=1440)

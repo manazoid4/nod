@@ -63,7 +63,7 @@ class FakeRealtime:
 
 
 def make_client(fake: FakeRealtime, gain: float = 1.0) -> TestClient:
-    cfg = Settings(token=TOKEN, llamacpp_url=f"http://127.0.0.1:{fake.port}", live_end_silence_ms=200, live_mic_gain=gain,
+    cfg = Settings(token=TOKEN, llamacpp_url=f"http://127.0.0.1:{fake.port}", live_end_silence_ms=200, live_mic_gain=gain, live_listen_holdoff_ms=0,
                    autoupdate=False, remote_detect=False)
     return TestClient(create_app(cfg))
 
@@ -195,3 +195,18 @@ def test_quiet_cardputer_speech_starts_a_turn_with_gain():
         assert text(ws)["state"] == "thinking"
         ws.send_text(json.dumps({"type": "bye"}))
     assert fake.appended > 0 and "response.create" in fake.events
+
+
+def test_boosted_room_noise_never_starts_a_turn():
+    """Measured ADV room noise (rms ~40) boosted 10x must not trigger the 'I'm here to help' loop."""
+    fake = FakeRealtime()
+    client = make_client(fake, gain=10.0)
+    with client.websocket_connect(f"/voice/live?token={TOKEN}") as ws:
+        assert text(ws)["state"] == "listening"
+        rng = np.random.default_rng(3)
+        for _ in range(100):
+            ws.send_bytes((rng.normal(0, 40, 640)).astype("<i2").tobytes())
+        ws.send_text(json.dumps({"type": "bye"}))
+        with pytest.raises(WebSocketDisconnect):
+            ws.receive_text()
+    assert "response.create" not in fake.events

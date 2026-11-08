@@ -44,7 +44,7 @@ def boost(pcm: bytes, gain: float) -> bytes:
 class Vad:
     """Energy VAD: adaptive noise floor, 300 ms pre-roll, min-speech gate, silence hangover."""
 
-    MIN_RMS = 400.0  # int16 rms; below this is never speech, whatever the floor
+    MIN_RMS = 700.0  # int16 rms after live_mic_gain; boosted ADV room noise reaches ~400, speech 1000+
 
     def __init__(self, end_silence_ms: int) -> None:
         self.end_blocks = max(1, end_silence_ms // BLOCK_MS)
@@ -125,6 +125,8 @@ class LiveBridge:
         self.url = cfg.llamacpp_url.replace("http", "ws", 1).rstrip("/") + "/v1/realtime"
         self.vad = Vad(cfg.live_end_silence_ms)
         self.gain = cfg.live_mic_gain
+        self.holdoff = cfg.live_listen_holdoff_ms / 1000
+        self._mute_until = 0.0
         self.state = "listening"
         self.up = None
         self._reader: asyncio.Task | None = None
@@ -183,6 +185,8 @@ class LiveBridge:
     async def _mic(self, pcm: bytes) -> None:
         if self.state != "listening":
             return  # half-duplex: the codec is playing, mic is not ours
+        if time.monotonic() < self._mute_until:
+            return  # tail of our own reply / codec switch noise: never a user turn
         if self.gain != 1.0:
             pcm = boost(pcm, self.gain)
         blocks, ended = self.vad.feed(pcm)
@@ -226,6 +230,9 @@ class LiveBridge:
         self._player = None
 
     async def _set_state(self, state: str) -> None:
+        if state == "listening" and self.state != "listening":
+            self._mute_until = time.monotonic() + self.holdoff
+            self.vad.reset()
         self.state = state
         await self._send({"type": "state", "state": state})
 
