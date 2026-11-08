@@ -138,6 +138,15 @@ void pullAgentEvents(const std::string& base, bool remote, BeamMessage& out) {
             ev.kind = e["kind"] | "";
             ev.text = e["text"] | "";
             ev.source = e["source"] | "";
+            if (ev.kind == "alert") {
+                JsonObject a = e["alert"];
+                ev.alertId = a["id"] | "";
+                ev.alertKind = a["kind"] | "info";
+                ev.title = a["title"] | "";
+                ev.body = a["body"] | "";
+                ev.priority = a["priority"] | "normal";
+                ev.alertActions = e["snooze"] | false ? 3 : 1;  // Core flags whether snooze is offered
+            }
             out.events.push_back(std::move(ev));
         }
     }

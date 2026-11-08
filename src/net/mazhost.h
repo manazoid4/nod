@@ -81,6 +81,9 @@ struct AgentEvent {
     std::string kind;
     std::string text;
     std::string source;  // free-text agent name, may be empty
+    // kind == "alert" (generic notification, see docs/ALERTS.md); otherwise unused.
+    std::string alertId, alertKind, title, body, priority;
+    uint8_t     alertActions = 0;  // alert_policy::ACT_* bits offered by Core
 };
 
 struct BeamMessage {

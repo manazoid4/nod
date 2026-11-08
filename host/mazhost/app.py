@@ -25,7 +25,7 @@ from .braindump import structure_braindump
 from .dump_routes import build_dump_router, save_safely
 from .library_routes import build_library_router
 from .bridge import BridgeWorker
-from .buddy import install_buddy_routes
+from .buddy import AlertIn, install_buddy_routes
 from .needs_routes import build_needs_router
 from .commands import parse_command
 from .config import Settings
@@ -308,6 +308,9 @@ def create_app(
     def deterministic_command(session_id: str, text: str, command: dict, actions: list) -> dict:
         if command["type"] == "reminder.create":
             reply = f"Reminder set: {command['title']}"
+            buddy.post_alert(AlertIn(source="reminder", kind="reminder", title=command["title"][:60],
+                                     priority="high", actions=["ack", "snooze"],
+                                     delay_seconds=command["delay_seconds"]))
             provider = "deterministic-local"
         elif command["type"] == "pc.action":
             try:
@@ -944,11 +947,12 @@ def create_app(
     # intentionally reachable with no token, since exchanging a short-lived
     # code for the real credential is the whole point.
     api.mount("/pair", build_pairing_app(cfg, security))
+    buddy = install_buddy_routes(api)
 
     api.include_router(build_dump_router(cfg, model_router))
     api.include_router(webui_router)
     api.include_router(build_library_router(cfg, model_router))
-    api.include_router(build_needs_router(cfg, install_buddy_routes(api)))
+    api.include_router(build_needs_router(cfg, buddy))
     install_focus_routes(api, focus)
     install_live_voice(api, cfg, security, turn_timings)
     # ------------------------------------------------------------ SUBTITLES

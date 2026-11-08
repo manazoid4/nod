@@ -11,6 +11,7 @@
 #include "../net/host_worker.h"
 #include "../net/mazhost.h"
 #include "../storage/store.h"
+#include "alerts.h"
 #include "launcher.h"
 #include "notify.h"
 #include "quiet.h"
@@ -166,6 +167,7 @@ void finishBeamPull(const host::BeamMessage& msg) {
     for (const auto& e : msg.events) {
         std::string detail = e.source.empty() ? e.text : e.source + ": " + e.text;
         if (detail.size() > 160) detail.resize(160);
+        if (e.kind == "alert") { alerts::onEvent(e); continue; }  // generic alerts: Buddy overlay + priority table
         // Quiet mode decides the sound only; the toast is always posted.
         using quiet::Ev;
         const Ev ev = e.kind == "done" ? Ev::Done : e.kind == "usage" ? Ev::Usage
