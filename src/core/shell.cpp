@@ -16,6 +16,7 @@
 #include "../storage/store.h"
 #include "../ui/ui.h"
 #include "../ui/lvgl_ui.h"
+#include "alerts.h"
 #include "approvals.h"
 #include "field.h"
 #include "notify.h"
@@ -425,6 +426,10 @@ void dispatchKey(const KeyEvent& e) {
         if (!wasAsleep) approvals::handleKey(e);
         return;
     }
+    if (alerts::active()) {
+        if (!wasAsleep) alerts::handleKey(e);
+        return;
+    }
     if (notify::active() && e.down) notify::dismiss();
 
     if (handleGlobalKey(e)) return;
@@ -537,6 +542,7 @@ void loop() {
     net::update();
     field::update();
     if (approvals::update(gScreenOff)) wake();
+    alerts::update();
     notify::update();
     quiet::update();
     apps::updateProductServices();
@@ -556,6 +562,7 @@ void loop() {
     ui::statusBar(gCanvas);
     ui::hintBar(gCanvas, top->hints());
     notify::render(gCanvas);
+    alerts::render(gCanvas);
     approvals::render(gCanvas);
     if (gFwConfirm) {
         gCanvas.fillRoundRect(20, 38, SCREEN_W - 40, 52, 4, PANEL);

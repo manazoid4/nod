@@ -125,7 +125,7 @@ void pullAgentEvents(const std::string& base, bool remote, BeamMessage& out) {
     http.setTimeout(4000);
     const int status = http.GET();
     String body;
-    const bool read = status == 200 && readBoundedBody(http, body, 6144) == BodyReadResult::Ok;
+    const bool read = status == 200 && readBoundedBody(http, body, 14336) == BodyReadResult::Ok;
     http.end();
     if (!read) return;  // older Core without /buddy/events: silently skip
     JsonDocument doc;
@@ -138,6 +138,19 @@ void pullAgentEvents(const std::string& base, bool remote, BeamMessage& out) {
             ev.kind = e["kind"] | "";
             ev.text = e["text"] | "";
             ev.source = e["source"] | "";
+            if (ev.kind == "alert") {
+                JsonObject a = e["alert"];
+                ev.alertId = a["id"] | "";
+                ev.alertKind = a["kind"] | "info";
+                ev.title = a["title"] | "";
+                ev.body = a["body"] | "";
+                ev.priority = a["priority"] | "normal";
+                for (JsonVariant act : a["actions"].as<JsonArray>()) {
+                    const char* name = act | "";
+                    if (!strcmp(name, "ack")) ev.alertActions |= 1;
+                    else if (!strcmp(name, "snooze")) ev.alertActions |= 2;
+                }
+            }
             out.events.push_back(std::move(ev));
         }
     }

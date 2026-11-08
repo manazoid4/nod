@@ -20,6 +20,13 @@ HALT_DEFAULT_MIN = 30
 HALT_MAX_MIN = 480
 HALT_REASON = "Halted from Piblo (permission request denied; running processes unaffected)"
 MAX_AGENTS = 8
+MAX_ALERTS = 50        # alert records kept (with their ack/snooze outcome)
+SNOOZE_DEFAULT_MIN = 10
+SNOOZE_MAX_MIN = 240
+MAX_DELAY_S = 30 * 86400
+AlertKind = Literal["reminder", "meeting", "deadline", "sla", "computer", "task_done", "approval", "info"]
+Priority = Literal["low", "normal", "high", "urgent"]
+AlertAction = Literal["ack", "snooze", "approve", "reject"]
 OTHER = "other"
 KIND_KEY = {"done": "done", "needs": "needs", "error": "errors", "usage": "usage"}
 
@@ -47,6 +54,23 @@ class BuddyEvent(BaseModel):
     source: str = Field(default="", max_length=40)
 
 
+class AlertIn(BaseModel):
+    """Generic notification (reminder, webhook, ...). kind=approval is routed into the
+    existing approval queue, never into the notify ring."""
+    source: str = Field(default="webhook", max_length=40)
+    kind: AlertKind = "info"
+    title: str = Field(min_length=1, max_length=60)
+    body: str = Field(default="", max_length=200)
+    priority: Priority = "normal"
+    actions: list[AlertAction] = Field(default_factory=lambda: ["ack"], max_length=4)
+    delay_seconds: int = Field(default=0, ge=0, le=MAX_DELAY_S)
+    expires_in: int | None = Field(default=None, ge=1, le=MAX_DELAY_S)
+
+
+class SnoozeBody(BaseModel):
+    minutes: int = Field(default=SNOOZE_DEFAULT_MIN, ge=1, le=SNOOZE_MAX_MIN)
+
+
 class AllowAll(BaseModel):
     session_id: str = Field(min_length=1, max_length=120)
     on: bool = False
@@ -68,6 +92,7 @@ class Buddy:
         self._items: dict[str, dict] = {}
         self._events: deque[dict] = deque(maxlen=MAX_EVENTS)  # separate from _items on purpose
         self._event_id = 0
+        self._alerts: dict[str, dict] = {}   # id -> alert record incl. outcome
         self._halt_until_mono = 0.0
         self._halt_until_wall = 0.0
         # No persistent session-wide grants: every sensitive action needs a fresh decision.
@@ -140,8 +165,71 @@ class Buddy:
             self._last = {key: ev[key] for key in ("kind", "text", "source", "ts")}
             return dict(ev)
 
+    # ---- generic alerts (reminder / webhook / ...) ----
+    def post_alert(self, a: AlertIn) -> dict:
+        if a.kind == "approval":
+            # Same queue, same authority/halt/timeout rules as the Claude Code hook.
+            item = self.request(a.title, a.body, project=a.source[:60])
+            return {"ok": True, "routed": "approval", "id": item["id"], "decision": item["decision"]}
+        if any(x in ("approve", "reject") for x in a.actions):
+            raise ValueError("approve_reject_only_for_approval_kind")
+        now = time.time()
+        with self._cv:
+            aid = "al-" + uuid.uuid4().hex[:8]
+            rec = {"id": aid, "source": a.source, "kind": a.kind, "title": a.title, "body": a.body,
+                   "priority": a.priority, "actions": list(dict.fromkeys(a.actions)) or ["ack"],
+                   "created_at": datetime.fromtimestamp(now, timezone.utc).isoformat(),
+                   "due": now + a.delay_seconds, "fired": False, "outcome": None, "snooze_until": 0.0}
+            if a.expires_in:
+                rec["_exp"] = now + a.delay_seconds + a.expires_in
+                rec["expires_at"] = datetime.fromtimestamp(rec["_exp"], timezone.utc).isoformat()
+            self._alerts[aid] = rec
+            while len(self._alerts) > MAX_ALERTS:
+                self._alerts.pop(next(iter(self._alerts)))
+            self._fire_due_locked()
+            return {"ok": True, "routed": "alert", "id": aid, "scheduled": not rec["fired"]}
+
+    def _fire_due_locked(self) -> None:
+        """Lazy scheduler: due reminders and snoozes that ran out enter the ring when polled."""
+        now = time.time()
+        for rec in self._alerts.values():
+            if rec["outcome"] == "acked" or now > rec.get("_exp", float("inf")):
+                continue
+            snoozed = rec["outcome"] == "snoozed"
+            if snoozed and now < rec["snooze_until"]:
+                continue
+            if rec["fired"] and not snoozed:
+                continue
+            if not rec["fired"] and now < rec["due"]:
+                continue
+            rec["fired"], rec["outcome"] = True, None   # (re)fire: an expired snooze nags again
+            self._event_id += 1
+            public = {k: v for k, v in rec.items() if k not in ("due", "fired", "outcome", "snooze_until", "_exp", "outcome_at")}
+            self._events.append({"id": self._event_id, "kind": "alert", "text": rec["title"],
+                                 "source": rec["source"], "ts": now, "alert": public})
+
+    def alert_outcome(self, aid: str, action: str, minutes: int = SNOOZE_DEFAULT_MIN) -> dict:
+        with self._cv:
+            rec = self._alerts.get(aid)
+            if rec is None:
+                raise KeyError(aid)
+            if action not in rec["actions"]:
+                raise ValueError("action_not_offered")
+            rec["outcome"] = "acked" if action == "ack" else "snoozed"
+            rec["outcome_at"] = time.time()
+            if action == "snooze":
+                rec["snooze_until"] = rec["outcome_at"] + minutes * 60
+            return {"ok": True, "id": aid, "outcome": rec["outcome"]}
+
+    def alerts(self) -> dict:
+        with self._cv:
+            self._fire_due_locked()
+            return {"ok": True, "alerts": [{k: v for k, v in r.items() if k != "_exp"}
+                                           for r in self._alerts.values()]}
+
     def events(self, since: int = 0) -> dict:
         with self._cv:
+            self._fire_due_locked()
             return {"ok": True, "events": [dict(e) for e in self._events if e["id"] > since],
                     "last": self._event_id}
 
@@ -276,6 +364,26 @@ def install_buddy_routes(api: FastAPI, buddy: Buddy | None = None) -> Buddy:
     @api.post("/buddy/event")
     def buddy_event(body: BuddyEvent):
         return {"ok": True, **buddy.post_event(body.kind, body.text, body.source)}
+
+    @api.post("/buddy/alert")
+    def buddy_alert(body: AlertIn):
+        try:
+            return buddy.post_alert(body)
+        except ValueError as error:
+            raise HTTPException(400, str(error))
+
+    @api.get("/buddy/alerts")
+    def buddy_alerts():
+        return buddy.alerts()
+
+    @api.post("/buddy/alert/{aid}/{action}")
+    def buddy_alert_action(aid: str, action: Literal["ack", "snooze"], body: SnoozeBody | None = None):
+        try:
+            return buddy.alert_outcome(aid, action, (body or SnoozeBody()).minutes)
+        except KeyError:
+            raise HTTPException(404, "alert_not_found")
+        except ValueError as error:
+            raise HTTPException(400, str(error))
 
     @api.get("/buddy/today")
     def buddy_today():

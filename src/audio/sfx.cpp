@@ -43,6 +43,13 @@ void error()     { pair(300.f, 200.f, 90); }
 
 void approval()  { pair(880.f, 1480.f, 90, /*force=*/true); }
 
+void alertPattern(const alert_policy::Rule& r, bool force) {
+    for (uint8_t i = 0; i < r.toneCount && i < alert_policy::MAX_TONES; ++i) {
+        beep(r.tones[i].hz, r.tones[i].ms, force);
+        delay(r.tones[i].ms);
+    }
+}
+
 // Called right before notify::post(Success): the toast's generic "saved" beep
 // is skipped once so only the agent chirp plays.
 bool gSkipNextNote = false;

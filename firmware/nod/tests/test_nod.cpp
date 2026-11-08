@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include "../include/alert_policy.h"
 #include "../include/charge_monitor.h"
 #include "../include/home_layout.h"
 #include "../include/talk_home.h"
@@ -162,6 +163,25 @@ int main() {
       CHECK(uniquePath("/maz/notes/19700101-000012", "txt", ex) == "/maz/notes/19700101-000012-1.txt");
       fs.files["/maz/notes/19700101-000012-1.txt"] = "b";
       CHECK(uniquePath("/maz/notes/19700101-000012", "txt", ex) == "/maz/notes/19700101-000012-2.txt"); }
+    // alert policy: priority -> sound/LED/mood table, Quiet-aware
+    { using namespace maz::alert_policy;
+      CHECK(parsePriority("urgent") == Priority::Urgent && parsePriority("low") == Priority::Low);
+      CHECK(parsePriority("high") == Priority::High && parsePriority("garbage") == Priority::Normal && parsePriority(nullptr) == Priority::Normal);
+      for (int p = 0; p < 4; p++) {
+          const Rule& r = rule(static_cast<Priority>(p));
+          CHECK(r.toneCount >= 1 && r.toneCount <= MAX_TONES);
+          for (int i = 0; i < r.toneCount; i++) CHECK(r.tones[i].hz >= 200 && r.tones[i].ms >= 20 && r.tones[i].ms <= 200);
+      }
+      // more urgent never sounds shorter or flashes less than a calmer one
+      for (int p = 1; p < 4; p++) CHECK(rule(static_cast<Priority>(p)).toneCount >= rule(static_cast<Priority>(p - 1)).toneCount);
+      CHECK(rule(Priority::Urgent).flashes == FLASH_UNTIL_ACK && rule(Priority::Low).flashes == 0);
+      // Quiet (1) mutes low/normal only; Silent (2) leaves only urgent; Normal (0) plays all
+      for (int p = 0; p < 4; p++) CHECK(shouldSound(0, static_cast<Priority>(p)));
+      CHECK(!shouldSound(1, Priority::Low) && !shouldSound(1, Priority::Normal));
+      CHECK(shouldSound(1, Priority::High) && shouldSound(1, Priority::Urgent));
+      CHECK(!shouldSound(2, Priority::High) && shouldSound(2, Priority::Urgent));
+      CHECK(forced(Priority::Urgent) && !forced(Priority::High));
+      CHECK(moodFor(Priority::Low, true) == Mood::Celebrating && moodFor(Priority::Urgent, false) == Mood::NeedsAttention); }
     printf("%d checks, %d failed\n", checks, fails);
     return fails ? 1 : 0;
 }

@@ -81,6 +81,9 @@ struct AgentEvent {
     std::string kind;
     std::string text;
     std::string source;  // free-text agent name, may be empty
+    // kind == "alert" (generic notification, see docs/ALERTS.md); otherwise unused.
+    std::string alertId, alertKind, title, body, priority;
+    uint8_t     alertActions = 0;  // alert_policy::ACT_* bits offered by Core
 };
 
 struct BeamMessage {
@@ -239,6 +242,7 @@ CoreInfo fetchCoreInfo();
 struct BuddyItem { std::string id, tool, summary, project, session; int left = 0; };
 struct BuddyPoll { bool ok = false; std::string agent; int count = 0; std::vector<BuddyItem> items; };
 BuddyPoll buddyPoll();                                              // GET /buddy/summary (tiny)
+bool buddyAlertAct(const std::string& id, const std::string& action);  // POST /buddy/alert/{id}/{ack|snooze}; true = Core stored it (or alert is gone)
 bool buddyDecide(const std::string& id, const std::string& decision, std::string& applied);  // allow|deny|allow_all
 const CoreInfo& coreInfo();          // last poll result (cached)
 void setCoreInfo(const CoreInfo& info);

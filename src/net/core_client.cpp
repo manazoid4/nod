@@ -132,6 +132,17 @@ BuddyPoll buddyPoll() {
     return out;
 }
 
+bool buddyAlertAct(const std::string& id, const std::string& action) {
+    if (id.empty() || (action != "ack" && action != "snooze")) return false;
+    for (char c : id) if (!isalnum(static_cast<unsigned char>(c)) && c != '-') return false;  // id goes into the URL path
+    NodHttp http;
+    if (!coreBegin(http, "/buddy/alert/" + id + "/" + action)) return false;
+    http.addHeader("Content-Type", "application/json");
+    const int status = http.POST("{}");
+    http.end();
+    return status == 200 || status == 404;  // 404: Core restarted or ring rolled over; nothing left to answer
+}
+
 bool buddyDecide(const std::string& id, const std::string& decision, std::string& applied) {
     applied.clear();
     NodHttp http;
