@@ -111,7 +111,7 @@ test("films: muted, playsinline, no autoplay, labelled as concept, small enough 
   const { statSync } = await import("node:fs");
   const html = contents["/"];
   const videos = html.match(/<video\b[^>]*>/g) || [];
-  assert.ok(videos.length >= 3);
+  assert.ok(videos.length >= 1); // one concept film by design (Nov 2026 clarity pass)
   for (const tag of videos) {
     assert.match(tag, /\smuted\b/, "no video may play with sound by default");
     assert.match(tag, /\splaysinline\b/);
@@ -142,7 +142,7 @@ test("media references use piblo-* files that exist, and no nod-* media remains"
   const { readdirSync } = await import("node:fs");
   const html = contents["/"];
   const refs = html.match(/\/media\/[\w.-]+\.(mp4|webp|jpg)/g) || [];
-  assert.ok(refs.length >= 8);
+  assert.ok(refs.length >= 4); // og image x2, film + poster (one concept film by design)
   for (const ref of refs) { assert.match(ref, /\/media\/piblo-/); assert.ok(existsSync(join(root, ref)), ref); }
   assert.deepEqual(readdirSync(join(root, "media")).filter(f => /nod/i.test(f)), []);
   assert.match(html, /name="piblo_hp_field"/);
