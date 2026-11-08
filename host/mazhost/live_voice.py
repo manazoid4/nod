@@ -96,15 +96,35 @@ class Vad:
         return (self._loud + MIN_SPEECH_MS // BLOCK_MS) * BLOCK_MS
 
 
+def _speaker_band(taps: int = 481, low: float = 220.0, high: float = 6800.0, rate: int = OUT_RATE) -> np.ndarray:
+    """Windowed-sinc band-pass for the Cardputer's tiny speaker, designed at the model's 24 kHz."""
+    n = np.arange(taps) - (taps - 1) / 2
+
+    def lowpass(fc: float) -> np.ndarray:
+        return 2 * fc / rate * np.sinc(2 * fc / rate * n)
+
+    return ((lowpass(high) - lowpass(low)) * np.blackman(taps)).astype(np.float32)
+
+
+SPEAKER_BAND = _speaker_band()
+
+
 class Resampler24to16:
-    """Streaming 24k->16k by linear interpolation (output length = 2/3 of input)."""
+    """Streaming 24k->16k (output length = 2/3 of input), band-limited for the device speaker.
+
+    The band-pass runs before decimation: without it, 8-12 kHz model output aliases into 4-8 kHz
+    (harsh, gritty sibilance), and sub-220 Hz energy only makes the 1 W speaker rattle.
+    """
 
     def __init__(self) -> None:
         self._buf = np.zeros(0, np.float32)
         self._t = 0.0  # next output position, in input samples relative to _buf[0]
+        self._hist = np.zeros(len(SPEAKER_BAND) - 1, np.float32)  # filter state across chunks
 
     def feed(self, pcm: bytes) -> bytes:
-        self._buf = np.concatenate([self._buf, np.frombuffer(pcm, "<i2").astype(np.float32)])
+        x = np.concatenate([self._hist, np.frombuffer(pcm, "<i2").astype(np.float32)])
+        self._hist = x[len(x) - len(self._hist):]
+        self._buf = np.concatenate([self._buf, np.convolve(x, SPEAKER_BAND, "valid")])
         if len(self._buf) < 2:
             return b""
         ts = np.arange(self._t, len(self._buf) - 1 + 1e-9, OUT_RATE / IN_RATE)
