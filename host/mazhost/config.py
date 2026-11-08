@@ -87,7 +87,10 @@ class Settings(BaseSettings):
     # live voice brain: "cloud" = LFM3 hears/speaks, OpenRouter thinks (falls back to Ollama, then LFM3);
     # "lfm" = today's direct LFM3 speech-to-speech.
     live_brain: Literal["cloud", "lfm"] = "cloud"
-    live_cloud_default: str = "gemma"  # voice alias resolved to a :free OpenRouter id until Maz switches by voice
+    live_cloud_default: str = "nemotron"  # voice alias resolved to a :free OpenRouter id until Maz switches by voice
+    # tried in order when the chosen cloud model fails (429 etc.), before the slow local fallback. Measured 8 Nov 2026:
+    # nemotron-3.5-lightning:free ~0.6 s first token; deepseek-v4.1-flash (cheap paid) ~0.7 s; gemma :free was 429ing.
+    live_cloud_backups: list[str] = ["nvidia/nemotron-3.5-lightning:free", "deepseek/deepseek-v4.1-flash"]
     live_ollama_model: str = "qwen36-heretic:latest"
     live_memory_github: str = "manazoid4/unified-memory-database:piblo/MEMORY.md"  # needs github_token; skipped if unset
     live_memory_file: str = ""  # "remember ..." notes; empty = <data_dir>/piblo-memory.md

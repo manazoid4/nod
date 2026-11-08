@@ -42,10 +42,14 @@ ALIASES = {
     "deepseek": ["deepseek"], "qwen": ["qwen"], "llama": ["llama"], "glm": ["glm"], "kimi": ["kimi"],
     "gemma": ["gemma", "gemini"], "gemini": ["gemma", "gemini"],
     "claude": ["claude-haiku", "haiku", "claude-sonnet", "sonnet"],
+    "nemotron": ["nemotron-3-ultra", "nemotron"], "nvidia": ["nemotron-3-ultra", "nemotron"],
+    "lightning": ["nemotron-3.5-lightning"],
 }
 LABELS = {"gemini": "Gemma", "gemma": "Gemma", "glm": "GLM", "deepseek": "DeepSeek", "qwen": "Qwen",
-          "llama": "Llama", "kimi": "Kimi", "claude": "Claude"}
+          "llama": "Llama", "kimi": "Kimi", "claude": "Claude", "nemotron": "Nemotron", "nvidia": "Nemotron",
+          "lightning": "Nemotron Lightning"}
 SPECIAL = {"local": "ollama", "fast": "lfm"}
+_SPOKEN = str.maketrans("", "", "*#`_")  # markdown the model leaks; never spoken
 _BAD_ID = re.compile(r"(:batch|guard|embed|image|audio|tts|whisper|moderation|^~)")
 _REASONING = re.compile(r"(r1|reason|think)")
 
@@ -161,7 +165,7 @@ class LiveBrain:
             r.raise_for_status()
             return (r.json()["choices"][0]["message"]["content"] or "").strip()
         except (httpx.HTTPError, KeyError, IndexError, ValueError) as error:
-            log.warning("live: ASR failed: %s", error)
+            log.warning("live: ASR failed: %r", error)
             return ""
 
     # ---- model choice ------------------------------------------------------
@@ -274,7 +278,9 @@ class LiveBrain:
             return [lfm]
         if choice["model"] == "ollama":
             return [olm, lfm]
-        return ([orr] if cfg.openrouter_api_key else []) + [olm, lfm]
+        backups = [("openrouter", OPENROUTER, cfg.openrouter_api_key, m, FIRST_TOKEN_S)
+                   for m in cfg.live_cloud_backups if m != choice["model"]]
+        return ([orr, *backups] if cfg.openrouter_api_key else []) + [olm, lfm]
 
     async def stream(self, user_text: str) -> AsyncIterator[str]:
         choice = await self.current()
@@ -293,7 +299,7 @@ class LiveBrain:
                     if not got:
                         self.meta["brain_first_token_ms"] = round((time.monotonic() - t0) * 1000)
                     got += piece
-                    yield piece
+                    yield piece.translate(_SPOKEN)
                 reason = None if got else "empty reply"
             except BrainError as error:
                 reason = str(error)
@@ -308,6 +314,8 @@ class LiveBrain:
 
     async def _sse(self, base: str, key: str, model: str, msgs: list[dict], first_s: float) -> AsyncIterator[str]:
         body = {"model": model, "messages": msgs, "stream": True, "max_tokens": 220, "temperature": 0.7}
+        if base == OPENROUTER:  # thinking models spend the whole budget reasoning and say nothing
+            body["reasoning"] = {"enabled": False}
         headers = {"Authorization": f"Bearer {key}"} if key else {}
         try:
             async with self.client(60) as c, c.stream("POST", f"{base}/chat/completions", json=body, headers=headers) as r:
