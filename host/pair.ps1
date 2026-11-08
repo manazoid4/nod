@@ -50,10 +50,10 @@ try {
     } while ($Reply -notlike 'MAZCOREPAIR *' -and [DateTime]::UtcNow -lt $Deadline)
 
     if ($Reply -notlike 'MAZCOREPAIR OK*') {
-        throw "Device did not accept Core-only pairing. Install MAZ Pocket v0.6 first or pair once from CONTROL > MAZ Core. Reply: $Reply"
+        throw "Device did not accept Core-only pairing. Install Piblo v0.6 first or pair once from CONTROL > MAZ Core. Reply: $Reply"
     }
     if (-not $Quiet) {
-        Write-Host "MAZ Pocket paired to MAZ Core at ${Address}:8787 without changing Wi-Fi." -ForegroundColor Green
+        Write-Host "Piblo paired to MAZ Core at ${Address}:8787 without changing Wi-Fi." -ForegroundColor Green
     }
 } finally {
     if ($Port.IsOpen) { $Port.Close() }

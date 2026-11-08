@@ -1,4 +1,4 @@
-name: MAZ Pocket build
+name: Piblo build
 
 on:
   # Feature/fix branches are validated by their pull_request run only. Running
@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: maz-pocket-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  group: piblo-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
         run: |
           $v = (Get-Content .\VERSION -Raw).Trim()
           "value=$v" >> $env:GITHUB_OUTPUT
-          Write-Host "MAZ Pocket v$v"
+          Write-Host "Piblo v$v"
 
       - name: Install dependencies
         shell: pwsh
@@ -83,7 +83,7 @@ jobs:
           $files = @(
             '.\scripts\START-HERE.cmd',
             '.\scripts\setup-all.ps1',
-            '.\scripts\INSTALL-MAZ-POCKET.cmd',
+            '.\scripts\INSTALL-PIBLO.cmd',
             '.\scripts\install-to-sd.ps1'
           )
           $failed = $false
@@ -114,7 +114,7 @@ jobs:
       - name: Validate M5Launcher app image
         shell: pwsh
         run: |
-          python -c "from pathlib import Path; b=Path('dist/maz-pocket-app.bin').read_bytes(); assert len(b)>=65536 and b[0]==0xE9, 'invalid ESP32 app image'; assert len(b)<0x170000, f'{len(b)} does not fit the 1,507,328 B nodfw slot'; print('ESP image OK',len(b),'bytes')"
+          python -c "from pathlib import Path; b=Path('dist/piblo-app.bin').read_bytes(); assert len(b)>=65536 and b[0]==0xE9, 'invalid ESP32 app image'; assert len(b)<0x170000, f'{len(b)} does not fit the 1,507,328 B nodfw slot'; print('ESP image OK',len(b),'bytes')"
 
       - name: Prepare full client + Cardputer packages
         shell: pwsh
@@ -126,12 +126,12 @@ jobs:
           $v = '${{ steps.version.outputs.value }}'
           $core = ".\dist\MAZ-Core-v$v.zip"
           $card = ".\dist\MAZ-Cardputer-v$v.zip"
-          $all = ".\dist\MAZ-Pocket-v$v-Install.zip"
+          $all = ".\dist\Piblo-v$v-Install.zip"
           foreach ($file in @($core,$card,$all)) { if (-not (Test-Path $file)) { throw "Required package missing: $file" } }
           $tmp = Join-Path $env:RUNNER_TEMP 'maz-card-check'
           Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
           Expand-Archive $card $tmp
-          if (-not (Test-Path (Join-Path $tmp "Maz-Pocket-v$v-M5Launcher.bin"))) { throw 'Cardputer ZIP missing firmware' }
+          if (-not (Test-Path (Join-Path $tmp "Piblo-v$v-M5Launcher.bin"))) { throw 'Cardputer ZIP missing firmware' }
           if (-not (Test-Path (Join-Path $tmp 'QUICKSTART.txt'))) { throw 'Cardputer ZIP missing quickstart' }
           Write-Host 'Client + Cardputer + combined ZIP rule OK'
 
@@ -139,7 +139,7 @@ jobs:
         shell: pwsh
         run: |
           $v = '${{ steps.version.outputs.value }}'
-          $zip = ".\dist\MAZ-Pocket-v$v-Install.zip"
+          $zip = ".\dist\Piblo-v$v-Install.zip"
           $tmp = Join-Path $env:RUNNER_TEMP 'maz-install-ps51'
           Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
           Expand-Archive $zip $tmp
@@ -172,16 +172,16 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: maz-pocket-v${{ steps.version.outputs.value }}
+          name: piblo-v${{ steps.version.outputs.value }}
           if-no-files-found: error
           path: |
-            dist/Maz-Pocket-v${{ steps.version.outputs.value }}-M5Launcher.bin
+            dist/Piblo-v${{ steps.version.outputs.value }}-M5Launcher.bin
             dist/MAZ-Core-v${{ steps.version.outputs.value }}.zip
             dist/MAZ-Cardputer-v${{ steps.version.outputs.value }}.zip
-            dist/MAZ-Pocket-v${{ steps.version.outputs.value }}-Install.zip
+            dist/Piblo-v${{ steps.version.outputs.value }}-Install.zip
             dist/START-HERE.cmd
             dist/setup-all.ps1
-            dist/INSTALL-MAZ-POCKET.cmd
+            dist/INSTALL-PIBLO.cmd
             dist/install-to-sd.ps1
             dist/VERSION
             dist/SHA256SUMS.txt

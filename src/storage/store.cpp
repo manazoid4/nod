@@ -93,7 +93,7 @@ bool begin() {
         ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "mazdata");
 
     // "May I format the internal filesystem?" cannot be answered by the app
-    // subtype. MAZ Pocket now ships two OTA slots of its own, and a
+    // subtype. Piblo now ships two OTA slots of its own, and a
     // Launcher-installed build also runs from an OTA slot in *Launcher's*
     // table — the one case where formatting would destroy someone else's data.
     // So identify our own layout directly: our partitions.csv is the only one
@@ -117,7 +117,7 @@ bool begin() {
         fsMounted = LittleFS.begin(false);
 
     if (!fsMounted) {
-        // M5Launcher provisions "mazdata" specifically for MAZ Pocket, so
+        // M5Launcher provisions "mazdata" specifically for Piblo, so
         // formatting it cannot affect Launcher or another installed app.
         // Without it, only format a partition table we own ourselves.
         const bool mayFormat = dedicated || ownsPartitionTable;

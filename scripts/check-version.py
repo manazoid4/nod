@@ -10,7 +10,7 @@ if not re.fullmatch(r"\d+\.\d+(?:\.\d+)?", version):
 
 checks = {
     "docs/pocket/MAZ-POCKET-README.md": f"Current release candidate: v{version}",
-    "QUICKSTART.txt": f"MAZ POCKET v{version}",
+    "QUICKSTART.txt": f"PIBLO v{version}",
     "RELEASE_NOTES.md": f"v{version}",
     "CHANGELOG.md": f"## v{version}",
     "docs/pocket/RELEASE_RULES.md": "MAZ-Cardputer-v<version>.zip",
@@ -23,8 +23,8 @@ for name, needle in checks.items():
 pio = (ROOT / "platformio.ini").read_text(encoding="utf-8-sig")
 if "extra_scripts = pre:scripts/version.py" not in pio:
     raise SystemExit("platformio.ini is not sourcing VERSION through scripts/version.py")
-if "MAZ_POCKET_VERSION=" in pio:
-    raise SystemExit("platformio.ini still hard-codes MAZ_POCKET_VERSION")
+if "NOD_FW_VERSION=" in pio:
+    raise SystemExit("platformio.ini still hard-codes NOD_FW_VERSION")
 if "-<net/portal.cpp>" not in pio or "-<net/portal_v2.cpp>" not in pio:
     raise SystemExit("portal_v3 guard missing: older portal implementations are not excluded")
 
@@ -32,7 +32,7 @@ firmware_workflow = (ROOT / ".github" / "workflows" / "firmware.yml").read_text(
 required_packages = (
     "MAZ-Core-v${{ steps.version.outputs.value }}.zip",
     "MAZ-Cardputer-v${{ steps.version.outputs.value }}.zip",
-    "MAZ-Pocket-v${{ steps.version.outputs.value }}-Install.zip",
+    "Piblo-v${{ steps.version.outputs.value }}-Install.zip",
 )
 for package in required_packages:
     if package not in firmware_workflow:
@@ -72,4 +72,4 @@ field = (ROOT / "src" / "core" / "field.cpp").read_text(encoding="utf-8-sig")
 if "submitOutboxAudio" not in field or "submitOutboxBeam" not in field:
     raise SystemExit("durable FIELD outbox contract missing")
 
-print(f"MAZ Pocket v{version} version/install contract OK")
+print(f"Piblo v{version} version/install contract OK")

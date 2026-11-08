@@ -1,4 +1,4 @@
-// MAZ Pocket — the control surface, over USB and over Wi-Fi.
+// Piblo — the control surface, over USB and over Wi-Fi.
 //
 // The MAZ* command language used to live inline in main.cpp and answer only on
 // the serial port, which meant the device could neither be driven nor updated

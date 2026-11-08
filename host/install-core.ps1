@@ -49,7 +49,7 @@ if (@("local", "auto", "cloud", "mazlatest") -notcontains $CurrentRoute) {
 Set-MazEnv "MAZ_MAZLATEST_URL" "http://localhost:20128/v1"
 Set-MazEnv "MAZ_MAZLATEST_MODEL" "MazLatest"
 Set-MazEnv "MAZ_BUILD_ID" $Version
-Set-MazEnv "MAZ_CARDPUTER_URL" "http://mazpocket.local"
+Set-MazEnv "MAZ_CARDPUTER_URL" "http://piblo.local"
 Set-MazEnv "MAZ_WEB_ORIGINS" "https://mazos-site.vercel.app,http://localhost:3000,http://127.0.0.1:3000"
 Set-MazEnv "MAZ_BRIDGE_REPO" "manazoid4/maz-pocket"
 Set-MazEnv "MAZ_LOCAL_MODEL_POLICY" "auto"
@@ -166,8 +166,8 @@ if ($PortName) {
 
 # A durable shortcut makes the device portal one click away.
 try {
-    $PortalShortcut = Join-Path $Desktop "MAZ Pocket.url"
-    @("[InternetShortcut]", "URL=http://mazpocket.local") | Set-Content -Encoding ascii $PortalShortcut
+    $PortalShortcut = Join-Path $Desktop "Piblo.url"
+    @("[InternetShortcut]", "URL=http://piblo.local") | Set-Content -Encoding ascii $PortalShortcut
 } catch { }
 
 Write-Host ""
@@ -177,9 +177,9 @@ Write-Host "Pair token ID: $TokenId (secret not printed)"
 Write-Host "Local model chain: $(Get-MazEnv 'MAZ_OLLAMA_MODEL') -> $(Get-MazEnv 'MAZ_OLLAMA_BACKUP_MODEL')"
 Write-Host "USB pairing: $(if ($UsbPaired) { 'DONE' } else { 'not required / not available' })"
 Write-Host "GitHub bridge: $(if ($Bridge) { 'ON' } else { 'OFF - sign into gh if you want AI -> private GitHub -> PC actions' })"
-Write-Host "Cardputer portal: http://mazpocket.local"
+Write-Host "Cardputer portal: http://piblo.local"
 Write-Host "Maz Works: /maz-core and /maz-pocket-ai"
 
 if (-not $NoBrowser) {
-    try { Start-Process "http://mazpocket.local" } catch { }
+    try { Start-Process "http://piblo.local" } catch { }
 }

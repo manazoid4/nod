@@ -1,4 +1,4 @@
-v1.5.0 (nod v1.5: blue talk dot in the Toy-shop warm palette, charging mode, no OTA battery gate). See CHANGELOG.md for details.
+v1.5.1 (Piblo name everywhere on the device; old MAZ Pocket name removed). v1.5.0 (nod v1.5: blue talk dot in the Toy-shop warm palette, charging mode, no OTA battery gate). See CHANGELOG.md for details.
 
 # MAZ Pocket v1.0.0 — WORK CONSISTENCY
 

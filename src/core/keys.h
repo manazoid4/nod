@@ -1,4 +1,4 @@
-// MAZ Pocket — HID usage codes we actually care about.
+// Piblo — HID usage codes we actually care about.
 //
 // The ADV keyboard reports through a TCA8418 I2C matrix expander, not the
 // shift-register matrix of the original Cardputer. Scan codes below follow the

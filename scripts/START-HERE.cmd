@@ -16,6 +16,6 @@ rem non-destructive mode (-SkipCore -SkipSd -NoBrowser). Users pass nothing.
 "%MAZPS%" -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup-all.ps1" %*
 set "ERR=%ERRORLEVEL%"
 echo.
-if not "%ERR%"=="0" echo MAZ Pocket setup stopped with error %ERR%.
+if not "%ERR%"=="0" echo Piblo setup stopped with error %ERR%.
 pause
 exit /b %ERR%

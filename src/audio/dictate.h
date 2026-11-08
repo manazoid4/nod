@@ -1,4 +1,4 @@
-// MAZ Pocket — typing by voice.
+// Piblo — typing by voice.
 //
 // Every text field on this device is a 240px strip driven by a thumb keyboard,
 // which is the slowest way to get a sentence into it. Dictation is therefore

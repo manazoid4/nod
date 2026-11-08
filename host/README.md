@@ -1,10 +1,10 @@
 # MAZ Core v0.7
 
-MAZ Core is the Windows companion for MAZ Pocket. The Cardputer stays a small, responsive control surface; CPU/GPU telemetry, local AI, Beam persistence, project context and safe PC actions run here.
+MAZ Core is the Windows companion for Piblo. The Cardputer stays a small, responsive control surface; CPU/GPU telemetry, local AI, Beam persistence, project context and safe PC actions run here.
 
 ## Start
 
-For a complete install use the root `MAZ-Pocket-v0.7-Install.zip` and double-click `START-HERE.cmd`.
+For a complete install use the root `Piblo-v0.7-Install.zip` and double-click `START-HERE.cmd`.
 
 For Core by itself, extract `MAZ-Core-v0.7.zip` and run `INSTALL-MAZ-CORE.cmd`. Existing `.env` configuration is preserved by the normal installer path.
 
@@ -89,9 +89,9 @@ Every releasable version must produce both complete halves and the combined conv
 
 1. `MAZ-Core-vX.Y.zip`
 2. `MAZ-Cardputer-vX.Y.zip`
-3. `MAZ-Pocket-vX.Y-Install.zip`
+3. `Piblo-vX.Y-Install.zip`
 
-The firmware inside the Cardputer package remains an app-only M5Launcher image. MAZ Core never makes MAZ Pocket self-flash firmware partitions.
+The firmware inside the Cardputer package remains an app-only M5Launcher image. MAZ Core never makes Piblo self-flash firmware partitions.
 
 ## Tests
 

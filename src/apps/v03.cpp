@@ -1,4 +1,4 @@
-// MAZ Pocket v0.3 — the two product surfaces that replace generic Talk/Nudge
+// Piblo v0.3 — the two product surfaces that replace generic Talk/Nudge
 // on Home. Capture keeps its existing proven BrainDump implementation.
 #include <algorithm>
 #include <array>

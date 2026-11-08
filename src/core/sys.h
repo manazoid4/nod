@@ -1,4 +1,4 @@
-// MAZ Pocket — shared lightweight state snapshot.
+// Piblo — shared lightweight state snapshot.
 #pragma once
 #include <stdint.h>
 

@@ -7,7 +7,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 function Fail([string]$Message) {
-    Write-Host "MAZ Pocket: $Message" -ForegroundColor Red
+    Write-Host "Piblo: $Message" -ForegroundColor Red
     exit 1
 }
 
@@ -18,7 +18,7 @@ if (-not (Test-Path $versionPath)) {
 }
 if (-not (Test-Path $versionPath)) { Fail "VERSION file not found" }
 $Version = (Get-Content $versionPath -Raw).Trim()
-$FirmwareName = "Maz-Pocket-v$Version-M5Launcher.bin"
+$FirmwareName = "Piblo-v$Version-M5Launcher.bin"
 
 if (-not $FirmwarePath) {
     $candidate = Join-Path $scriptRoot $FirmwareName
@@ -75,7 +75,7 @@ $target = Join-Path $root $FirmwareName
 $sourceHash = (Get-FileHash $source -Algorithm SHA256).Hash.ToLowerInvariant()
 
 Write-Host ""
-Write-Host "MAZ Pocket v$Version -> $target" -ForegroundColor Cyan
+Write-Host "Piblo v$Version -> $target" -ForegroundColor Cyan
 Write-Host "This only copies one app image. It will NOT format the card or flash the Cardputer." -ForegroundColor Yellow
 if (-not $Yes) {
     $answer = Read-Host "Type COPY to continue"
@@ -96,7 +96,7 @@ if (-not (Test-Path $quick)) {
     $quick = Join-Path (Split-Path -Parent $scriptRoot) "QUICKSTART.txt"
 }
 if (Test-Path $quick) {
-    Copy-Item $quick (Join-Path $root "MAZ-Pocket-QUICKSTART.txt") -Force
+    Copy-Item $quick (Join-Path $root "Piblo-QUICKSTART.txt") -Force
 }
 
 Write-Host ""

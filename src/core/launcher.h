@@ -7,7 +7,7 @@ namespace maz::launcher {
 // installed, otherwise a factory image or another populated slot.
 //
 // Returns false, having changed nothing, when there is no bootable partition
-// to land in. Flashing MAZ Pocket directly over USB replaces M5Launcher, and
+// to land in. Flashing Piblo directly over USB replaces M5Launcher, and
 // in that state invalidating this image would leave the device reachable only
 // by cable.
 bool reboot();

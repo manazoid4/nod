@@ -1,4 +1,4 @@
-"""Curated Windows controls for Maz Pocket.
+"""Curated Windows controls for Piblo.
 
 No arbitrary shell execution lives here. The handheld can only request a small
 allow-list of everyday controls that map to Windows virtual keys or the native

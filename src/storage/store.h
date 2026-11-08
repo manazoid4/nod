@@ -1,7 +1,7 @@
-// MAZ Pocket — storage abstraction.
+// Piblo — storage abstraction.
 //
 // Two facts drive this design:
-//   1. MAZ Pocket must stay useful with no SD card in the slot.
+//   1. Piblo must stay useful with no SD card in the slot.
 //   2. When M5Launcher flashes us it uses ITS partition table, so our LittleFS
 //      partition may simply not exist. Neither case is allowed to be fatal.
 // So: pick the best available backend at boot, tell the user which one won,

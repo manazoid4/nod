@@ -122,7 +122,7 @@ void sendPage(WiFiClient& c) {
 
 String statusJson(bool unlocked) {
     String j; j.reserve(1100);
-    j += "{\"ok\":true,\"version\":\"" MAZ_POCKET_VERSION "\"";
+    j += "{\"ok\":true,\"version\":\"" NOD_FW_VERSION "\"";
     j += ",\"unlocked\":"; j += unlocked ? "true" : "false";
     j += ",\"app\":\"" + jsonEscape(shell::currentId()) + "\"";
     j += ",\"battery\":" + String(Sys.batteryPct);
@@ -183,7 +183,7 @@ String performAction(const String& body) {
         return ok ? "{\"ok\":true,\"result\":\"connected\"}" : "{\"ok\":false,\"error\":\"saved_networks_failed_setup_ap_on\"}";
     }
     if (name == "disconnect") { net::disconnect(); return "{\"ok\":true,\"result\":\"disconnected\"}"; }
-    if (name == "setup_ap") return net::startSetupAp() ? "{\"ok\":true,\"result\":\"MAZ-Pocket-Setup / 192.168.4.1\"}" : "{\"ok\":false,\"error\":\"setup_ap_failed\"}";
+    if (name == "setup_ap") return net::startSetupAp() ? "{\"ok\":true,\"result\":\"Piblo-Setup / 192.168.4.1\"}" : "{\"ok\":false,\"error\":\"setup_ap_failed\"}";
     if (name == "speaker") { sfx::boot(); return "{\"ok\":true,\"result\":\"speaker_test_played\"}"; }
     if (name == "host_test") return host::health() ? "{\"ok\":true,\"result\":\"maz_core_online\"}" : "{\"ok\":false,\"error\":\"maz_core_offline\"}";
     if (name == "storage") return storageCheck();
@@ -291,12 +291,12 @@ void update() {
     if (networkAvailable() && !gRunning) {
         gServer.begin();
         gRunning = true;
-        if (net::connected()) gMdns = MDNS.begin("mazpocket");
+        if (net::connected()) gMdns = MDNS.begin("piblo");
     } else if (!networkAvailable() && gRunning) {
         gServer.stop(); gRunning = false;
         if (gMdns) { MDNS.end(); gMdns = false; }
     } else if (net::connected() && gRunning && !gMdns) {
-        gMdns = MDNS.begin("mazpocket");
+        gMdns = MDNS.begin("piblo");
     }
 
     if (gRunning) {

@@ -1,4 +1,4 @@
-// MAZ Pocket — Cardputer ADV keyboard (TI TCA8418 I2C key-matrix expander).
+// Piblo — Cardputer ADV keyboard (TI TCA8418 I2C key-matrix expander).
 //
 // Why this exists: the original Cardputer scans a shift-register matrix on
 // dedicated GPIOs and M5Cardputer's Keyboard class drives that. The ADV moved

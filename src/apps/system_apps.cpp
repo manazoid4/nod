@@ -382,7 +382,7 @@ public:
 
     void render(M5Canvas& g) override {
         g.fillScreen(BG);
-        ui::header(g, "Settings", "v" MAZ_POCKET_VERSION);
+        ui::header(g, "Settings", "v" NOD_FW_VERSION);
 
         const int rows = std::min(ROWS_VISIBLE - 1, SET_COUNT);
         for (int i = 0; i < rows; ++i) {
@@ -806,7 +806,7 @@ public:
 
     void render(M5Canvas& g) override {
         g.fillScreen(BG);
-        ui::header(g, "Keys & Help", "v" MAZ_POCKET_VERSION);
+        ui::header(g, "Keys & Help", "v" NOD_FW_VERSION);
         g.setFont(&fonts::Font0);
         g.setTextDatum(top_left);
 

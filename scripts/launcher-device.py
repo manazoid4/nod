@@ -19,13 +19,13 @@ BOOT_BANNER = "Press the button to enter the Launcher!"
 def ready_banner() -> str:
     """The banner the firmware being installed will print.
 
-    This was pinned to "MAZ Pocket 0.3.0 READY" for four releases, so `verify`
+    This was pinned to "Piblo 0.3.0 READY" for four releases, so `verify`
     could only ever pass on v0.3 hardware. Read the version being shipped
     instead: a stale acceptance check is worse than none, because it reports a
     successful flash as a failure and invites a re-flash of the same image.
     """
     version = (Path(__file__).resolve().parent.parent / "VERSION").read_text().strip()
-    return f"MAZ Pocket {version} READY"
+    return f"Piblo {version} READY"
 
 
 def reset(port: str) -> None:
@@ -50,7 +50,7 @@ def handoff(port: str) -> None:
         deadline = time.time() + 15
         while time.time() < deadline:
             line = read_line(device, deadline)
-            if "MAZ Pocket" in line and "READY" in line:
+            if "Piblo" in line and "READY" in line:
                 break
         device.write(b"MAZLAUNCHER\n")
         device.flush()
@@ -123,10 +123,10 @@ def partitions(device: serial.Serial) -> tuple[list[str], int]:
 
 
 def stale_app_labels(lines: list[str]) -> list[str]:
-    """MAZ Pocket app slots left by a previous install.
+    """Piblo app slots left by a previous install.
 
     M5Launcher derives the label from the app name, and truncates/uniquifies
-    it: installing "MAZ-Pocket" has produced both `mazpoc` and `mazpo2`. The
+    it: installing "Piblo" has produced both `mazpoc` and `mazpo2`. The
     old code deleted the literal `mazpoc` only, so a device carrying `mazpo2`
     kept a 4032KB slot and the new image had nowhere to go.
     """
@@ -152,7 +152,7 @@ def prepare(port: str, require_free: int = 0, already_in_launcher: bool = False)
         for label in stale_app_labels(lines):
             command(device, f"partition delete {label}", 8,
                     until=("OK partition deleted", "ERR partition not found"))
-            print(f"[+] Removed the previous MAZ Pocket app slot '{label}'.")
+            print(f"[+] Removed the previous Piblo app slot '{label}'.")
             lines, free = partitions(device)
 
         if not any(line.startswith("mazdata ") for line in lines):

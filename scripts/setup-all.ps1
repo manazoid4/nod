@@ -14,7 +14,7 @@ if (-not (Test-Path $VersionPath)) {
 }
 if (-not (Test-Path $VersionPath)) { throw "VERSION file not found beside START-HERE package." }
 $Version = (Get-Content $VersionPath -Raw).Trim()
-$FirmwareName = "Maz-Pocket-v$Version-M5Launcher.bin"
+$FirmwareName = "Piblo-v$Version-M5Launcher.bin"
 $CoreName = "MAZ-Core-v$Version.zip"
 
 function Find-PackageFile([string]$Name) {
@@ -33,12 +33,12 @@ function Ask-Yes([string]$Prompt, [bool]$DefaultYes = $true) {
 }
 
 Write-Host ""
-Write-Host "MAZ POCKET v$Version - START HERE" -ForegroundColor Cyan
+Write-Host "PIBLO v$Version - START HERE" -ForegroundColor Cyan
 Write-Host "You choose each part. Nothing formats a drive or writes Cardputer flash directly." -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "OPTION 1 - MAZ Core: PC companion for Call MAZ, agents, phone approvals and projects."
 Write-Host "OPTION 2 - Cardputer file: copy the firmware .bin to a microSD for M5Launcher."
-Write-Host "OPTION 3 - Portal: open mazpocket.local after setup."
+Write-Host "OPTION 3 - Portal: open piblo.local after setup."
 Write-Host ""
 
 $CoreInstalled = $false
@@ -92,7 +92,7 @@ if (-not $SkipSd) {
         $Disk = $Removable[0]
         Write-Host ""
         Write-Host "One removable drive detected: $($Disk.DeviceID) $($Disk.VolumeName)" -ForegroundColor Cyan
-        if (Ask-Yes "Copy MAZ Pocket v$Version firmware there now?" $true) {
+        if (Ask-Yes "Copy Piblo v$Version firmware there now?" $true) {
             & $SdInstaller -Drive $Disk.DeviceID -FirmwarePath $Firmware -Yes
             $SdCopied = $true
         } else {
@@ -101,11 +101,11 @@ if (-not $SkipSd) {
     } elseif ($Removable.Count -eq 0) {
         Write-Host ""
         Write-Host "No removable microSD detected - that is fine." -ForegroundColor Yellow
-        Write-Host "If MAZ Pocket is already running, stage the new .bin later at http://mazpocket.local."
+        Write-Host "If Piblo is already running, stage the new .bin later at http://piblo.local."
     } elseif ($Removable.Count -gt 1) {
         Write-Host ""
         Write-Warning "Multiple removable drives detected, so setup will not guess which one is the Cardputer microSD."
-        Write-Host "Run INSTALL-MAZ-POCKET.cmd when you want to choose the drive explicitly."
+        Write-Host "Run INSTALL-PIBLO.cmd when you want to choose the drive explicitly."
     } elseif (-not $Firmware) {
         Write-Warning "$FirmwareName not found; firmware copy skipped."
     }
@@ -116,15 +116,15 @@ Write-Host "SETUP COMPLETE" -ForegroundColor Green
 Write-Host "MAZ Core: $(if ($CoreInstalled) { 'installed/updated' } elseif ($SkipCore) { 'skipped by command' } else { 'not installed' })"
 Write-Host "Cardputer SD file: $(if ($SdCopied) { 'copied' } elseif ($SkipSd) { 'skipped by command' } else { 'not copied' })"
 Write-Host "Core location: $env:LOCALAPPDATA\MAZ Core"
-Write-Host "Cardputer portal: http://mazpocket.local"
-Write-Host "Update path: choose .bin at mazpocket.local -> Verify/Stage -> Open M5Launcher -> Install -> Launch MAZ Pocket."
-Write-Host "Returning to M5Launcher no longer intentionally invalidates the installed MAZ Pocket image."
+Write-Host "Cardputer portal: http://piblo.local"
+Write-Host "Update path: choose .bin at piblo.local -> Verify/Stage -> Open M5Launcher -> Install -> Launch Piblo."
+Write-Host "Returning to M5Launcher no longer intentionally invalidates the installed Piblo image."
 
 if (-not $NoBrowser) {
     Write-Host ""
-    if (Ask-Yes "Open mazpocket.local now?" $true) {
-        try { Start-Process "http://mazpocket.local" } catch { }
+    if (Ask-Yes "Open piblo.local now?" $true) {
+        try { Start-Process "http://piblo.local" } catch { }
     } else {
-        Write-Host "Portal not opened. Use http://mazpocket.local whenever you want it."
+        Write-Host "Portal not opened. Use http://piblo.local whenever you want it."
     }
 }

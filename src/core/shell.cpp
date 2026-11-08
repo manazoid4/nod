@@ -277,7 +277,7 @@ void bootScreen() {
             gCanvas.setFont(&fonts::Font0);
             gCanvas.setTextDatum(top_center);
             gCanvas.setTextColor(DIM, BG);
-            gCanvas.drawString("v" MAZ_POCKET_VERSION, SCREEN_W / 2, 118);
+            gCanvas.drawString("v" NOD_FW_VERSION, SCREEN_W / 2, 118);
             gCanvas.setTextDatum(top_left);
         }
         gCanvas.pushSprite(0, 0);

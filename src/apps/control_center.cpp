@@ -34,7 +34,7 @@ constexpr ControlItem CONTROL_ITEMS[] = {
     {"WI-FI",       "scan / connect",  "network"},
     {"HUB",    "HUB / AI bridge",  nullptr},
     {"HUB COMMANDS", "media / lock",    "talk"},
-    {"LIVE SCREEN", "mazpocket.local", nullptr},
+    {"LIVE SCREEN", "piblo.local", nullptr},
     {"STORAGE",     "SD / flash",      nullptr},
     {"DIAGNOSTICS", "hardware tests",  "tools"},
     {"SETTINGS",    "device",          "settings"},
@@ -120,7 +120,7 @@ private:
             ui::header(g, "OVERVIEW", "LIVE");
             char line[96];
             const char* wifi = Sys.wifiConnected ? Sys.wifiSsid.c_str() :
-                               (net::setupApActive() ? "MAZ-Pocket-Setup" : "offline");
+                               (net::setupApActive() ? "Piblo-Setup" : "offline");
             snprintf(line, sizeof(line), "Wi-Fi  %s", wifi);
             draw(g, 0, line);
             snprintf(line, sizeof(line), "IP     %s", Sys.ip.empty() ? "-" : Sys.ip.c_str());
@@ -147,7 +147,7 @@ private:
         }
         if (idx == 4) {
             ui::header(g, "LIVE SCREEN", "2 FPS");
-            draw(g, 0, "Open mazpocket.local");
+            draw(g, 0, "Open piblo.local");
             draw(g, 1, "Unlock with Piblo token");
             draw(g, 2, "LIVE SCREEN mirrors this LCD");
             draw(g, 3, "240x135 RGB565 / LAN");
@@ -268,7 +268,7 @@ private:
             if (Sys.wifiConnected) {
                 _message = Sys.ip + " / " + std::to_string(net::rssi()) + " dBm";
             } else if (net::setupApActive()) {
-                _message = "Join MAZ-Pocket-Setup / pass mazpocket";
+                _message = "Join Piblo-Setup / pass piblosetup";
             } else {
                 _message = "Wi-Fi offline";
             }
@@ -291,7 +291,7 @@ private:
             Cfg.wifiSsid2.clear(); Cfg.wifiPass2.clear(); Cfg.save();
             _message = "Backup forgotten";
         } else if (idx == 7) {
-            _message = net::startSetupAp() ? "Hotspot: MAZ-Pocket-Setup" : "Could not start hotspot";
+            _message = net::startSetupAp() ? "Hotspot: Piblo-Setup" : "Could not start hotspot";
         }
         sfx::confirm();
         invalidate();

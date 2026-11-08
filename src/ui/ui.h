@@ -1,4 +1,4 @@
-// MAZ Pocket — shared drawing primitives.
+// Piblo — shared drawing primitives.
 // Apps never talk to M5.Display directly; they draw into the shell's canvas
 // through these helpers so status bar, hints and dialogs stay consistent.
 #pragma once

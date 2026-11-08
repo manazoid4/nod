@@ -2,11 +2,11 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $Version = (Get-Content (Join-Path $Root "VERSION") -Raw).Trim()
 $Dist = Join-Path $Root "dist"
-$SourceFirmware = Join-Path $Dist "maz-pocket-app.bin"
-$FirmwareName = "Maz-Pocket-v$Version-M5Launcher.bin"
+$SourceFirmware = Join-Path $Dist "piblo-app.bin"
+$FirmwareName = "Piblo-v$Version-M5Launcher.bin"
 $CoreName = "MAZ-Core-v$Version.zip"
 $CardputerName = "MAZ-Cardputer-v$Version.zip"
-$BundleName = "MAZ-Pocket-v$Version-Install.zip"
+$BundleName = "Piblo-v$Version-Install.zip"
 $Firmware = Join-Path $Dist $FirmwareName
 $CoreZip = Join-Path $Dist $CoreName
 $CardputerZip = Join-Path $Dist $CardputerName
@@ -56,7 +56,7 @@ $PackageFiles = @{
     "VERSION" = (Join-Path $Root "VERSION")
     "START-HERE.cmd" = (Join-Path $Root "scripts\START-HERE.cmd")
     "setup-all.ps1" = (Join-Path $Root "scripts\setup-all.ps1")
-    "INSTALL-MAZ-POCKET.cmd" = (Join-Path $Root "scripts\INSTALL-MAZ-POCKET.cmd")
+    "INSTALL-PIBLO.cmd" = (Join-Path $Root "scripts\INSTALL-PIBLO.cmd")
     "install-to-sd.ps1" = (Join-Path $Root "scripts\install-to-sd.ps1")
     "QUICKSTART.txt" = (Join-Path $Root "QUICKSTART.txt")
     "RELEASE_NOTES.md" = (Join-Path $Root "RELEASE_NOTES.md")
@@ -74,7 +74,7 @@ foreach ($entry in $PackageFiles.GetEnumerator()) {
 # unbalanced the quoting in v0.7 and produced bogus brace/elseif parse errors.
 # Two independent guards: refuse to ship non-ASCII in an executed installer, and
 # write a UTF-8 BOM so 5.1 can never guess the encoding wrong again.
-$ExecutedInstallers = @("START-HERE.cmd", "setup-all.ps1", "INSTALL-MAZ-POCKET.cmd", "install-to-sd.ps1")
+$ExecutedInstallers = @("START-HERE.cmd", "setup-all.ps1", "INSTALL-PIBLO.cmd", "install-to-sd.ps1")
 $Utf8Bom = New-Object System.Text.UTF8Encoding($true)
 foreach ($name in $ExecutedInstallers) {
     $path = Join-Path $Dist $name
@@ -94,7 +94,7 @@ Remove-Item $CardStage -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $CardStage | Out-Null
 Copy-Item $Firmware (Join-Path $CardStage $FirmwareName) -Force
 Copy-Item (Join-Path $Dist "VERSION") $CardStage -Force
-Copy-Item (Join-Path $Dist "INSTALL-MAZ-POCKET.cmd") $CardStage -Force
+Copy-Item (Join-Path $Dist "INSTALL-PIBLO.cmd") $CardStage -Force
 Copy-Item (Join-Path $Dist "install-to-sd.ps1") $CardStage -Force
 Copy-Item (Join-Path $Dist "QUICKSTART.txt") $CardStage -Force
 Copy-Item (Join-Path $Dist "RELEASE_NOTES.md") $CardStage -Force
@@ -129,7 +129,7 @@ $InstallNames = @(
     "VERSION",
     "START-HERE.cmd",
     "setup-all.ps1",
-    "INSTALL-MAZ-POCKET.cmd",
+    "INSTALL-PIBLO.cmd",
     "install-to-sd.ps1",
     "SHA256SUMS.txt",
     "QUICKSTART.txt",
@@ -141,6 +141,6 @@ Compress-Archive -Path (Join-Path $InstallStage "*") -DestinationPath $Bundle -F
 $BundleHash = (Get-FileHash $Bundle -Algorithm SHA256).Hash.ToLowerInvariant()
 "$BundleHash  $BundleName" | Add-Content -Encoding ascii (Join-Path $Dist "SHA256SUMS.txt")
 
-Write-Host "Prepared MAZ Pocket v$Version release:"
+Write-Host "Prepared Piblo v$Version release:"
 Get-ChildItem $Firmware, $CoreZip, $CardputerZip, $Bundle, (Join-Path $Dist "SHA256SUMS.txt") | Select-Object Name, Length
 Get-Content (Join-Path $Dist "SHA256SUMS.txt")

@@ -11,7 +11,7 @@ try {
     $Firmware = Join-Path $Build "firmware.bin"
     $FirmwareBytes = (Get-Item $Firmware).Length
 
-    # Preserve the known live M5Launcher app-slot ceiling. MAZ Pocket is an app
+    # Preserve the known live M5Launcher app-slot ceiling. Piblo is an app
     # image: releases must slim down rather than repartitioning a user's device
     # or deleting sibling Launcher apps to make a build fit.
     $LauncherSlotBytes = 0x180000
@@ -22,8 +22,8 @@ try {
 
     $Dist = Join-Path $Root "dist"
     New-Item -ItemType Directory -Force $Dist | Out-Null
-    Copy-Item $Firmware (Join-Path $Dist "maz-pocket-app.bin") -Force
-    Remove-Item (Join-Path $Dist "maz-pocket-merged.bin") -Force -ErrorAction SilentlyContinue
+    Copy-Item $Firmware (Join-Path $Dist "piblo-app.bin") -Force
+    Remove-Item (Join-Path $Dist "piblo-merged.bin") -Force -ErrorAction SilentlyContinue
 } finally {
     Pop-Location
 }

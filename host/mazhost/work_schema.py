@@ -1,7 +1,7 @@
 """WORK schema and built-in template declarations.
 
 Kept separate from ``work_store.py`` so the transactional store remains small
-enough to audit. These are native MAZ Pocket definitions, not vendored code.
+enough to audit. These are native Piblo definitions, not vendored code.
 """
 
 from __future__ import annotations

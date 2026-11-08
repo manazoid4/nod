@@ -1,7 +1,7 @@
 [project]
 name = "mazhost"
 version = "0.2.0"
-description = "MAZ Host — speech-to-text and model routing for MAZ Pocket"
+description = "MAZ Host — speech-to-text and model routing for Piblo"
 requires-python = ">=3.10"
 
 [tool.pytest.ini_options]

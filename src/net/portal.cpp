@@ -134,7 +134,7 @@ void sendText(WiFiClient& c, int code, const char* type, const String& body) {
 String statusJson(bool unlocked) {
     String j;
     j.reserve(900);
-    j += "{\"ok\":true,\"version\":\"" MAZ_POCKET_VERSION "\"";
+    j += "{\"ok\":true,\"version\":\"" NOD_FW_VERSION "\"";
     j += ",\"unlocked\":"; j += unlocked ? "true" : "false";
     j += ",\"app\":\"" + jsonEscape(shell::currentId()) + "\"";
     j += ",\"battery\":" + String(Sys.batteryPct);
@@ -308,7 +308,7 @@ void startServer() {
     gServer.begin();
     gServer.setNoDelay(true);
     gRunning = true;
-    if (!gMdns && MDNS.begin("mazpocket")) {
+    if (!gMdns && MDNS.begin("piblo")) {
         MDNS.addService("http", "tcp", PORT);
         gMdns = true;
     }

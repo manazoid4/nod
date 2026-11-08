@@ -90,7 +90,7 @@ class SkillVault:
         steps = sentences[:12] or ["Review the Teach demonstration and repeat the demonstrated workflow."]
         return {
             "name": f"Teach workflow {session_id[-6:]}",
-            "description": "Repeat a workflow captured through MAZ Pocket Teach-by-Demonstration.",
+            "description": "Repeat a workflow captured through Piblo Teach-by-Demonstration.",
             "when_to_use": ["When the same demonstrated workflow needs to be repeated."],
             "procedure": steps,
             "verification": ["Confirm the intended outcome matches the demonstrated successful state."],
@@ -101,7 +101,7 @@ class SkillVault:
         source = self._teach_source(session_id)
         transcript = source["transcript"]
         prompt = (
-            "Turn this MAZ Pocket Teach-by-Demonstration evidence into one reusable procedural skill. "
+            "Turn this Piblo Teach-by-Demonstration evidence into one reusable procedural skill. "
             "Return JSON only with keys: name, description, when_to_use (array), procedure (array), "
             "verification (array), safety (array). Keep it concise and operational. Do not invent "
             "steps not supported by the demonstration; mark uncertain decisions as checks.\n\n"
@@ -178,7 +178,7 @@ class SkillVault:
         lines += ["", "## Safety / approval boundaries"]
         for item in data.get("safety") or []:
             lines.append(f"- {str(item).strip()}")
-        lines += ["", "## Provenance", "Generated from an explicitly recorded MAZ Pocket Teach session; see `provenance.json` and `sources.json`.", ""]
+        lines += ["", "## Provenance", "Generated from an explicitly recorded Piblo Teach session; see `provenance.json` and `sources.json`.", ""]
         return "\n".join(lines)
 
     def draft(self, draft_id: str) -> dict[str, Any]:

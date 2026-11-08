@@ -131,7 +131,7 @@ def main() -> None:
             device.open("braindump")
             require(device.state()["recording"] == "1", "BrainDump did not record")
             narrator = speak(
-                "I decided to use MAZ Pocket today because it keeps capture fast. "
+                "I decided to use Piblo today because it keeps capture fast. "
                 "The action is to test every shortcut."
             )
             time.sleep(0.8)
@@ -153,7 +153,7 @@ def main() -> None:
 
         before = device.state()
         device.open("decision")
-        device.type("Use MAZ Pocket today")
+        device.type("Use Piblo today")
         device.press("ENTER")
         device.type("It keeps capture and agent control close")
         device.press("ENTER")

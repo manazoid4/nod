@@ -1,4 +1,4 @@
-"""MAZ Host — the laptop half of MAZ Pocket.
+"""MAZ Host — the laptop half of Piblo.
 
 The Cardputer records audio and shows answers. Everything expensive or secret
 lives here: speech-to-text, model routing, API keys, conversation history.

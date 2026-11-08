@@ -1,4 +1,4 @@
-// MAZ Pocket — Claude Code approvals overlay.
+// Piblo — Claude Code approvals overlay.
 //
 // A global modal (like the firmware-update confirm): when Core holds a pending
 // Claude Code permission request, any screen is covered by tool + summary +

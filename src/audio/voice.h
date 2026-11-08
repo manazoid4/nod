@@ -1,4 +1,4 @@
-// MAZ Pocket — the voice pipeline.
+// Piblo — the voice pipeline.
 //
 // This is the piece v0.2 replaces, so it is deliberately drawn as a pipeline
 // and not as "the record button". Today:

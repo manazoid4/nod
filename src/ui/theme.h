@@ -1,4 +1,4 @@
-// MAZ Pocket — the single source of truth for how the device looks.
+// Piblo — the single source of truth for how the device looks.
 #pragma once
 #include <stdint.h>
 

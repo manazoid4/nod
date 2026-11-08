@@ -1,4 +1,4 @@
-// MAZ Pocket — networking.
+// Piblo — networking.
 #pragma once
 #include <stdint.h>
 
@@ -30,7 +30,7 @@ std::string ip();
 std::vector<Ap> scan(uint32_t timeoutMs = 6000);
 
 // v0.5 provisioning fallback. When no saved network works the device exposes
-// MAZ-Pocket-Setup so Wi-Fi can always be repaired from the Cardputer or phone.
+// Piblo-Setup so Wi-Fi can always be repaired from the Cardputer or phone.
 bool        startSetupAp();
 void        stopSetupAp();
 bool        setupApActive();

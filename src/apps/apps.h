@@ -1,4 +1,4 @@
-// MAZ Pocket — the app registry.
+// Piblo — the app registry.
 #pragma once
 #include <stddef.h>
 
