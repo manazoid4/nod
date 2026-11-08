@@ -176,6 +176,24 @@ def test_resampler_streaming_matches_one_shot_length():
     assert abs(len(out) - 32000) <= 4
 
 
+def _tone_rms_through_resampler(hz: float) -> float:
+    t = np.arange(24000) / 24000
+    pcm = (8000 * np.sin(2 * np.pi * hz * t)).astype("<i2").tobytes()
+    r = Resampler24to16()
+    out = np.frombuffer(b"".join(r.feed(pcm[i:i + 960]) for i in range(0, len(pcm), 960)), "<i2")
+    return float(np.sqrt(np.mean(out[4000:].astype(np.float64) ** 2)))  # skip filter warm-up
+
+
+def test_resampler_keeps_speech_band():
+    assert 5000 < _tone_rms_through_resampler(1000) < 6200  # 8000 peak sine = 5657 rms
+
+
+def test_resampler_blocks_aliasing_and_rattle():
+    # 10 kHz would alias to 6 kHz grit at 16 kHz; 80 Hz only rattles the speaker.
+    assert _tone_rms_through_resampler(10000) < 60
+    assert _tone_rms_through_resampler(80) < 120
+
+
 def test_boost_scales_and_clips():
     x = np.array([100, -100, 4000, -4000], dtype="<i2").tobytes()
     y = np.frombuffer(boost(x, 10.0), "<i2")
