@@ -14,12 +14,12 @@ def test_turns_accumulate_and_come_back_in_order():
     store = SessionStore(max_turns=10, ttl_minutes=60)
     sid = store.start()
 
-    store.add_turn(sid, "I am trying to finish MAZ Pocket today.", "Noted.")
+    store.add_turn(sid, "I am trying to finish Piblo today.", "Noted.")
     store.add_turn(sid, "What should I do next?", "Finish the mic test.")
 
     messages = store.messages(sid)
     assert [m["role"] for m in messages] == ["user", "assistant", "user", "assistant"]
-    assert messages[0]["content"] == "I am trying to finish MAZ Pocket today."
+    assert messages[0]["content"] == "I am trying to finish Piblo today."
     assert messages[3]["content"] == "Finish the mic test."
 
 

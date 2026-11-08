@@ -9,7 +9,7 @@ $HostPython = Join-Path $Root "host\.venv\Scripts\python.exe"
 
 if (-not $Binary) {
     & (Join-Path $Root "scripts\package-release.ps1")
-    $Binary = Join-Path $Root "dist\maz-pocket-app.bin"
+    $Binary = Join-Path $Root "dist\piblo-app.bin"
 }
 if (-not (Test-Path $Binary)) { throw "Firmware not found: $Binary" }
 
@@ -46,7 +46,7 @@ if (-not $Port) {
     throw "Cardputer ADV not found over USB after 20 seconds. Connect its data cable and tap RESET."
 }
 
-# If MAZ Pocket is currently open, wait through the serial-open reset and then
+# If Piblo is currently open, wait through the serial-open reset and then
 # ask it to hand back to Launcher. A Launcher already running simply ignores
 # this best-effort step and is accepted by `prepare` below.
 try {
@@ -61,7 +61,7 @@ $ImageBytes = (Get-Item $Binary).Length
 & $HostPython (Join-Path $Root "scripts\launcher-device.py") prepare --port $Port --require-free $ImageBytes --already-in-launcher
 if ($LASTEXITCODE -ne 0) { throw "M5Launcher preparation failed." }
 
-$ToolDir = Join-Path ([IO.Path]::GetTempPath()) "maz-pocket-m5launcher-2.8.0"
+$ToolDir = Join-Path ([IO.Path]::GetTempPath()) "piblo-m5launcher-2.8.0"
 $Flasher = Join-Path $ToolDir "serial_flasher.py"
 New-Item -ItemType Directory -Force $ToolDir | Out-Null
 if (-not (Test-Path $Flasher)) {
@@ -73,10 +73,10 @@ $Expected = "9CFBA9AF762AC7D99488F23706320B30D0896C4993599990EC80AD06AB8F7536"
 $Actual = (Get-FileHash $Flasher -Algorithm SHA256).Hash
 if ($Actual -ne $Expected) { throw "Downloaded M5Launcher tool failed its checksum." }
 
-& $HostPython $Flasher -f $Binary -p $Port -n "MAZ-Pocket"
+& $HostPython $Flasher -f $Binary -p $Port -n "Piblo"
 $FlashResult = $LASTEXITCODE
 
 # Launcher 2.8.0 can reboot before its final serial OK drains on Windows. The
 # actual acceptance criterion is the freshly installed firmware booting.
 & $HostPython (Join-Path $Root "scripts\launcher-device.py") verify --port $Port
-if ($LASTEXITCODE -ne 0) { throw "MAZ Pocket did not boot after M5Launcher install (flasher exit $FlashResult)." }
+if ($LASTEXITCODE -ne 0) { throw "Piblo did not boot after M5Launcher install (flasher exit $FlashResult)." }

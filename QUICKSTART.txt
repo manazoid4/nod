@@ -1,24 +1,24 @@
-MAZ POCKET v1.5.0 (Piblo)
+PIBLO v1.5.1
 
-MAZ POCKET v1.0.0 - WORK CONSISTENCY QUICKSTART
+PIBLO v1.0.0 - WORK CONSISTENCY QUICKSTART
 ======================================
 
 WHAT TO DOWNLOAD
 ----------------
 Laptop/client only:   MAZ-Core-v1.0.0.zip
 Cardputer only:       MAZ-Cardputer-v1.0.0.zip
-Everything together: MAZ-Pocket-v1.0.0-Install.zip
+Everything together: Piblo-v1.0.0-Install.zip
 
 The Cardputer ZIP contains an app-only M5Launcher firmware image. M5Launcher owns installation and rollback. Do NOT flash this app .bin at address 0x0.
 
 FIRST START / WINDOWS
 ---------------------
-1. Extract MAZ-Pocket-v1.0.0-Install.zip.
+1. Extract Piblo-v1.0.0-Install.zip.
 2. Double-click START-HERE.cmd.
 3. Choose whether to install/update MAZ Core when asked.
 4. If one removable microSD is connected, choose whether to copy the Cardputer .bin to it.
-5. Install Maz-Pocket-v1.0.0-M5Launcher.bin with M5Launcher.
-6. Once MAZ Pocket is on Wi-Fi, open http://mazpocket.local.
+5. Install Piblo-v1.0.0-M5Launcher.bin with M5Launcher.
+6. Once Piblo is on Wi-Fi, open http://piblo.local.
 
 HOME
 ----
@@ -89,21 +89,21 @@ http://<your-PC>:8787/control/
 
 Use it to approve/deny PROJECT FULL, PC FULL or ADMIN requests and to REVOKE ALL active control.
 
-MAZPOCKET.LOCAL
+PIBLO.LOCAL
 ---------------
-Open http://mazpocket.local on the same LAN.
+Open http://piblo.local on the same LAN.
 The page puts Pairing, Token ID, Phone Control, OPEN WORK, CALL, PLAN, CREW, RETRO, Prompt Deck, AI route, voice playback, status and firmware staging on one page.
 
 UPDATING FIRMWARE
 -----------------
-At mazpocket.local:
+At piblo.local:
 1. Choose the new app .bin.
 2. VERIFY + STAGE it to SD.
 3. OPEN M5LAUNCHER.
 4. Install the staged .bin.
-5. Launch MAZ Pocket.
+5. Launch Piblo.
 
-IMPORTANT: the v0.8 M5Launcher safety fix remains enforced. Returning to M5Launcher does not deliberately erase/invalidate the installed MAZ Pocket image.
+IMPORTANT: the v0.8 M5Launcher safety fix remains enforced. Returning to M5Launcher does not deliberately erase/invalidate the installed Piblo image.
 
 REMOTE DEBUG / FULL CONTROL
 ---------------------------
@@ -122,7 +122,7 @@ GLOBAL
 Fn + Space = ask about current Pocket screen/context.
 Fn + F     = FIELD mode on/off.
 Ctrl + K   = command palette.
-Ctrl + L   = return to M5Launcher without invalidating MAZ Pocket.
+Ctrl + L   = return to M5Launcher without invalidating Piblo.
 Fn + M on Home = harmless retro Easter egg.
 
 FIRST VALIDATION
@@ -133,8 +133,8 @@ FIRST VALIDATION
 - CAPTURE -> TEACH DEMO: choose display, record, MARK, stop.
 - AGENTS -> PLAN / CREW / RETRO: run one of each against a test project.
 - MEMORY -> PROMPT DECK: compile one template.
-- Open mazpocket.local from your phone.
-- Enter M5Launcher and confirm MAZ Pocket remains listed/launchable.
+- Open piblo.local from your phone.
+- Enter M5Launcher and confirm Piblo remains listed/launchable.
 - Phone WORK: log APPLICATION + one MAZ WORKS event, then Undo Last.
 - Cardputer WORK: confirm next-poll update, disconnect Core, and confirm last-known values remain labelled STALE.
 - WORK TOOLS: confirm Focus/Sprint/Tasks/Reminders/Shift/Retro remain reachable.

@@ -31,7 +31,7 @@ namespace {
 class HomeApp : public App {
 public:
     const char* id() const override { return "home"; }
-    const char* title() const override { return "MAZ Pocket"; }
+    const char* title() const override { return "Piblo"; }
     const char* hints() const override { return _hints; }
 
     void onEnter() override {

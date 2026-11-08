@@ -1,4 +1,4 @@
-// MAZ Pocket — firmware entry point for the M5Stack Cardputer ADV.
+// Piblo — firmware entry point for the M5Stack Cardputer ADV.
 #include <M5Unified.h>
 #include <sys/time.h>
 #include <time.h>
@@ -74,8 +74,8 @@ void setup() {
 
     health::begin();
 
-    Serial.printf("MAZ Pocket %s READY board=%d keyboard=%s storage=%s\n",
-                  MAZ_POCKET_VERSION, (int)M5.getBoard(),
+    Serial.printf("Piblo %s READY board=%d keyboard=%s storage=%s\n",
+                  NOD_FW_VERSION, (int)M5.getBoard(),
                   KB.ok() ? "ok" : "missing", store::backendName());
 
     if (!KB.ok())

@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-echo MAZ Pocket - safe microSD installer
+echo Piblo - safe microSD installer
 echo.
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0install-to-sd.ps1"
 set "exitcode=%ERRORLEVEL%"

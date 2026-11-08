@@ -134,7 +134,7 @@ String handleLine(const String& raw, bool trusted) {
     }
 
     if (line == "MAZPING")
-        return String("MAZPING OK version=" MAZ_POCKET_VERSION " ip=") +
+        return String("MAZPING OK version=" NOD_FW_VERSION " ip=") +
                WiFi.localIP().toString();
 
     if (line == "MAZSPK") {
@@ -298,7 +298,7 @@ void update() {
             gClient = next;
             gAuthed = false;
             gInbound = "";
-            gClient.println("MAZ Pocket " MAZ_POCKET_VERSION " - MAZAUTH first");
+            gClient.println("Piblo " NOD_FW_VERSION " - MAZAUTH first");
         }
         return;
     }

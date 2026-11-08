@@ -1,4 +1,4 @@
-// MAZ Pocket — the shell.
+// Piblo — the shell.
 //
 // Owns the frame: one canvas, one app stack, the status/hint chrome, the
 // global shortcuts, the command palette, the screen timeout and the Focus

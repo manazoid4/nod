@@ -1,6 +1,6 @@
 # MAZ Pocket
 
-Current release candidate: v1.5.0
+Current release candidate: v1.5.1
 
 **A pocket-sized physical control surface for your PC, AI models and coding agents — built for the M5Stack Cardputer ADV.**
 

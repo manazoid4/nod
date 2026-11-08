@@ -7,7 +7,7 @@ from mazhost.core import CoreError, MazCore
 
 
 def _service(handler, **kw):
-    settings = Settings(token="t" * 32, cardputer_url="http://mazpocket.local", **kw)
+    settings = Settings(token="t" * 32, cardputer_url="http://piblo.local", **kw)
     return MazCore(settings, client=httpx.Client(transport=httpx.MockTransport(handler)))
 
 
@@ -38,7 +38,7 @@ def test_falls_back_to_configured_url_and_ignores_public_ips():
     assert svc.device_ip is None
     svc.note_device("10.0.0.9")
     assert svc.cardputer_status()["version"] == "1.0.2"
-    assert seen == ["10.0.0.9", "mazpocket.local"]
+    assert seen == ["10.0.0.9", "piblo.local"]
 
 
 def test_action_forwards_form_and_token():

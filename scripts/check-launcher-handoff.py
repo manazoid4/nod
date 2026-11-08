@@ -22,8 +22,8 @@ for forbidden in (
 ):
     if forbidden in text:
         raise SystemExit(
-            "launcher hand-back guard: MAZ Pocket must never invalidate its own app "
+            "launcher hand-back guard: Piblo must never invalidate its own app "
             f"image ({forbidden})"
         )
 
-print("M5Launcher hand-back preserves the MAZ Pocket app image")
+print("M5Launcher hand-back preserves the Piblo app image")

@@ -20,8 +20,8 @@ bool     gWasConnected = false;
 bool     gSetupAp      = false;
 uint8_t  gFailCycles   = 0;
 
-constexpr const char* SETUP_SSID = "MAZ-Pocket-Setup";
-constexpr const char* SETUP_PASS = "mazpocket";
+constexpr const char* SETUP_SSID = "Piblo-Setup";
+constexpr const char* SETUP_PASS = "piblosetup";
 }  // namespace
 
 bool startSetupAp() {
@@ -34,7 +34,7 @@ bool startSetupAp() {
         Sys.wifiSsid = SETUP_SSID;
         Sys.ip = WiFi.softAPIP().toString().c_str();
     }
-    notify::post(Note::Info, "Wi-Fi setup ready", "MAZ-Pocket-Setup / 192.168.4.1");
+    notify::post(Note::Info, "Wi-Fi setup ready", "Piblo-Setup / 192.168.4.1");
     return true;
 }
 
@@ -135,7 +135,7 @@ void update() {
         Sys.ip = WiFi.localIP().toString().c_str();
         Sys.wifiSsid = WiFi.SSID().c_str();
         if (!gWasConnected) {
-            notify::post(Note::Success, "Wi-Fi connected", Sys.wifiSsid + " / mazpocket.local");
+            notify::post(Note::Success, "Wi-Fi connected", Sys.wifiSsid + " / piblo.local");
             syncClock();
         }
         gWasConnected = true;

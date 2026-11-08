@@ -81,7 +81,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         "Compare approaches against this project's actual constraints.",
         "Implement only the selected high-value pieces.",
     ), ("Document sources and licences.", "Run project-specific verification.")),
-    PromptTemplate("maz-feature", "Add a MAZ Pocket capability", "maz", "Add a useful Pocket capability without turning it into an app drawer", (
+    PromptTemplate("maz-feature", "Add a Piblo capability", "maz", "Add a useful Pocket capability without turning it into an app drawer", (
         "Keep heavy work on MAZ Core where possible.",
         "Preserve the six-surface information architecture.",
         "Make the Pocket interaction obvious, compact and recoverable offline.",

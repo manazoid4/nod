@@ -1,4 +1,4 @@
-// MAZ Pocket — small shared pieces every app screen needs.
+// Piblo — small shared pieces every app screen needs.
 #pragma once
 #include <string>
 
@@ -104,7 +104,7 @@ struct TextField {
 };
 
 // Shared list cursor: keeps selection and scroll window in step so every list
-// screen in MAZ Pocket behaves identically.
+// screen in Piblo behaves identically.
 struct ListCursor {
     int sel   = 0;
     int first = 0;

@@ -1,4 +1,4 @@
-// MAZ Pocket — the app contract.
+// Piblo — the app contract.
 #pragma once
 #include <M5Unified.h>
 

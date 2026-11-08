@@ -11,7 +11,7 @@ Settings Cfg;
 SysState Sys;
 
 namespace {
-constexpr const char* NS = "mazpocket";
+constexpr const char* NS = "mazpocket";  // storage key, never shown: renaming it would wipe saved Wi-Fi and pairing
 Preferences prefs;
 }  // namespace
 

@@ -1,4 +1,4 @@
-// MAZ Pocket — persisted settings.
+// Piblo — persisted settings.
 #pragma once
 #include <stdint.h>
 

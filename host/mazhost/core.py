@@ -1,4 +1,4 @@
-"""MAZ Core: factual local-PC tools for MAZ Pocket and the private web console.
+"""MAZ Core: factual local-PC tools for Piblo and the private web console.
 
 Core exposes a deliberately small allow-list. It can inspect projects and run
 normal test/build/git maintenance commands, but there is no generic remote
@@ -439,7 +439,7 @@ class MazCore:
 
     def note_device(self, ip: str) -> None:
         """Remember the device's LAN address when it calls in, so the live view
-        works even where mazpocket.local (mDNS) does not resolve."""
+        works even where piblo.local (mDNS) does not resolve."""
         if ip and is_lan_ip(ip) and not ip.startswith("127."):
             self.device_ip = ip
 
@@ -450,6 +450,8 @@ class MazCore:
         configured = self.settings.cardputer_url.rstrip("/")
         if configured not in bases:
             bases.append(configured)
+        if "http://mazpocket.local" not in bases:  # devices still on pre-1.5.1 firmware
+            bases.append("http://mazpocket.local")
         return bases
 
     def _cardputer(self, method: str, path: str, timeout: float, **kwargs: Any) -> httpx.Response:

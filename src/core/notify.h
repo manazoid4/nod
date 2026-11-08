@@ -1,4 +1,4 @@
-// MAZ Pocket — one notification path for the whole device.
+// Piblo — one notification path for the whole device.
 //
 // Focus finishing, a recording saved, Wi-Fi dropping and (next version) an
 // assistant reply all arrive through this same call, so the future AI features

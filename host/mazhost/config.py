@@ -107,7 +107,7 @@ class Settings(BaseSettings):
     core_enabled: bool = True
     project_roots: str = ""
     obsidian_root: str = ""
-    cardputer_url: str = "http://mazpocket.local"
+    cardputer_url: str = "http://piblo.local"
     web_origins: str = "https://mazos-site.vercel.app,http://localhost:3000,http://127.0.0.1:3000"
 
     # Optional GitHub command bridge. This remains narrow and should not be used

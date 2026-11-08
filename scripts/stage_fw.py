@@ -4,7 +4,7 @@
   python scripts/stage_fw.py --bin X [out]   stage a local bin, but only if its embedded sha is origin/main's HEAD
 
 Guards (why: on 7 Nov Core served an old d88e714 build that a hand copy left in host/fw):
-build must come from a successful "MAZ Pocket build" run on main whose head sha == origin/main now,
+build must come from a successful "Piblo build" run on main whose head sha == origin/main now,
 the bin's embedded sha must equal that head, first byte 0xE9, size under the 1,507,328 B app slot.
 Needs git + gh on the machine that runs it; copy the staged folder to the PC afterwards.
 """

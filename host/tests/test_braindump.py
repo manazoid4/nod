@@ -15,11 +15,11 @@ def test_accepts_fenced_model_json():
 def test_malformed_model_output_falls_back_to_transcript():
     value, fallback = structure_braindump(
         '```json\n{"summary":"broken","actions":["test"]}\nextra',
-        "I decided to use MAZ Pocket. The action is to test every shortcut.",
+        "I decided to use Piblo. The action is to test every shortcut.",
     )
 
     assert fallback is True
-    assert value["summary"].startswith("I decided to use MAZ Pocket")
+    assert value["summary"].startswith("I decided to use Piblo")
     assert value["actions"] == ["test every shortcut"]
 
 

@@ -31,5 +31,5 @@ $Headers = @{ Authorization = "Bearer $Token" }
 $Body = @{ text = $Text } | ConvertTo-Json -Compress
 $result = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/beam/to-pocket" -Method Post -Headers $Headers -ContentType "application/json" -Body $Body -TimeoutSec 5
 if (-not $result.ok) { throw "MAZ Core did not accept the Beam." }
-Write-Host "BEAM QUEUED -> MAZ Pocket" -ForegroundColor Green
+Write-Host "BEAM QUEUED -> Piblo" -ForegroundColor Green
 Write-Host $Text

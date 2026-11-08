@@ -1,4 +1,4 @@
-"""Small durable Beam queue shared by MAZ Core and MAZ Pocket.
+"""Small durable Beam queue shared by MAZ Core and Piblo.
 
 Beam deliberately moves only short text/URLs.  It is not a remote shell and it
 never treats received text as executable input.  Laptop -> Pocket messages are

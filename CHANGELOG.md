@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.1 — Piblo name everywhere (8 Nov 2026)
+
+- Device shows Piblo, never MAZ Pocket: home title, Settings, Wi-Fi hotspot (Piblo-Setup, password piblosetup), web address piblo.local, serial banner.
+- Core prompts, installers and release file names say Piblo.
+- Kept so nothing is lost: saved settings key, Core data folders (~/.maz-pocket), API paths.
+
 ## v1.5.0 — nod v1.5 (7 Nov 2026)
 
 - Home: blue talk dot inside the Toy-shop warm palette (theme.h); talk circle kept.

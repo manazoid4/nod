@@ -1,4 +1,4 @@
-// MAZ Pocket — UI sounds.
+// Piblo — UI sounds.
 //
 // Short, quiet, two notes at most. The point is confirmation you can feel
 // without looking at the screen: you hold SPACE in your pocket, hear the

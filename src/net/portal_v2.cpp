@@ -34,8 +34,8 @@ constexpr uint32_t UPLOAD_MAX_AGE_MS = 120000;
 constexpr uint32_t TX_IDLE_MS = 2500;
 constexpr size_t SCREEN_PIXELS = 240u * 135u;
 constexpr size_t SCREEN_BYTES = SCREEN_PIXELS * 2u;
-constexpr char STAGING_PATH[] = "/MAZ-Pocket-Staging.part";
-constexpr char STAGED_PATH[] = "/MAZ-Pocket-Staged.bin";
+constexpr char STAGING_PATH[] = "/Piblo-Staging.part";
+constexpr char STAGED_PATH[] = "/Piblo-Staged.bin";
 
 WiFiServer gServer(PORT);
 WiFiClient gClient;
@@ -256,7 +256,7 @@ void queueScreen() {
 String statusJson(bool unlocked) {
     String j;
     j.reserve(1200);
-    j += "{\"ok\":true,\"version\":\"" MAZ_POCKET_VERSION "\"";
+    j += "{\"ok\":true,\"version\":\"" NOD_FW_VERSION "\"";
     j += ",\"unlocked\":"; j += unlocked ? "true" : "false";
     j += ",\"app\":\"" + jsonEscape(shell::currentId()) + "\"";
     j += ",\"battery\":" + String(Sys.batteryPct);
@@ -759,7 +759,7 @@ void startServer() {
     gServer.begin();
     gServer.setNoDelay(true);
     gRunning = true;
-    if (!gMdns && MDNS.begin("mazpocket")) {
+    if (!gMdns && MDNS.begin("piblo")) {
         MDNS.addService("http", "tcp", PORT);
         gMdns = true;
     }

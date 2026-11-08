@@ -1,4 +1,4 @@
-# MAZ Pocket - 8MB flash (ESP32-S3FN8), no PSRAM.
+# Piblo - 8MB flash (ESP32-S3FN8), no PSRAM.
 #
 # THIS FILE IS NOT THE REAL DEVICE LAYOUT. On a Launcher-managed device,
 # M5Launcher owns and rewrites the partition table; this CSV only gives
