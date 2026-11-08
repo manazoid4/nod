@@ -20,7 +20,7 @@ from starlette.routing import WebSocketRoute
 from websockets.asyncio.client import connect
 
 from .config import Settings
-from .live_brain import LiveBrain, is_noise, split_sentences
+from .live_brain import LiveBrain, is_noise, split_sentences, first_clause
 
 log = logging.getLogger("mazhost.live")
 
@@ -289,11 +289,14 @@ class LiveBridge:
                 self._cloud = None
 
     async def _think(self, text: str, sentences: asyncio.Queue) -> None:
-        buf = ""
+        buf, said = "", False
         try:
             async for piece in self.brain.stream(text):
                 buf += piece
                 done, buf = split_sentences(buf)
+                if not done and not said:
+                    done, buf = first_clause(buf)  # start speaking at the first comma: ~0.4 s sooner
+                said = said or bool(done)
                 for s in done:
                     await self._send({"type": "text", "role": "assistant", "text": s + " "})
                     sentences.put_nowait(s)

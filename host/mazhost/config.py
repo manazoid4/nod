@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     default_route: Literal["local", "auto", "cloud", "mazlatest"] = "local"
     build_id: str = Field(default="dev", min_length=1, max_length=120)
 
-    live_end_silence_ms: int = Field(default=600, ge=100, le=3000)  # live voice: silence that ends the user's turn
+    live_end_silence_ms: int = Field(default=450, ge=100, le=3000)  # live voice: silence that ends the user's turn
     # live voice: digital gain on device mic audio before VAD + model. Cardputer ADV speech arrives at
     # rms ~100-290 (peak ~1k of 32k, measured 8 Nov 2026), far below normal speech levels.
     live_mic_gain: float = Field(default=10.0, ge=0.1, le=64.0)

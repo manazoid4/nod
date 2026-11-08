@@ -95,6 +95,14 @@ def split_sentences(buf: str, final: bool = False, min_len: int = 20) -> tuple[l
     return out, rest
 
 
+def first_clause(buf: str, min_words: int = 4) -> tuple[list[str], str]:
+    """Cut the reply's opening clause at a comma/dash once it has min_words, so speech starts early."""
+    m = re.search(r"^(.+?[,—–])\s+(.*)$", buf, re.S)
+    if m and len(m[1].split()) >= min_words:
+        return [m[1].strip()], m[2]
+    return [], buf
+
+
 def pick_model(models: list[dict], patterns: list[str]) -> str | None:
     """Best OpenRouter id for an alias: free first (biggest context, non-reasoning first), else cheapest paid."""
     for pat in patterns:

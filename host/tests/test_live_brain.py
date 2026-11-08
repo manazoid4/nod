@@ -189,3 +189,10 @@ def test_transcript_noise_filter_and_sentence_cutting():
     done, rest = split_sentences("Hi there. This is **a longer one!** And a part")
     assert done == ["Hi there. This is a longer one!"] and rest == "And a part"
     assert split_sentences("Ok", final=True) == (["Ok"], "")
+
+
+def test_first_clause_starts_speech_early():
+    from mazhost.live_brain import first_clause
+    assert first_clause("How about something snappy, like Bleep or Zip") == (["How about something snappy,"], "like Bleep or Zip")
+    assert first_clause("Sure, like Bleep") == ([], "Sure, like Bleep")  # too short to be worth a TTS call
+    assert first_clause("No comma yet here") == ([], "No comma yet here")
