@@ -47,17 +47,13 @@ test("all external new-tab links protect the opener", () => {
   }
 });
 
-test("21 unique published roadmap packages, four stages, no misleading shipped claims", () => {
+test("roadmap is a short honest page — no 21-package slop, no filter UI", () => {
   const html = contents["/roadmap/"];
-  const numbers = [...html.matchAll(/class="work-id">(\d+)<\/span>/g)].map(x => Number(x[1]));
-  assert.equal(numbers.length, 21);
-  assert.deepEqual(numbers.sort((a,b) => a-b), Array.from({length:21}, (_,i) => i+1));
-  assert.equal((html.match(/class="road-phase"/g) || []).length, 4);
-  for (const key of ["foundation", "experience", "new", "launch"]) assert.ok(html.includes('data-phase-section="' + key + '"'));
-  assert.match(html, /PROPOSED, NOT WORKING/);
-  assert.match(html, /Reel-to-model detective/);
-  assert.match(html, /Saved-video importer/);
-  assert.doesNotMatch(html, /NOT CLAIMED AS SHIPPED/);
+  assert.match(html, /What works/);
+  assert.match(html, /What's next/);
+  assert.match(html, /Works on the desk/);
+  assert.match(html, /hold a key|ask a question/);
+  assert.doesNotMatch(html, /work packages|permission decisions|boundaries|creative frontier/);
 });
 
 test("homepage is a clean Kickstarter teaser — no fake claims, real waitlist", () => {
