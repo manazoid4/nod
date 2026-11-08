@@ -45,6 +45,7 @@ float   gLevel = 0.f;
 uint32_t gConnSince = 0;  // when we last started waiting for Core
 bool     gNeedMic = false;  // switch to mic pending (retried from update())
 uint8_t  gMicTries = 0;
+uint8_t  gSpkWaits = 0;
 uint32_t gNextTry = 0;
 
 // mic
@@ -108,6 +109,7 @@ bool toMic() {
 void wantMic() {
     gNeedMic = true;
     gMicTries = 0;
+    gSpkWaits = 0;
     gNextTry = 0;
     gWantListen = false;
 }
@@ -226,7 +228,12 @@ void queueBlock(int16_t* b, size_t n) {
 
 void pumpSpeaker() {
     if (gMode != Mode::Spk) return;
-    const bool quiet = gWantListen || millis() - gLastFrameMs > kQuietMs;
+    // Core paused/finished only when frames stop AND the ring is nearly drained.
+    // A mid-reply WebSocket stall with a full ring must not trigger the tail
+    // drain (fade-out, re-buffer, fade-in = audible pumping); with Core pacing
+    // <=400 ms ahead the ring always drains below kPreBytes at a true end.
+    const bool quiet =
+        gWantListen || (gCount <= kPreBytes && millis() - gLastFrameMs > kQuietMs);
     while (M5.Speaker.isPlaying(kCh) < 2) {
         const size_t avail = gCount & ~(size_t)1;
         if (gPrebuf) {
@@ -320,7 +327,12 @@ void update() {
     pumpMic();
     pumpSpeaker();
     if (gNeedMic && (int32_t)(millis() - gNextTry) >= 0) {
-        if (toMic()) {
+        if (M5.Speaker.isPlaying(kCh) && gSpkWaits < 5) {
+            // A reconnect can land mid-reply; Speaker.end() on a playing block
+            // clicks. Let the queued tail (<=128 ms) drain first, bounded.
+            ++gSpkWaits;
+            gNextTry = millis() + 60;
+        } else if (toMic()) {
             gNeedMic = false;
         } else if (++gMicTries >= 5) {
             end();  // keeps the "mic did not start" error for the screen
