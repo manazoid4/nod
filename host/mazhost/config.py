@@ -78,6 +78,7 @@ class Settings(BaseSettings):
     default_route: Literal["local", "auto", "cloud", "mazlatest"] = "local"
     build_id: str = Field(default="dev", min_length=1, max_length=120)
 
+    live_end_silence_ms: int = Field(default=600, ge=100, le=3000)  # live voice: silence that ends the user's turn
     max_upload_mb: int = Field(default=12, ge=1, le=64)
     max_audio_seconds: int = Field(default=900, ge=1, le=3600)
     session_ttl_minutes: int = Field(default=120, ge=1, le=1440)
