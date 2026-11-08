@@ -183,7 +183,7 @@ private:
                 const std::string upd = host::updateReady() ? "\nUPDATE READY v" + host::coreInfo().fwVersion : "";
                 snprintf(buf, sizeof(buf),
                          "nod v" NOD_FW_VERSION " (" NOD_FW_SHA ")\nCore %s%s\nChip     %s "
-                         "rev%d\nCores    %d\nKeyboard %s\nUptime   %s",
+                         "rev%d\nCores    %d\nKeyboard %s\nUptime   %s\nBuild    " PIBLO_LABEL,
                          cv.empty() ? "offline" : ("v" + cv).c_str(), upd.c_str(), ESP.getChipModel(),
                          (int)ESP.getChipRevision(), (int)ESP.getChipCores(),
                          KB.ok() ? "TCA8418 ok" : "NOT DETECTED",
@@ -382,7 +382,7 @@ public:
 
     void render(M5Canvas& g) override {
         g.fillScreen(BG);
-        ui::header(g, "Settings", "v" NOD_FW_VERSION);
+        ui::header(g, "Settings", PIBLO_LABEL);
 
         const int rows = std::min(ROWS_VISIBLE - 1, SET_COUNT);
         for (int i = 0; i < rows; ++i) {
