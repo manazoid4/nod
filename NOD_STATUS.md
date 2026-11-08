@@ -5,6 +5,9 @@ Every feature: [FEATURE_INVENTORY.md](FEATURE_INVENTORY.md) · Device tests: [te
 
 **Current level: v1.5.** A firmware tick only goes green when the feature is seen working on the real Cardputer, not just in the build or in CI.
 
+## Physical blocker
+- [ ] 🟠 **Battery:** old firmware (d88e714) blocks OTA unless charging. Charge the Cardputer fully before attempting U update or flashing v1.5. Do not test at low battery.
+
 ## Decided
 - 🟢 Brand and web layout: Concept A "Toy-shop warm" (Maz's choice). Blue talk dot inside the warm palette. Not open for re-discussion.
 - 🟢 Firmware has a second OTA slot (`nodfw1` / `nodfw2`, 1,507,328 B each). The device's U update works: it installed build d88e714 into `nodfw2`. Every build must stay below 1,507,328 B.
