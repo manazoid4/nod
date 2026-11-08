@@ -4,22 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#fff4e0">
-  <meta name="description" content="Piblo is a pocket device for asking, saving thoughts and staying on top of the day. Hold a key and talk. Designed in the UK. Open-source prototype in progress.">
-    <meta property="og:title" content="Piblo. Ask. Listen. Remember.">
-    <meta property="og:description" content="Less screen. More life. Piblo is an everyday pocket helper being developed in the UK — open source and heading to Kickstarter.">
+  <meta name="description" content="Piblo is a pocket device for the things you'd otherwise lose. Hold a key and talk. Designed in the UK. Heading to Kickstarter.">
+  <meta property="og:title" content="Piblo. Ask. Listen. Remember.">
+  <meta property="og:description" content="Less screen. More life. Piblo is an everyday pocket helper — heading to Kickstarter.">
   <meta property="og:type" content="website">
   <link rel="canonical" href="https://piblo.co.uk/">
   <meta property="og:url" content="https://piblo.co.uk/">
   <meta property="og:image" content="https://piblo.co.uk/media/piblo-og.jpg">
-  <meta property="og:image:alt" content="Piblo. Less screen. More life. Designed in the UK. Concept prototype. piblo.co.uk">
+  <meta property="og:image:alt" content="Piblo. Less screen. More life. Designed in the UK. piblo.co.uk">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:site_name" content="Piblo">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Piblo. Ask. Listen. Remember.">
-  <meta name="twitter:description" content="Less screen. More life. Piblo is an everyday pocket helper being developed in the UK.">
+  <meta name="twitter:description" content="Less screen. More life. Piblo is an everyday pocket helper — heading to Kickstarter.">
   <meta name="twitter:image" content="https://piblo.co.uk/media/piblo-og.jpg">
-  <meta name="twitter:image:alt" content="Piblo. Less screen. More life. Designed in the UK. Concept prototype. piblo.co.uk">
+  <meta name="twitter:image:alt" content="Piblo. Less screen. More life. Designed in the UK. piblo.co.uk">
   <title>Piblo. Ask. Listen. Remember.</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/tokens.css">
@@ -46,212 +46,80 @@
 <header class="header">
   <div class="wrap header-inner">
     <a class="logo" href="/" aria-label="Piblo home"><span class="logo-dot" aria-hidden="true"></span>piblo</a>
-    <nav class="nav" aria-label="Main navigation">
-      <a href="/#does">What it does</a><a href="/#inside">What's inside</a><a href="/#how">How it works</a><a href="/#concepts">Concepts</a><a href="/#status">Status</a><a href="/#open">Open source</a>
-          </nav>
-          <a class="btn btn-sun btn-small" href="/#waitlist">Join the launch list</a>
+    <a class="btn btn-sun btn-small" href="#waitlist">Join the launch list</a>
   </div>
-  <details class="mobile-menu"><summary>Menu</summary><nav class="mobile-menu-links" aria-label="Mobile navigation"><a href="/#does">What it does</a><a href="/#inside">What's inside</a><a href="/#how">How it works</a><a href="/#concepts">Future concepts</a><a href="/#status">Status</a><a href="/roadmap/">Detailed roadmap</a><a href="/readiness/">Launch checks</a><a href="/#open">Open source</a></nav></details>
 </header>
 
 <main id="main">
   <section class="hero wrap" id="top">
     <div class="hero-text">
-      <p class="sticker sticker-mint"><span aria-hidden="true">🇬🇧</span> Designed in the UK · built in the open</p>
       <h1><span class="h-ask">Ask.</span> <span class="h-listen">Listen.</span> <span class="h-end">Remember.</span></h1>
-      <p class="hero-promise">Less screen. More life.</p><p class="lede">A small pocket device for the things you'd otherwise lose: the note, the idea, the bins on Thursday. Type it, put it away, get on with your evening.</p>
+      <p class="hero-promise">Less screen. More life.</p>
+      <p class="lede">A small pocket device for the things you'd otherwise lose: the note, the idea, the bins on Thursday. Type it, put it away, get on with your evening.</p>
       <div class="actions">
-        <a class="btn btn-tomato" href="/#waitlist">Join the launch list</a>
-                <a class="btn btn-ghost" href="#how">See how it works</a>
-              </div>
+        <a class="btn btn-tomato" href="#waitlist">Join the launch list</a>
+      </div>
     </div>
     <figure class="hero-film">
       <video class="film" data-autoplay controls muted loop playsinline preload="metadata" poster="/media/piblo-everyday-poster.jpg" aria-label="Short film, 12 seconds, no speech. A man about to leave the house remembers: bins out tonight. The note is typed on a concept Piblo, whose screen then goes to sleep. Ends on: One less thing on your mind.">
         <source src="/media/piblo-everyday.mp4" type="video/mp4">
       </video>
-      <figcaption><span class="screen-concept">CONCEPT</span> film. Generated scene. The device is drawn to the real Cardputer ADV in a proposed case; the screen is simulated.</figcaption>
+      <figcaption>Concept film. Generated scene; the screen is simulated.</figcaption>
     </figure>
   </section>
 
-  <section class="does band-paper" id="does">
-    <div class="wrap">
-      <p class="eyebrow">What Piblo does</p>
-      <h2>Little things that make a big difference.</h2>
-      <div class="does-grid">
-        <article class="block block-talk">
-          <span class="num">1</span>
-          <h3>Talk, don't type</h3>
-          <p>Need an answer? Hold a key and ask out loud. We are working to make it feel as simple as a conversation.</p>
-          <span class="tag tag-wip">In progress</span>
-        </article>
-        <article class="block block-save">
-          <span class="num">2</span>
-          <h3>Save a thought</h3>
-          <p>Got an idea while making tea or heading out? Say it before it disappears. We are building a reliable place to find it later.</p>
-          <span class="tag tag-wip">In progress</span>
-        </article>
-        <article class="block block-today">
-          <span class="num">3</span>
-          <h3>Today</h3>
-          <p>A calm little place for reminders and what comes next. Planned, not built yet.</p>
-          <span class="tag tag-concept">Concept</span>
-        </article>
-        <article class="block block-pc">
-          <div class="block-pc-text">
-            <span class="num">4</span>
-            <h3>Your PC asks. You decide.</h3>
-            <p>When your computer asks to do something important, Piblo is designed to let you give a clear yes or no. Still being tested.</p>
-            <span class="tag tag-verify">Still to verify</span>
-          </div>
-          <div class="mini" role="img" aria-label="Concept illustration of an approval screen. It reads: Piblo Core wants to open your Downloads folder. Buttons: No, and Yes go.">
-            <div class="mini-label">CONCEPT</div>
-            <div class="mini-q">Piblo Core wants to</div>
-            <div class="mini-a">Open your Downloads folder</div>
-            <div class="mini-btns"><span class="no">No</span><span class="yes">Yes, go</span></div>
-          </div>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="inside" id="inside" aria-labelledby="inside-title">
-    <div class="wrap">
-      <p class="eyebrow">What makes a Piblo</p>
-      <h2 id="inside-title">What's in a Piblo.</h2>
-      <div class="inside-layout">
-        <figure class="inside-figure">
-          <img src="/media/piblo-exploded.webp" width="1080" height="1460" loading="lazy" decoding="async" alt="Exploded concept render: an orange concept front frame with a skirt, the two-tone Cardputer ADV with its 56-key keyboard and small screen, and an orange concept back tray with snap tabs, vents and a USB-C cut-out.">
-          <figcaption>Drawn from the published 84 × 54 × 19.6 mm size. Concept render, not a photo: the case has not been printed.</figcaption>
-        </figure>
-        <ol class="inside-parts">
-          <li><span class="tag tag-concept">Concept</span><h3>The case</h3><p>A snap-on front and back in orange, cream or mint, made for a home 3D printer. Not printed or fit-tested yet.</p></li>
-          <li><span class="tag tag-real">Real hardware</span><h3>The device</h3><p>An off-the-shelf Cardputer ADV from M5Stack, with 56 keys, a 1.14-inch screen and a microphone. We don't make it, and it isn't made in Britain.</p></li>
-          <li><span class="tag tag-wip">In testing</span><h3>The software</h3><p>A typed-note feature is in the firmware. Device test pending.</p></li>
-        </ol>
-      </div>
-      <div class="films">
-        <figure class="film-card">
-          <video class="film" controls muted playsinline preload="none" poster="/media/piblo-product-poster.jpg" aria-label="Product film, 15 seconds, no speech: the Piblo concept on a table, a close look at the keys and screen, and the three proposed colours.">
-            <source src="/media/piblo-product.mp4" type="video/mp4">
-          </video>
-          <figcaption><span class="screen-concept">CONCEPT</span> film, 15 seconds. AI-generated renders, not footage of real hardware.</figcaption>
-        </figure>
-        <figure class="film-card">
-          <video class="film" controls muted playsinline preload="none" poster="/media/piblo-launch-poster.jpg" aria-label="Launch film, 21 seconds, no speech: bins out tonight, typed on a concept Piblo, then the device, its colours and a close look at the keys.">
-            <source src="/media/piblo-launch.mp4" type="video/mp4">
-          </video>
-          <figcaption><span class="screen-concept">CONCEPT</span> film, 21 seconds. AI-generated, not footage of real hardware.</figcaption>
-        </figure>
-      </div>
-      <p class="footnote">Nothing is for sale yet: no prices, preorders or delivery dates.</p>
-    </div>
-  </section>
-
-  <section class="how band-mint" id="how">
-    <div class="wrap">
-      <p class="eyebrow">How it works</p>
-      <h2>Press. Speak. Get on with life.</h2>
-      <ol class="path">
-        <li><span class="orb orb-1" aria-hidden="true">1</span><h3>Press</h3><p>Pick up Piblo and hold a physical key. No complicated menus.</p></li>
-        <li><span class="orb orb-2" aria-hidden="true">2</span><h3>Ask or save</h3><p>Ask a question or catch a thought. We are making these experiences easy to use.</p></li>
-        <li><span class="orb orb-3" aria-hidden="true">3</span><h3>Stay in charge</h3><p>A connected computer does the bigger work, while you remain in control of important decisions.</p></li>
-      </ol>
-    </div>
-  </section>
-
-    <section class="concepts band-cream" id="concepts" aria-labelledby="concepts-title">
-        <div class="wrap">
-          <p class="eyebrow">Design concepts</p>
-          <h2 id="concepts-title">Future directions for Piblo.</h2>
-          <p>Three ways the hardware could evolve, all drawn around the real Cardputer ADV. None are prototyped, costed or scheduled.</p>
-          <div class="concepts-grid">
-            <article class="concept-card concept-flip">
-              <h3>Piblo Flip</h3>
-              <p>A hinged screen that opens to reveal a full keyboard. Closed it fits in a pocket; open it becomes a mini laptop for longer sessions.</p>
-              <span class="tag tag-concept">Concept · not built</span>
-            </article>
-            <article class="concept-card concept-slide">
-              <h3>Piblo Slide</h3>
-              <p>A sliding keyboard mechanism. Push up to reveal the keys for typing; slide back for a compact screen-only view.</p>
-              <span class="tag tag-concept">Concept · not built</span>
-            </article>
-            <article class="concept-card concept-snap">
-              <h3>Piblo Snap</h3>
-              <p>A touchscreen module that snaps onto the back for visual tasks, plus modular add-ons. The core device stays the same; the shell adapts.</p>
-              <span class="tag tag-concept">Concept · not built</span>
-            </article>
-          </div>
-        </div>
-      </section>
-
-  <section class="status band-paper" id="status">
-    <div class="wrap">
-      <p class="eyebrow">Honest build status</p>
-      <h2>Open progress. No pretending.</h2>
-      <p>There is no finished product, price or launch date yet. Here is where things stand.</p>
-      <ul class="board">
-        <li><span class="chip chip-done">Documented</span><strong>Wi-Fi, PC hub and firmware updates</strong></li>
-        <li><span class="chip chip-wip">In progress</span><strong>Voice and capture on a real device</strong></li>
-        <li><span class="chip chip-concept">Concept</span><strong>Home and Today screens, saved-video search, print-from-video (proposed, not yet implemented)</strong></li>
-        <li><span class="chip chip-verify">To verify</span><strong>PC actions with your approval</strong></li>
-        <li><span class="chip chip-none">Not set</span><strong>Kickstarter date and price</strong></li>
-      </ul>
-      <div class="faq">
-        <details><summary>What do I need to try it?</summary><p>Development uses a Cardputer ADV and a connected Windows PC. Some optional online services may cost extra. A person always approves anything important, such as starting a print.</p></details>
-        <details><summary>Is there a Kickstarter date or price?</summary><p>Not confirmed. A reliable prototype, safety testing and real manufacturing quotes come first. Join the list below for honest updates.</p></details>
-      </div>
-      <p class="status-links"><a class="link" href="/roadmap/">See the full roadmap</a> · <a class="link" href="/readiness/">Launch checks</a></p>
-    </div>
-  </section>
-
-  <section class="open band-tomato" id="open">
-    <div class="wrap open-layout">
-      <div>
-        <p class="eyebrow eyebrow-ink">Open source</p>
-        <h2>Built in the open. MIT licensed.</h2>
-        <p>The firmware, Piblo Core and this website are all on GitHub. Read it, change it, make your own version. It is early days and mostly one maker so far, so a second pair of hands really counts.</p>
-        <a class="btn btn-paper" href="https://github.com/manazoid4/piblo" target="_blank" rel="noopener noreferrer">Look at the code on GitHub</a>
-      </div>
-      <ul class="stickers" aria-label="Ways to join in">
-        <li class="st st-1">Open an issue</li><li class="st st-2">Test the firmware</li><li class="st st-3">Suggest a screen</li><li class="st st-4">Fork it</li>
-      </ul>
+  <section class="films-section wrap" id="films">
+    <h2 class="visually-hidden">Concept films</h2>
+    <div class="films">
+      <figure class="film-card">
+        <video class="film" controls muted playsinline preload="none" poster="/media/piblo-product-poster.jpg" aria-label="Product film, 15 seconds, no speech: the Piblo concept on a table, a close look at the keys and screen, and the three proposed colours.">
+          <source src="/media/piblo-product.mp4" type="video/mp4">
+        </video>
+        <figcaption>Concept film · 15 seconds</figcaption>
+      </figure>
+      <figure class="film-card">
+        <video class="film" controls muted playsinline preload="none" poster="/media/piblo-launch-poster.jpg" aria-label="Launch film, 21 seconds, no speech: bins out tonight, typed on a concept Piblo, then the device, its colours and a close look at the keys.">
+          <source src="/media/piblo-launch.mp4" type="video/mp4">
+        </video>
+        <figcaption>Concept film · 21 seconds</figcaption>
+      </figure>
     </div>
   </section>
 
   <section class="join wrap" id="waitlist">
-      <div class="join-card">
-        <h2>Be there when Piblo launches.</h2>
-        <p>No spam, no pressure. We will send honest updates — when there is a working demo, a Kickstarter date or a price worth sharing. You can unsubscribe any time.</p>
-        <form class="waitlist-form" id="waitlist-form" action="/api/waitlist" method="post" novalidate>
-          <input class="waitlist-hp" type="text" name="piblo_hp_field" tabindex="-1" autocomplete="off" aria-hidden="true">
-          <div class="waitlist-fields">
-            <label class="waitlist-label">
-              <span>Name (optional)</span>
-              <input class="waitlist-input" type="text" name="first_name" placeholder="Your name" autocomplete="name">
-            </label>
-            <label class="waitlist-label">
-              <span>Email</span>
-              <input class="waitlist-input" type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
-            </label>
-          </div>
-          <div class="waitlist-consent">
-            <label class="waitlist-check">
-              <input type="checkbox" name="consent" value="yes" required>
-              <span>I am happy to receive Piblo updates by email. <a href="/privacy/" target="_blank" rel="noopener noreferrer">Privacy notice</a></span>
-            </label>
-          </div>
-          <button class="btn btn-tomato btn-big waitlist-submit" type="submit">Join the launch list</button>
-          <p class="fine waitlist-status" aria-live="polite">We'll only email you about Piblo. Unsubscribe any time.</p>
-        </form>
-      </div>
-    </section>
+    <div class="join-card">
+      <h2>Be there when Piblo launches.</h2>
+      <p>No spam, no pressure. Real updates when there is something worth sharing. Unsubscribe any time.</p>
+      <form class="waitlist-form" id="waitlist-form" action="/api/waitlist" method="post" novalidate>
+        <input class="waitlist-hp" type="text" name="piblo_hp_field" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="waitlist-fields">
+          <label class="waitlist-label">
+            <span>Name (optional)</span>
+            <input class="waitlist-input" type="text" name="first_name" placeholder="Your name" autocomplete="name">
+          </label>
+          <label class="waitlist-label">
+            <span>Email</span>
+            <input class="waitlist-input" type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+          </label>
+        </div>
+        <div class="waitlist-consent">
+          <label class="waitlist-check">
+            <input type="checkbox" name="consent" value="yes" required>
+            <span>I am happy to receive Piblo updates by email. <a href="/privacy/" target="_blank" rel="noopener noreferrer">Privacy notice</a></span>
+          </label>
+        </div>
+        <button class="btn btn-tomato btn-big waitlist-submit" type="submit">Join the launch list</button>
+        <p class="fine waitlist-status" aria-live="polite">We'll only email you about Piblo. Unsubscribe any time.</p>
+      </form>
+    </div>
+  </section>
 </main>
 
 <footer class="footer">
   <div class="wrap footer-inner">
-    <div><a class="logo" href="/"><span class="logo-dot" aria-hidden="true"></span>piblo</a><p><span aria-hidden="true">🇬🇧</span> Designed in the UK by Maz Works, using globally sourced Cardputer ADV hardware.</p></div>
-    <nav class="footer-links" aria-label="Footer"><a href="/roadmap/">Roadmap</a><a href="/readiness/">Readiness</a><a href="https://github.com/manazoid4/piblo" target="_blank" rel="noopener noreferrer">GitHub</a><a href="mailto:info@piblo.co.uk">Contact</a><a href="/privacy/">Privacy</a></nav>
-    <p class="legal">Prototype in development. Interfaces and proposed 3D-printed cases are concepts, not shipping features. Hardware is not manufactured in Britain. Piblo was previously called Nod. Not affiliated with or endorsed by Anthropic, M5Stack, Meta or Instagram.</p>
+    <div><a class="logo" href="/"><span class="logo-dot" aria-hidden="true"></span>piblo</a><p><span aria-hidden="true">🇬🇧</span> Designed in the UK · <a class="footer-link" href="https://github.com/manazoid4/piblo" target="_blank" rel="noopener noreferrer">Open source on GitHub</a></p></div>
+    <nav class="footer-links" aria-label="Footer"><a href="/roadmap/">Roadmap</a><a href="mailto:info@piblo.co.uk">Contact</a><a href="/privacy/">Privacy</a></nav>
+    <p class="legal">Prototype in development. Concepts shown are not shipping features. Independent, not affiliated with any other brand.</p>
   </div>
 </footer>
 </body>

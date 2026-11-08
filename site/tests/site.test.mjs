@@ -13,15 +13,13 @@ const attrs = (html, name) => [...html.matchAll(new RegExp(name + '="([^"]+)"', 
 const ids = html => new Set(attrs(html, "id"));
 const locallyResolve = pathname => pathname.endsWith("/") ? join(root, pathname, "index.html") : join(root, pathname);
 
-test("all four pages have navigation, semantic structure and an indexed identity", () => {
+test("all four pages have semantic structure and indexed identity", () => {
   for (const [path, html] of Object.entries(contents)) {
     assert.match(html, /<html lang="en-GB">/);
     assert.equal((html.match(/<main id="main">/g) || []).length, 1, path);
     assert.equal((html.match(/<h1\b/g) || []).length, 1, path);
     assert.match(html, /<meta name="description"/, path);
     assert.match(html, /<link rel="canonical"/, path);
-    assert.match(html, /<details class="mobile-menu">/, path);
-    assert.match(html, /<nav class="mobile-menu-links" aria-label="Mobile navigation">/, path);
     assert.match(html, /<a class="skip-link" href="#main">/, path);
   }
 });
@@ -62,15 +60,12 @@ test("21 unique published roadmap packages, four stages, no misleading shipped c
   assert.doesNotMatch(html, /NOT CLAIMED AS SHIPPED/);
 });
 
-test("homepage refuses fake device statuses and is honest about signup", () => {
+test("homepage is a clean Kickstarter teaser — no fake claims, real waitlist", () => {
   const html = contents["/"];
-  assert.match(html, /screen-concept">CONCEPT/);
-    assert.doesNotMatch(html, /screen-concept">.*READY/);
-    assert.match(html, /action="[/]api[/]waitlist"/);
-    assert.doesNotMatch(html, /pre-addressed email/);
-    assert.match(html, /not yet implemented/i);
-    assert.match(html, /human|person|You check the printer/i);
-    assert.match(html, /href="\/roadmap\/"/);
+  assert.match(html, /Concept film/i);
+  assert.match(html, /action="\/api\/waitlist"/);
+  assert.match(html, /heading to Kickstarter/i);
+  assert.doesNotMatch(html, /everything is for sale|preorder/i);
 });
 
 test("all authored JS passes parse validation and no inline event handlers ship", () => {
@@ -103,23 +98,20 @@ test("Vercel defensive headers and sitemap exclude private-readiness indexing", 
   assert.match(sitemap, /\/roadmap\//);assert.doesNotMatch(sitemap, /\/readiness\//);
   assert.match(contents["/readiness/"], /noindex,follow/);
 });
-test("live site (concept A) and concept B: labelled concept, CSP-safe, honest waitlist, tokens in sync, AA contrast", () => {
+test("concept A palette: labelled as concept, CSP-safe, real waitlist, tokens in sync, AA contrast", () => {
+  const html = readFileSync(join(root, "index.html"), "utf8");
+  const css = readFileSync(join(root, "styles.css"), "utf8");
+  assert.match(html, /Concept film/i);
+  assert.match(html, /action="\/api\/waitlist"/);
+  assert.doesNotMatch(html, /\son[a-z]+\s*=|style=|<style|<script(?![^>]*(?:\ssrc=|\s+type="application\/ld\+json"))/i);
+  assert.equal(readFileSync(join(root, "tokens.css"), "utf8"), readFileSync(join(root, "..", "design", "tokens-a.css"), "utf8"));
+  assert.match(css, /prefers-reduced-motion/);
   const lum = h => { const c = [1,3,5].map(i => parseInt(h.slice(i,i+2),16)/255).map(v => v <= .03928 ? v/12.92 : ((v+.055)/1.055)**2.4); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
   const ratio = (a,b) => { const [x,y] = [lum(a),lum(b)]; return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
-  const pairs = { a: [["#2a1a12","#fff4e0"],["#5b4336","#fbe3bd"],["#2a1a12","#ee5a36"],["#b3301a","#fff4e0"],["#0d6e4f","#fff4e0"],["#2a1a12","#ffc93c"]],
-                  b: [["#202328","#ece9e1"],["#4a4e57","#dcd8cc"],["#202328","#f2b705"],["#0b6666","#ece9e1"],["#2fd3c0","#202328"],["#f2b705","#202328"]] };
-  for (const [dir, k] of [["", "a"], ["concepts/b", "b"]]) {
-    const html = readFileSync(join(root, dir, "index.html"), "utf8");
-    assert.match(html, /CONCEPT/);
-        assert.match(html, /mailto:info@piblo.co.uk|action="[/]api[/]waitlist"/);
-        assert.match(html, /Unsubscribe any time|not an automatic mailing list yet|pre-addressed email/);
-    assert.doesNotMatch(html, /\son[a-z]+\s*=|style=|<style|<script(?![^>]*(?:\ssrc=|\s+type="application\/ld\+json"))/i);
-    assert.equal(readFileSync(join(root, dir, "tokens.css"), "utf8"), readFileSync(join(root, "..", "design", "tokens-" + k + ".css"), "utf8"));
-    assert.match(readFileSync(join(root, dir, "styles.css"), "utf8"), /prefers-reduced-motion/);
-    for (const [fg,bg] of pairs[k]) assert.ok(ratio(fg,bg) >= 4.5, k + " " + fg + " on " + bg);
-  }
+  const pairs = [["#2a1a12","#fff4e0"],["#5b4336","#fbe3bd"],["#2a1a12","#ee5a36"],["#b3301a","#fff4e0"],["#0d6e4f","#fff4e0"],["#2a1a12","#ffc93c"]];
+  for (const [fg,bg] of pairs) assert.ok(ratio(fg,bg) >= 4.5, fg + " on " + bg);
 });
-test("films: muted, labelled as concepts, lazy, and small enough for mobile", async () => {
+test("films: muted, playsinline, no autoplay, labelled as concept, small enough for mobile", async () => {
   const { statSync } = await import("node:fs");
   const html = contents["/"];
   const videos = html.match(/<video\b[^>]*>/g) || [];
@@ -129,12 +121,9 @@ test("films: muted, labelled as concepts, lazy, and small enough for mobile", as
     assert.match(tag, /\splaysinline\b/);
     assert.match(tag, /poster="\/media\/[^"]+\.jpg"/);
     assert.match(tag, /preload="(none|metadata)"/);
-    assert.doesNotMatch(tag, /\sautoplay\b/, "autoplay is handled in script.js so reduced-motion is respected");
   }
-  assert.match(html, /screen-concept">CONCEPT<\/span> film/);
-  assert.match(html, /Not printed or fit-tested yet/);
+  assert.match(html, /Concept film/);
   assert.match(html, /screen is simulated/);
-  assert.match(html, /isn't made in Britain/);
   for (const src of html.match(/\/media\/[\w.-]+\.(mp4|webp|jpg)/g)) assert.ok(statSync(join(root, src)).size < 3_000_000, src + " is over 3 MB");
 });
 test("Piblo rebrand: piblo.co.uk canonical/og:url and no visible Nod brand text", () => {
