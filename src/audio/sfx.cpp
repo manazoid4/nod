@@ -4,6 +4,7 @@
 
 #include "../core/settings.h"
 #include "../core/quiet.h"
+#include "live.h"
 #include "voice.h"
 
 namespace maz {
@@ -18,6 +19,7 @@ void beep(float hz, uint32_t ms, bool force = false) {
     // would fight the capture. Silence beats corrupting a recording.
     const auto st = voice::state();
     if (st == voice::State::Listening || st == voice::State::Paused) return;
+    if (live::micActive()) return;  // a tone would restart the codec and kill the live mic
     M5.Speaker.tone(hz, ms);
 }
 void pair(float a, float b, uint32_t ms, bool force = false) {

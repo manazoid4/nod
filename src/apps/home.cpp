@@ -128,7 +128,7 @@ private:
     void activate(nod::TalkFocus f) {
         sfx::confirm();
         switch (f) {
-            case nod::FOCUS_TALK:  shell::pushById("talk"); break;
+            case nod::FOCUS_TALK:  shell::pushById("live"); break;  // T still opens push-to-talk Call
             case nod::FOCUS_SAVE:  shell::pushById("braindump"); break;
             case nod::FOCUS_TODAY: shell::pushById("today"); break;
             default:               _grid = true; invalidate(); break;  // More: the full six-surface grid
@@ -226,9 +226,9 @@ private:
     void rebuildHints() {
         // W opens Wi-Fi from Home (registry shortcut), so say so when Wi-Fi is down.
         if (!_grid) {
-            _hints = (linkSentence(true) && !Sys.wifiConnected) ? "ENTER pick  SPACE save  W wifi"
-                   : host::updateReady()                        ? "ENTER pick  SPACE save  U update"
-                                                                : "ENTER pick  hold SPACE save";
+            _hints = (linkSentence(true) && !Sys.wifiConnected) ? "ENTER live  SPACE save  W wifi"
+                   : host::updateReady()                        ? "ENTER live  SPACE save  U update"
+                                                                : "ENTER live  hold SPACE save";
             return;
         }
         _hints = (linkSentence(true) && !Sys.wifiConnected) ? "SPACE dump  ENTER open  W wifi"

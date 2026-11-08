@@ -56,6 +56,9 @@ private:
 };
 
 bool begin();  // one-time audio bring-up
+// Half-duplex codec switch for the live session (mic and speaker share one ES8311).
+void useSpeaker();
+bool useMic();
 
 // --- capture --------------------------------------------------------------
 // maxSeconds guards against a pocket-pressed SPACE filling the card.

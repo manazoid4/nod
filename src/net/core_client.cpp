@@ -1,3 +1,4 @@
+#include "../audio/live.h"
 #include "mazhost.h"
 
 #include <ArduinoJson.h>
@@ -439,6 +440,7 @@ String fwStatusJson() {
 }
 
 bool fwUpdate() {
+    live::end();  // free the live buffers and socket: the https download needs the heap
     WiFi.setSleep(false);  // steady throughput while the flash is busy erasing/writing
     NodHttp m;
     if (!coreBegin(m, "/fw/manifest", false)) return fwFail("manifest", "Update needs home Wi-Fi");

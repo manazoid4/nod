@@ -4,6 +4,9 @@
 
 #include <string>
 
+// Display label only; the parseable version stays NOD_FW_VERSION (VERSION file).
+#define PIBLO_LABEL "v1.5 beta"
+
 namespace maz {
 
 constexpr uint8_t TALK_ROUTE_COUNT = 4;
@@ -44,7 +47,7 @@ inline const char* talkRouteLabel(uint8_t route) {
 
 struct Settings {
     uint8_t  brightness    = 110;
-    uint8_t  volume        = 160;
+    uint8_t  volume        = 220;  // soft limiter (audio/limiter.h) keeps this clean
     bool     uiSounds      = true;
     // Quiet mode: last choice only. The device always boots Normal (see quiet.cpp).
     uint8_t  quietLevel    = 0;

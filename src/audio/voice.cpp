@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "limiter.h"
 #include "../core/settings.h"
 #include "../core/sys.h"
 #include "../storage/store.h"
@@ -245,6 +246,7 @@ size_t readBlock(int16_t* out) {
     size_t n = 0;
     if (want) n = gPlayFile.read(reinterpret_cast<uint8_t*>(out), want) / sizeof(int16_t);
     gPlayRemain = gPlayRemain > n * 2 ? gPlayRemain - n * 2 : 0;
+    audio::softLimit(out, n);
     return n;
 }
 
@@ -293,6 +295,13 @@ bool openNext() {
         return true;
     }
     return false;
+}
+
+void useSpeaker() { prepareSpeaker(); }
+
+bool useMic() {
+    M5.Speaker.end();
+    return M5.Mic.begin();
 }
 
 bool begin() {
