@@ -133,7 +133,7 @@ def stale_app_labels(lines: list[str]) -> list[str]:
     labels = []
     for line in lines:
         parts = line.split()
-        if len(parts) >= 2 and parts[0].startswith("mazpo") and parts[1] == "type=app":
+        if len(parts) >= 2 and parts[0].startswith(("mazpo", "pibl")) and parts[1] == "type=app":
             labels.append(parts[0])
     return labels
 

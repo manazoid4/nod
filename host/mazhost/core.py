@@ -450,6 +450,8 @@ class MazCore:
         configured = self.settings.cardputer_url.rstrip("/")
         if configured not in bases:
             bases.append(configured)
+        if "http://mazpocket.local" not in bases:  # devices still on pre-1.5.1 firmware
+            bases.append("http://mazpocket.local")
         return bases
 
     def _cardputer(self, method: str, path: str, timeout: float, **kwargs: Any) -> httpx.Response:
