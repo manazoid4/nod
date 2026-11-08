@@ -84,6 +84,13 @@ class Settings(BaseSettings):
     live_mic_gain: float = Field(default=10.0, ge=0.1, le=64.0)
     # live voice: ignore the mic this long after Piblo stops talking (speaker tail / room echo caused false turns)
     live_listen_holdoff_ms: int = Field(default=600, ge=0, le=3000)
+    # live voice brain: "cloud" = LFM3 hears/speaks, OpenRouter thinks (falls back to Ollama, then LFM3);
+    # "lfm" = today's direct LFM3 speech-to-speech.
+    live_brain: Literal["cloud", "lfm"] = "cloud"
+    live_cloud_default: str = "gemma"  # voice alias resolved to a :free OpenRouter id until Maz switches by voice
+    live_ollama_model: str = "qwen36-heretic:latest"
+    live_memory_github: str = "manazoid4/unified-memory-database:piblo/MEMORY.md"  # needs github_token; skipped if unset
+    live_memory_file: str = ""  # "remember ..." notes; empty = <data_dir>/piblo-memory.md
     max_upload_mb: int = Field(default=12, ge=1, le=64)
     max_audio_seconds: int = Field(default=900, ge=1, le=3600)
     session_ttl_minutes: int = Field(default=120, ge=1, le=1440)
