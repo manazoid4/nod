@@ -1,5 +1,8 @@
 # Piblo editions: Original and Founder's Edition
 
+> **SUPERSEDED (8 Nov 2026):** prices, cost curves and margins in this file come from the first planning pass (GBP 79 / 149, VAT applied to the whole pledge, no import VAT, no pre-payout cash view). The current numbers are in [model/assumptions.csv](model/assumptions.csv) and [model/out/SUMMARY.md](model/out/SUMMARY.md). Keep this file only for the edition concept and supplier questions.
+
+
 Status: PLANNING MODEL, 8 Nov 2026. Prices decided by Maz: **Original £79, Founder's Edition £149**. Nothing is supplier-quoted yet, so no cost figure may be shown publicly. Every number is tagged **[S]** source-backed (link given), **[A]** assumption needing a written quote, or **[D]** decision by Maz. GBP; USD converted at about 0.77. Plan assumes Chinese manufacturing (board from M5Stack, enclosures from a CNC/print shop such as JLCCNC, PCBWay or RapidDirect) to protect margin.
 
 `MANUFACTURING-RESEARCH.md` from the free research agent was not present when this was written. Reconcile when it lands.

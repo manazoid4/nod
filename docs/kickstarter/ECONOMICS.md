@@ -1,5 +1,12 @@
 # Nod: unit economics model
 
+> **Superseded 8 Nov 2026 by the profit model in [`model/`](model/).** Use `model/assumptions.csv` (every input, with evidence and QUOTED / SOURCED-LIST-PRICE / ASSUMPTION status), `model/piblo_model.py` (scenario engine), `model/Piblo-Profit-Model.xlsx` (editable, live formulas) and `model/out/SUMMARY.md` (results). The CSV sheets below are kept for history; their prices (GBP 79 / 149) and VAT treatment are out of date.
+>
+> **Run it:** `python3 docs/kickstarter/model/piblo_model.py` (writes `out/scenarios.csv`, 8,600 rows, and `out/SUMMARY.md`; about 2 s), `python3 docs/kickstarter/model/test_model.py` (7 checks), `python3 docs/kickstarter/model/build_xlsx.py` (rebuild the workbook after editing `assumptions.csv`; needs `openpyxl`).
+>
+> **Honest result (no input is a supplier quote yet):** at the baseline GBP 103 / 194, 80/20 mix, expected demand, the campaign loses money below roughly 1,000 backers (about -GBP 19k at 500, about -GBP 3k at 1,000) because about GBP 26k of one-off costs (compliance, prototypes, video, CNC setup) must be recovered from about GBP 27 per Original and GBP 4 to 26 per Founder's backer. Break-even is about 1,000 backers at 103/194 and about 565 at 129/249 (80/20). A funding goal of about GBP 49,500 covers one-offs plus a 150-unit first batch plus contingency and fees; reaching it is not profit. Cash needed before the Kickstarter payout is about GBP 25k at 500 backers and GBP 36k at 1,000. The conclusion is most sensitive to price elasticity (untested), the ads share, the Founder's CNC price (unquoted), compliance costs and the M5Stack bulk price. Get those quotes and run a price test before launch.
+
+
 File: `ECONOMICS.csv` (open in Excel, Google Sheets or LibreOffice; the formula cells are spreadsheet formulas).
 
 Update 8 Nov 2026: `ECONOMICS.csv` (Piblo Original, £79) and `ECONOMICS-FOUNDERS.csv` (Founder's Edition, £149) are now filled with ASSUMPTIONS and sourced fee rates (Kickstarter 5% + 3% + £0.30). Sources, margins and early-bird analysis are in `EDITIONS.md`. Still no supplier quote exists; do not quote any result publicly. Note the sheets use a combined 0.033 payment-fee fraction to approximate the fixed £0.30 per pledge.
