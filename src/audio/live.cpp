@@ -42,7 +42,10 @@ Mode    gMode  = Mode::None;
 char    gErr[64];
 char    gAuth[200];
 float   gLevel = 0.f;
-uint32_t gStartMs = 0;
+uint32_t gConnSince = 0;  // when we last started waiting for Core
+bool     gNeedMic = false;  // switch to mic pending (retried from update())
+uint8_t  gMicTries = 0;
+uint32_t gNextTry = 0;
 
 // mic
 uint8_t gMicIdx = 0;
@@ -88,7 +91,6 @@ void sendType(const char* type) {
 void setErr(const char* m) { snprintf(gErr, sizeof(gErr), "%s", m); }
 
 bool toMic() {
-    gMode = Mode::Mic;
     gMicIdx = 0;
     gMicQueued = false;
     gWantListen = false;
@@ -97,8 +99,17 @@ bool toMic() {
         gMode = Mode::None;
         return false;
     }
+    gMode = Mode::Mic;
     gPhase = Phase::Listening;
+    gErr[0] = 0;  // a retry succeeded
     return true;
+}
+
+void wantMic() {
+    gNeedMic = true;
+    gMicTries = 0;
+    gNextTry = 0;
+    gWantListen = false;
 }
 
 void toSpeaker() {
@@ -120,7 +131,7 @@ void maybeListen() {
         sendType("playback_done");
         gPlayed = false;
     }
-    toMic();
+    wantMic();
 }
 
 void onState(const char* s) {
@@ -159,11 +170,14 @@ void onEvent(WStype_t t, uint8_t* p, size_t n) {
             snprintf(b, sizeof(b), "{\"type\":\"hello\",\"fw\":\"%s\"}", NOD_FW_VERSION);
             gWs.sendTXT(b);
             gErr[0] = 0;
-            if (gMode != Mode::Mic) toMic();
+            if (gMode != Mode::Mic) wantMic();
             break;
         }
         case WStype_DISCONNECTED:
-            if (gPhase != Phase::Off) gPhase = Phase::Connecting;
+            if (gPhase != Phase::Off && gPhase != Phase::Connecting) {
+                gPhase = Phase::Connecting;
+                gConnSince = millis();
+            }
             break;
         case WStype_TEXT:
             onText(p, n);
@@ -272,6 +286,7 @@ bool begin() {
     ringClear();
     gLevel = 0.f;
     gMode = Mode::None;
+    gNeedMic = false;
     gWantListen = false;
     WiFi.setSleep(false);  // power-save wakeups add jitter to the audio stream
     gWs.begin(Cfg.hostAddr.c_str(), Cfg.hostPort, "/voice/live");
@@ -280,7 +295,7 @@ bool begin() {
     gWs.setReconnectInterval(2000);
     gWs.enableHeartbeat(15000, 3000, 2);
     gPhase = Phase::Connecting;
-    gStartMs = millis();
+    gConnSince = millis();
     Sys.recording = true;  // keeps the screen awake and shows the REC lamp
     return true;
 }
@@ -304,7 +319,20 @@ void update() {
     if (gPhase == Phase::Off) return;
     pumpMic();
     pumpSpeaker();
-    if (gPhase == Phase::Connecting && !gErr[0] && millis() - gStartMs > 10000) setErr("Core not answering");
+    if (gNeedMic && (int32_t)(millis() - gNextTry) >= 0) {
+        if (toMic()) {
+            gNeedMic = false;
+        } else if (++gMicTries >= 5) {
+            end();  // keeps the "mic did not start" error for the screen
+            return;
+        } else {
+            gNextTry = millis() + 200;
+        }
+    }
+    if (gPhase == Phase::Connecting && millis() - gConnSince > 10000) {
+        setErr("Core not answering");
+        end();
+    }
 }
 
 void interrupt() {
@@ -314,6 +342,7 @@ void interrupt() {
     gPrebuf = true;
 }
 
+bool        micActive() { return gPhase != Phase::Off && gMode == Mode::Mic; }
 Phase       phase() { return gPhase; }
 float       level() { return gLevel; }
 const char* error() { return gErr; }

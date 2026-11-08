@@ -14,6 +14,7 @@ bool        begin();      // false (see error()) if Wi-Fi / Core address / memor
 void        end();        // sends bye, frees buffers, restores the speaker for UI sounds
 void        update();     // call every loop while active
 void        interrupt();  // user pressed a key while Piblo is thinking/speaking
+bool        micActive();  // true while the mic owns the shared codec (UI tones must stay silent)
 Phase       phase();
 float       level();      // 0..1 mic peak for the orb
 const char* error();      // "" when fine

@@ -25,7 +25,7 @@ public:
     void onExit() override { live::end(); }
 
     bool onKey(const KeyEvent& e) override {
-        if (!e.down || e.code == KEY_ESC) return false;  // shell pops the app on ESC
+        if (!e.down || e.code == KEY_ESC || e.code == KEY_GRAVE) return false;  // shell maps ` to ESC and pops
         live::interrupt();
         return true;
     }
