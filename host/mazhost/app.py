@@ -38,6 +38,7 @@ from .errors import ErrorCode, RouteError
 from .focus import Focus, install_focus_routes
 from .executor import ElevatedExecutor
 from .jobs import CoreJobs
+from .live_voice import install_live_voice
 from .llm import Models, Route
 from .nudge import NudgeClient
 from .pairing import build_pairing_app
@@ -917,6 +918,7 @@ def create_app(
     api.include_router(build_library_router(cfg, model_router))
     api.include_router(build_needs_router(cfg, install_buddy_routes(api)))
     install_focus_routes(api, focus)
+    install_live_voice(api, cfg, security, turn_timings)
     # ------------------------------------------------------------ SUBTITLES
     install_subtitle_routes(api, subtitle_jobs)
 
