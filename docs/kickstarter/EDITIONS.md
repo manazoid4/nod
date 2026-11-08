@@ -65,6 +65,26 @@ Full-model result (sheet includes shipping gap, support, contingency, VAT 20%), 
 | 500 | £24.74 | -£1,132 | £38.31 | +£2,157 |
 | 1,000 | £27.97 | +£14,471 | £47.30 | +£30,295 |
 
+## Board routes: which one makes £79 work
+
+Verification of the free-model draft (`research/MANUFACTURING-RESEARCH.md`, low confidence): it states a Cardputer ADV retails at $79.90. **The live M5Stack product page for SKU K132-ADV shows $29.90** (fetched 8 Nov 2026, [source](https://shop.m5stack.com/products/m5stack-cardputer-adv-version-esp32-s3)), so the draft figure looks wrong and its margin tables (£160+ prices) should not be used. Its PCBWay/JLCCNC enclosure prices are also unverified (no public price list found; get real quotes). Sourced and kept from my own check: Kickstarter 5% + 3% + £0.30; ESP32-S3-WROOM-1 module about $3.3 to $3.8 at 650+ units on [JLCPCB](https://jlcpcb.com/partdetail/C2913202); JLCPCB PCBA has fixed setup and feeder fees that favour volume ([JLCPCB](https://jlcpcb.com/help/article/pcb-assembly-price)).
+
+Gross margin as defined above (VAT-registered / not), enclosure and packaging as in the cost table:
+
+| Route | Board cost used | Original @ £79, 500 units | Original @ £79, 1000 units | Founder's @ £149, 500 | Founder's @ £149, 1000 |
+|---|---|---|---|---|---|
+| (a) Retail Cardputer ADV + Piblo shell | £23 [S] ($29.90) | 35% / 46% | 38% / 48% | 30% / 42% | 36% / 47% |
+| (b) M5Stack bulk or OEM price | £19 at 500, £17.5 at 1000 [A] | 42% / 51% | 47% / 56% | 34% / 45% | 41% / 51% |
+| (c) Custom PCB around ESP32-S3 module (JLCPCB PCBA) | £24 at 500, £20 at 1000 [A]: module about £3, screen, keyboard, cell, audio, PCBA | 34% / 45% | 43% / 52% | 29% / 41% | 39% / 49% |
+| Stress case: board really $79.90 (£61.5) | £61.5 | -27% / -6% | -24% / -3% | -3% / 14% | 2% / 19% |
+
+Plain answers:
+- **£79 is profitable on route (a)**, because the verified retail board is only about £23. Margin is about 35% if VAT-registered, about 46% if not, at 500 units. At 100 units the sheet is positive per unit (about £14 to £17) but one-off costs are not recovered until roughly 550 to 800 units. The CSVs use route (b) pricing (£22 at 100 falling to £17.5 at 1,000); for route (a), set the board column to 23.
+- **Route (b) is the best**: a M5Stack bulk quote gets to the 45% target at 500 units unregistered and at 1,000 registered. Ask M5Stack first (supplier question 1).
+- **Route (c) does not pay at these volumes.** The module is cheap, but screen, keyboard, cell, audio, PCBA fixed fees and an estimated £25,000 to £40,000 of design, firmware port and own-radio certification **[A]** wipe out the saving, and it adds 4 to 8 months. Only consider it above about 2,000 units or if M5Stack refuses to supply.
+- **If the board really cost $79.90, £79 would lose money on every unit and £149 would barely break even.** That is why the live page was checked; re-check on the day you order and ask for written quotes.
+- **Minimum run size:** about 500 units for Original at £79 (route a or b), about 500 for Founder's at £149 (route b, CNC at or below £32 per set), and below 250 units neither edition clears 45%.
+
 ## Lowest early-bird price that still clears about 45%
 
 | Case | Original | Founder's |
