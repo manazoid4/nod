@@ -14,7 +14,7 @@ from websockets.asyncio.server import serve
 
 from mazhost.app import create_app
 from mazhost.config import Settings
-from mazhost.live_voice import Resampler24to16
+from mazhost.live_voice import Resampler24to16, boost
 
 TOKEN = "t" * 32
 REPLY_SAMPLES_24K = 24000  # 1 s of reply
@@ -62,8 +62,8 @@ class FakeRealtime:
         assert name in self.events, self.events
 
 
-def make_client(fake: FakeRealtime) -> TestClient:
-    cfg = Settings(token=TOKEN, llamacpp_url=f"http://127.0.0.1:{fake.port}", live_end_silence_ms=200,
+def make_client(fake: FakeRealtime, gain: float = 1.0) -> TestClient:
+    cfg = Settings(token=TOKEN, llamacpp_url=f"http://127.0.0.1:{fake.port}", live_end_silence_ms=200, live_mic_gain=gain,
                    autoupdate=False, remote_detect=False)
     return TestClient(create_app(cfg))
 
@@ -174,3 +174,24 @@ def test_resampler_streaming_matches_one_shot_length():
     r = Resampler24to16()
     out = b"".join(r.feed(pcm[i:i + 1000]) for i in range(0, len(pcm), 1000))
     assert abs(len(out) - 32000) <= 4
+
+
+def test_boost_scales_and_clips():
+    x = np.array([100, -100, 4000, -4000], dtype="<i2").tobytes()
+    y = np.frombuffer(boost(x, 10.0), "<i2")
+    assert list(y) == [1000, -1000, 32767, -32768]
+
+
+def test_quiet_cardputer_speech_starts_a_turn_with_gain():
+    """Real ADV levels: speech rms ~200, room ~20. Without gain this never crossed the VAD."""
+    fake = FakeRealtime()
+    client = make_client(fake, gain=10.0)
+    with client.websocket_connect(f"/voice/live?token={TOKEN}") as ws:
+        assert text(ws)["state"] == "listening"
+        rng = np.random.default_rng(2)
+        room = [(rng.normal(0, 20, 640)).astype("<i2").tobytes() for _ in range(25)]
+        for f in room + tone(800, amp=280) + quiet(400):
+            ws.send_bytes(f)
+        assert text(ws)["state"] == "thinking"
+        ws.send_text(json.dumps({"type": "bye"}))
+    assert fake.appended > 0 and "response.create" in fake.events

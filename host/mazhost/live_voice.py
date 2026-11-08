@@ -35,6 +35,12 @@ INSTRUCTIONS = ("You are Piblo, a friendly voice assistant on a tiny pocket devi
                 "and spoken. Respond with interleaved text and audio.")
 
 
+def boost(pcm: bytes, gain: float) -> bytes:
+    """Scale PCM16 by gain with hard clipping (the device mic is ~20 dB quiet)."""
+    x = np.frombuffer(pcm[: len(pcm) // 2 * 2], "<i2").astype(np.float32) * gain
+    return np.clip(x, -32768, 32767).astype("<i2").tobytes()
+
+
 class Vad:
     """Energy VAD: adaptive noise floor, 300 ms pre-roll, min-speech gate, silence hangover."""
 
@@ -118,6 +124,7 @@ class LiveBridge:
         self.ws, self.cfg, self.timings = ws, cfg, timings
         self.url = cfg.llamacpp_url.replace("http", "ws", 1).rstrip("/") + "/v1/realtime"
         self.vad = Vad(cfg.live_end_silence_ms)
+        self.gain = cfg.live_mic_gain
         self.state = "listening"
         self.up = None
         self._reader: asyncio.Task | None = None
@@ -176,6 +183,8 @@ class LiveBridge:
     async def _mic(self, pcm: bytes) -> None:
         if self.state != "listening":
             return  # half-duplex: the codec is playing, mic is not ours
+        if self.gain != 1.0:
+            pcm = boost(pcm, self.gain)
         blocks, ended = self.vad.feed(pcm)
         if blocks:
             await self._up_send({"type": "input_audio_buffer.append",
