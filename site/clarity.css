@@ -1,0 +1,38 @@
+/* Kickstarter clarity pass (Nov 2026): scenarios, Buddy, trust block, editions, FAQ. */
+.hero h1 { font-size: clamp(2.4rem, 5.4vw, 4.4rem); line-height: 1.04; max-width: 17ch; }
+.hero h1 span { display: inline; }
+.hero .eyebrow { margin-bottom: var(--space-4); }
+.hero .fine { margin-top: var(--space-4); }
+.scenes, .own, .faq-section { padding-block: var(--space-8); }
+.scene-grid, .own-grid { list-style: none; margin: var(--space-6) 0 0; padding: 0; display: grid; gap: var(--space-5); }
+.scene-grid { grid-template-columns: repeat(3, 1fr); }
+.own-grid { grid-template-columns: repeat(4, 1fr); margin-bottom: var(--space-6); }
+.scene, .own-grid li, .edition { background: var(--card); border: var(--stroke); border-radius: var(--radius-l); padding: var(--space-6); box-shadow: var(--shadow-m); }
+.scene h3, .own-grid h3, .edition h3 { font-size: 1.5rem; margin: 0 0 var(--space-3); }
+.scene p, .own-grid p, .edition p { margin: 0; }
+.scene-1 { background: var(--sun); }
+.scene-3 { background: var(--paper); }
+.buddy { display: grid; grid-template-columns: 1fr 1.2fr; gap: var(--space-7); align-items: center; padding-block: var(--space-8); }
+.buddy-faces { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-3); text-align: center; }
+.buddy-faces span { display: block; margin-top: var(--space-2); font-weight: 800; font-size: .95rem; }
+.bface { width: 100%; height: auto; overflow: visible; }
+.bf-head { fill: var(--mint); stroke: var(--ink); stroke-width: 4; }
+.bf-ink, .bf-fill { fill: var(--ink); }
+.bf-line { fill: none; stroke: var(--ink); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.b-celebrating .bf-head { fill: var(--sun); }
+.b-attention .bf-head { fill: var(--tomato); }
+.b-sleeping .bf-head { fill: var(--paper-2); }
+.editions { padding-block: var(--space-8); }
+.edition-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); margin-top: var(--space-6); }
+.edition-founder { background: var(--ink); color: var(--paper); }
+.edition-price { font: 800 1.1rem/1 var(--font-mono); margin: 0 0 var(--space-3) !important; }
+.edition-founder .edition-price { color: var(--sun); }
+.films-section { padding-block: var(--space-6) var(--space-8); }
+.films-section h2 { text-align: center; }
+.faq-section .faq { margin-top: var(--space-5); }
+.own .actions { justify-content: center; }
+@media (max-width: 900px) {
+  .scene-grid, .own-grid, .edition-grid, .buddy { grid-template-columns: 1fr; }
+  .buddy-faces { gap: var(--space-2); }
+  .buddy-faces span { font-size: .72rem; }
+}

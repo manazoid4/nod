@@ -2,7 +2,9 @@
 
 File: `ECONOMICS.csv` (open in Excel, Google Sheets or LibreOffice; the formula cells are spreadsheet formulas).
 
-Status: MODEL ONLY. Almost every input is deliberately blank. No supplier quote, fulfilment price or battery cost exists yet, so no result should be quoted publicly.
+Update 8 Nov 2026: `ECONOMICS.csv` (Piblo Original, £79) and `ECONOMICS-FOUNDERS.csv` (Founder's Edition, £149) are now filled with ASSUMPTIONS and sourced fee rates (Kickstarter 5% + 3% + £0.30). Sources, margins and early-bird analysis are in `EDITIONS.md`. Still no supplier quote exists; do not quote any result publicly. Note the sheets use a combined 0.033 payment-fee fraction to approximate the fixed £0.30 per pledge.
+
+Status (original note): MODEL ONLY. Almost every input is deliberately blank. No supplier quote, fulfilment price or battery cost exists yet, so no result should be quoted publicly.
 
 ## Gross pledges are not profit
 
