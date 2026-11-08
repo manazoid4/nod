@@ -92,6 +92,15 @@ class DeviceAction(BaseModel):
     action: str
 
 
+class DeviceKeyRequest(BaseModel):
+    keys: str = Field(min_length=1, max_length=400)
+
+
+class DeviceConfigRequest(BaseModel):
+    volume: int | None = Field(default=None, ge=0, le=100)
+    brightness: int | None = Field(default=None, ge=0, le=100)
+
+
 # What the web live view may ask the device to do; anything else stays device-only.
 _DEVICE_ACTION = re.compile(r"update|reboot|key:\d{1,3},\d{1,3},\d{1,2}|open:[a-z_]{1,24}")
 
@@ -570,6 +579,29 @@ def create_app(
             raise HTTPException(400, "unsupported_device_action")
         try:
             return core_service.cardputer_action(body.action)
+        except CoreError as error:
+            raise HTTPException(503, str(error)) from error
+
+    @api.get("/core/cardputer/screen.png")
+    def core_cardputer_screen_png():
+        try:
+            png = core_service.cardputer_png()
+        except CoreError as error:
+            raise HTTPException(503, str(error)) from error
+        return Response(content=png, media_type="image/png",
+                        headers={"Cache-Control": "no-store"})
+
+    @api.post("/core/cardputer/key")
+    def core_cardputer_key(body: DeviceKeyRequest):
+        try:
+            return core_service.cardputer_key(body.keys)
+        except CoreError as error:
+            raise HTTPException(503, str(error)) from error
+
+    @api.post("/core/cardputer/config")
+    def core_cardputer_config(body: DeviceConfigRequest):
+        try:
+            return core_service.cardputer_config(body.volume, body.brightness)
         except CoreError as error:
             raise HTTPException(503, str(error)) from error
 

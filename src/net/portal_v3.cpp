@@ -299,6 +299,8 @@ String statusJson(bool unlocked) {
     j += ",\"largest_block\":" + String(Sys.largestFreeBlock);
     j += ",\"loop_max\":" + String(Sys.loopMaxMs);
     j += ",\"screen_bytes\":" + String(SCREEN_BYTES);
+    j += ",\"volume\":" + String((Cfg.volume * 100 + 127) / 255);
+    j += ",\"brightness\":" + String((Cfg.brightness * 100 + 127) / 255);
     j += ",\"staging_supported\":"; j += Sys.storage == Storage::SD ? "true" : "false";
     j += host::fwStatusJson();
     if (unlocked) {
@@ -376,7 +378,81 @@ ActionResult runAction(const String& body) {
     return {400, "Unknown action."};
 }
 
+uint8_t percentToByte(const String& v, uint8_t fallback, int minPct) {
+    if (v.isEmpty() || v.length() > 3) return fallback;
+    for (char c : v) if (c < '0' || c > '9') return fallback;
+    const int p = v.toInt();
+    return p > 100 ? fallback : static_cast<uint8_t>((max(p, minPct) * 255 + 50) / 100);
+}
+int toPct(uint8_t b) { return (b * 100 + 127) / 255; }
+
+// Agent remote control: keys queued here, injected from update() ~60 ms apart into the real key queue.
+struct PendingKey { uint8_t code; char ch; };
+PendingKey gKeys[80];
+size_t gKeyCount = 0;
+uint32_t gKeyNextAt = 0;
+
+bool keyByName(const String& name, uint8_t& code, char& ch) {
+    ch = 0;
+    if (name == "up") { code = KEY_UP; return true; }
+    if (name == "down") { code = KEY_DOWN; return true; }
+    if (name == "left") { code = KEY_LEFT; return true; }
+    if (name == "right") { code = KEY_RIGHT; return true; }
+    if (name == "enter") { code = KEY_ENTER; return true; }
+    if (name == "esc") { code = KEY_ESC; return true; }
+    if (name == "space") { code = KEY_SPACE; ch = ' '; return true; }
+    if (name == "tab") { code = KEY_TAB; return true; }
+    if (name == "backspace" || name == "del") { code = KEY_BACKSPACE; return true; }
+    if (name.length() != 1) return false;
+    const char c = name[0];
+    ch = c;
+    if (c >= 'a' && c <= 'z') { code = KEY_A + (c - 'a'); return true; }
+    if (c >= '1' && c <= '9') { code = KEY_1 + (c - '1'); return true; }
+    if (c == '0') { code = KEY_0; return true; }
+    switch (c) {
+        case '.': code = KEY_DOT; return true;
+        case ',': code = KEY_COMMA; return true;
+        case '/': code = KEY_SLASH; return true;
+        case ';': code = KEY_SEMICOLON; return true;
+        case '-': code = KEY_MINUS; return true;
+        case '=': code = KEY_EQUAL; return true;
+        default: return false;
+    }
+}
+
+// "down right*7 esc" -> {"ok":true,"sent":9}
+String queueKeys(const String& body) {
+    const String spec = formValue(body, "keys");
+    gKeyCount = 0;
+    for (int i = 0, n = spec.length(); i < n && gKeyCount < 80;) {
+        while (i < n && spec[i] == ' ') i++;
+        const int s = i;
+        while (i < n && spec[i] != ' ') i++;
+        String tok = spec.substring(s, i);
+        int repeat = 1;
+        const int star = tok.lastIndexOf('*');
+        if (star > 0) { repeat = constrain(tok.substring(star + 1).toInt(), 1, 64); tok = tok.substring(0, star); }
+        uint8_t code; char ch;
+        if (!keyByName(tok, code, ch)) { gKeyCount = 0; return "{\"ok\":false,\"error\":\"unknown_key\"}"; }
+        for (int r = 0; r < repeat && gKeyCount < 80; ++r) gKeys[gKeyCount++] = {code, ch};
+    }
+    if (!gKeyCount) return "{\"ok\":false,\"error\":\"keys_required\"}";
+    gKeyNextAt = millis();
+    return "{\"ok\":true,\"sent\":" + String(gKeyCount) + "}";
+}
+
 String saveConfig(const String& body) {
+    const String vol = formValue(body, "volume"), bright = formValue(body, "brightness");
+    if (!vol.isEmpty() || !bright.isEmpty()) {
+        Cfg.volume = percentToByte(vol, Cfg.volume, 0);
+        Cfg.brightness = percentToByte(bright, Cfg.brightness, 10);  // never save a black screen
+        Cfg.applyToHardware();
+        // volume/brightness-only posts (agents, Core) must not blank the connection fields below
+        if (body.indexOf("host_addr=") < 0) {
+            Cfg.save();
+            return "{\"ok\":true,\"volume\":" + String(toPct(Cfg.volume)) + ",\"brightness\":" + String(toPct(Cfg.brightness)) + "}";
+        }
+    }
     const String hostAddr = formValue(body, "host_addr");
     const String hostPort = formValue(body, "host_port");
     const String remote = formValue(body, "remote_url");
@@ -479,7 +555,10 @@ void dispatchRequest() {
         else { const ActionResult result = runAction(gBody); queueText(result.code, "text/plain", result.text); }
     } else if (gMethod == "POST" && gPath == "/api/config") {
         if (!unlocked) queueText(401, "text/plain", "Unlock controls with the Piblo pairing token first.");
-        else queueText(200, "text/plain", saveConfig(gBody));
+        else { const String r = saveConfig(gBody); queueText(200, r[0] == '{' ? "application/json" : "text/plain", r); }
+    } else if (gMethod == "POST" && gPath == "/api/key") {
+        if (!unlocked) queueText(401, "application/json", "{\"error\":\"unlock_required\"}");
+        else queueText(200, "application/json", queueKeys(gBody));
     } else queueText(404, "text/plain", "Not found.");
     gRxState = RxState::Ready;
 }
@@ -620,6 +699,13 @@ void startServer() {
 void begin() { startServer(); }
 
 void update() {
+    if (gKeyCount && static_cast<int32_t>(millis() - gKeyNextAt) >= 0) {
+        KB.inject(gKeys[0].code, gKeys[0].ch, MOD_NONE);
+        for (size_t i = 0; i + 1 < gKeyCount; ++i) gKeys[i] = gKeys[i + 1];
+        gKeyCount--;
+        gKeyNextAt = millis() + 60;
+        shell::wake();
+    }
     if (gReconnectAt && static_cast<int32_t>(millis() - gReconnectAt) >= 0) { gReconnectAt = 0; net::connectSaved(); }
     if (gRebootAt && static_cast<int32_t>(millis() - gRebootAt) >= 0) {
         gRebootAt = 0; if (gToLauncher) launcher::reboot(); else ESP.restart();
