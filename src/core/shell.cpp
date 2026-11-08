@@ -427,8 +427,8 @@ void dispatchKey(const KeyEvent& e) {
         return;
     }
     if (alerts::active()) {
-        if (!wasAsleep) alerts::handleKey(e);
-        return;
+        if (wasAsleep) return;                 // that key only woke the screen
+        if (alerts::handleKey(e)) return;      // A/Enter/S/Esc only; Fn and other keys fall through
     }
     if (notify::active() && e.down) notify::dismiss();
 

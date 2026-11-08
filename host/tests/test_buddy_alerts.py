@@ -38,7 +38,14 @@ def test_alert_lands_in_ring_with_schema():
     assert "outcome" not in ev["alert"]
     for i in range(buddy_mod.MAX_EVENTS + 5):
         c.post("/buddy/alert", json={**ALERT, "title": f"n{i}"}, headers=H)
-    assert len(c.get("/buddy/events", headers=H).json()["events"]) == buddy_mod.MAX_EVENTS
+    ids, since = [], 0
+    while True:  # the poll is paged, so walk it
+        page = c.get(f"/buddy/events?since={since}", headers=H).json()
+        if not page["events"]:
+            break
+        ids += [e["id"] for e in page["events"]]
+        since = page["last"]
+    assert len(ids) == buddy_mod.MAX_EVENTS
 
 
 def test_alert_ack_and_snooze_store_outcome(monkeypatch):
@@ -80,6 +87,42 @@ def test_expired_alert_never_fires(monkeypatch):
     real = buddy_mod.time.time
     monkeypatch.setattr(buddy_mod.time, "time", lambda: real() + 100)
     assert c.get("/buddy/events", headers=H).json()["events"] == []
+
+
+def test_events_poll_is_paged_to_fit_the_device_buffer():
+    import json
+    c = api()
+    big = {**ALERT, "title": "t" * 60, "body": "é" * 200}
+    for _ in range(buddy_mod.MAX_EVENTS):
+        c.post("/buddy/alert", json=big, headers=H)
+    seen, since = [], 0
+    for _ in range(buddy_mod.MAX_EVENTS):
+        r = c.get(f"/buddy/events?since={since}", headers=H)
+        assert len(r.content) <= 6144
+        body = r.json()
+        if not body["events"]:
+            break
+        seen += [e["id"] for e in body["events"]]
+        since = body["last"]
+    assert seen == sorted(set(seen)) and len(seen) == buddy_mod.MAX_EVENTS
+    assert json.dumps(c.get("/buddy/events?since=0", headers=H).json()["events"][0])
+
+
+def test_full_alert_table_rejects_instead_of_evicting_pending():
+    c = api()
+    first = c.post("/buddy/alert", json={**ALERT, "delay_seconds": 600}, headers=H).json()["id"]
+    ids = [c.post("/buddy/alert", json=ALERT, headers=H).json()["id"] for _ in range(buddy_mod.MAX_ALERTS - 1)]
+    assert c.post("/buddy/alert", json=ALERT, headers=H).status_code == 429
+    assert c.post("/buddy/alert", json={"kind": "approval", "title": "Bash"}, headers=H).status_code == 200  # approvals unaffected
+    c.post(f"/buddy/alert/{ids[0]}/ack", headers=H)                      # answered alerts may be evicted
+    assert c.post("/buddy/alert", json=ALERT, headers=H).status_code == 200
+    kept = {a["id"] for a in c.get("/buddy/alerts", headers=H).json()["alerts"]}
+    assert first in kept and ids[0] not in kept
+
+
+def test_delayed_approval_is_rejected():
+    c = api()
+    assert c.post("/buddy/alert", json={"kind": "approval", "title": "Bash", "delay_seconds": 5}, headers=H).status_code == 400
 
 
 def test_voice_reminder_command_schedules_an_alert():

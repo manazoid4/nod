@@ -23,15 +23,25 @@ FEATURE_INVENTORY stays unchecked until it is tried on a real Cardputer ADV.
 
 ## Device (src/core/alerts.cpp, firmware/nod/include/alert_policy.h)
 
-| priority | sound (original tones) | edge flash | repeats | Buddy |
-|---|---|---|---|---|
-| low | 1 note | none | no | idle |
-| normal | 2 notes | 2 pulses | no | needs attention |
-| high | 3 notes | 4 pulses | every 30 s | needs attention |
-| urgent | 4 notes | until answered | every 8 s | needs attention |
+| priority | sound (original tones) | edge flash | Buddy |
+|---|---|---|---|
+| low | 1 note | none | idle |
+| normal | 2 notes | 2 pulses | needs attention |
+| high | 3 notes | 4 pulses | needs attention |
+| urgent | 4 notes | until answered | needs attention |
 
 `task_done` always shows Buddy celebrating. Quiet drops low/normal sounds; Silent leaves only
 urgent (forced, like the Focus alarm). The approval chime is unchanged and never muted.
-Keys: ENT/A ack, S snooze, ESC hide locally. The approval overlay always sits above alerts.
+Keys: ENT/A ack, S snooze, ESC hide locally; every other key (Fn shortcuts included) still reaches the normal UI. The approval overlay always sits above alerts. Only high/urgent alerts wake the screen.
 
 Demo: `MAZ_TOKEN=... python scripts/demo-alerts.py`
+
+## Known limits
+- `/buddy/events` is paged (about 4.8 KB per poll, oldest first); the device continues from `last`.
+- At most 50 alert records are kept. Answered or expired ones are evicted first; if all 50 are still
+  pending, `POST /buddy/alert` answers 429 `alert_table_full` (approvals are unaffected).
+- Delivery is "device polls Core": an alert that fired while the device was offline is delivered only if it
+  is still inside the 20-event ring when the device reconnects; there is no replay of older unacked alerts yet.
+- The device answer (ack/snooze) is fire-and-forget on the shared worker; if it fails, Core keeps the alert open.
+- Tone playback blocks the UI loop for up to about 0.4 s (same pattern as the approval chime).
+- `kind: approval` cannot be delayed (`delay_seconds` is rejected with 400).

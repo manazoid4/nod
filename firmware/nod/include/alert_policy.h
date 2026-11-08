@@ -21,16 +21,15 @@ struct Rule {
     Tone    tones[MAX_TONES];
     uint8_t toneCount;
     uint8_t flashes;       // screen-edge "LED" pulses; FLASH_UNTIL_ACK = keeps pulsing until answered
-    uint16_t repeatSec;    // re-sound while unanswered (0 = once)
     Mood    mood;
 };
 
 // priority -> pattern. The single source of truth for how an alert feels.
 constexpr Rule RULES[4] = {
-    /* Low    */ {{{660, 40}, {0, 0}, {0, 0}, {0, 0}},          1, 0,               0,  Mood::Idle},
-    /* Normal */ {{{880, 60}, {1175, 60}, {0, 0}, {0, 0}},      2, 2,               0,  Mood::NeedsAttention},
-    /* High   */ {{{880, 70}, {1175, 70}, {1480, 90}, {0, 0}},  3, 4,               30, Mood::NeedsAttention},
-    /* Urgent */ {{{1480, 90}, {988, 90}, {1480, 90}, {988, 90}}, 4, FLASH_UNTIL_ACK, 8, Mood::NeedsAttention},
+    /* Low    */ {{{660, 40}, {0, 0}, {0, 0}, {0, 0}},          1, 0, Mood::Idle},
+    /* Normal */ {{{880, 60}, {1175, 60}, {0, 0}, {0, 0}},      2, 2, Mood::NeedsAttention},
+    /* High   */ {{{880, 70}, {1175, 70}, {1480, 90}, {0, 0}},  3, 4, Mood::NeedsAttention},
+    /* Urgent */ {{{1480, 90}, {988, 90}, {1480, 90}, {988, 90}}, 4, FLASH_UNTIL_ACK, Mood::NeedsAttention},
 };
 
 inline Priority parsePriority(const char* s) {

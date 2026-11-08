@@ -100,7 +100,7 @@ bool update(bool screenOff) {
             if (host_worker::takeBuddyPollResult(p)) absorb(p);
         } else if (host_worker::jobKind() == host_worker::JobKind::BuddyDecide) {
             host_worker::BuddyDecideResult r;
-            if (host_worker::takeBuddyDecideResult(r)) {
+            if (host_worker::takeBuddyDecideResult(r) && r.id.rfind("al-", 0) != 0) {  // "al-": generic alert answer, see alerts.cpp
                 if (r.ok) {
                     markDone(r.id); drop(r.id);
                     if (r.applied == "allow" || r.applied == "allow_all") { toast("Approved", OK); sfx::confirm(); }

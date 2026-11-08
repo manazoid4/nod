@@ -132,21 +132,13 @@ BuddyPoll buddyPoll() {
     return out;
 }
 
-bool buddyAlertAct(const std::string& id, const std::string& action) {
-    if (id.empty() || (action != "ack" && action != "snooze")) return false;
-    for (char c : id) if (!isalnum(static_cast<unsigned char>(c)) && c != '-') return false;  // id goes into the URL path
-    NodHttp http;
-    if (!coreBegin(http, "/buddy/alert/" + id + "/" + action)) return false;
-    http.addHeader("Content-Type", "application/json");
-    const int status = http.POST("{}");
-    http.end();
-    return status == 200 || status == 404;  // 404: Core restarted or ring rolled over; nothing left to answer
-}
-
 bool buddyDecide(const std::string& id, const std::string& decision, std::string& applied) {
     applied.clear();
+    // Generic alert answers ("al-" ids) share this worker job: POST /buddy/alert/{id}/{ack|snooze}.
+    const bool alert = id.rfind("al-", 0) == 0;
+    if (alert && id.find('/') != std::string::npos) return false;  // id goes into the URL path
     NodHttp http;
-    if (!coreBegin(http, "/buddy/decide")) return false;
+    if (!coreBegin(http, alert ? "/buddy/alert/" + id + "/" + decision : "/buddy/decide")) return false;
     http.addHeader("Content-Type", "application/json");
     JsonDocument req;
     req["id"] = id;
@@ -157,6 +149,7 @@ bool buddyDecide(const std::string& id, const std::string& decision, std::string
     const String body = status > 0 ? http.getString() : String();
     http.end();
     if (status == 404) { applied = "gone"; return true; }  // expired or cancelled at the terminal
+    if (alert) { applied = decision; return status == 200; }
     JsonDocument doc;
     if (status != 200 || deserializeJson(doc, body)) return false;
     applied = doc["decision"] | "";

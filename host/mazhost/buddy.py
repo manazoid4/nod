@@ -1,6 +1,7 @@
 """Agent approval queue: Claude Code hook -> Core -> device (Piblo)."""
 from __future__ import annotations
 
+import json
 import threading
 import time
 import uuid
@@ -24,6 +25,7 @@ MAX_ALERTS = 50        # alert records kept (with their ack/snooze outcome)
 SNOOZE_DEFAULT_MIN = 10
 SNOOZE_MAX_MIN = 240
 MAX_DELAY_S = 30 * 86400
+EVENTS_BUDGET = 4800   # bytes of event JSON per poll; the device reads at most 6144
 AlertKind = Literal["reminder", "meeting", "deadline", "sla", "computer", "task_done", "approval", "info"]
 Priority = Literal["low", "normal", "high", "urgent"]
 AlertAction = Literal["ack", "snooze", "approve", "reject"]
@@ -168,6 +170,8 @@ class Buddy:
     # ---- generic alerts (reminder / webhook / ...) ----
     def post_alert(self, a: AlertIn) -> dict:
         if a.kind == "approval":
+            if a.delay_seconds:
+                raise ValueError("approval_cannot_be_delayed")
             # Same queue, same authority/halt/timeout rules as the Claude Code hook.
             item = self.request(a.title, a.body, project=a.source[:60])
             return {"ok": True, "routed": "approval", "id": item["id"], "decision": item["decision"]}
@@ -175,6 +179,13 @@ class Buddy:
             raise ValueError("approve_reject_only_for_approval_kind")
         now = time.time()
         with self._cv:
+            if len(self._alerts) >= MAX_ALERTS:
+                # Only answered or expired alerts may be evicted; never a pending reminder or unanswered alert.
+                gone = next((k for k, r in self._alerts.items()
+                             if r["outcome"] == "acked" or now > r.get("_exp", float("inf"))), None)
+                if gone is None:
+                    raise OverflowError("alert_table_full")
+                del self._alerts[gone]
             aid = "al-" + uuid.uuid4().hex[:8]
             rec = {"id": aid, "source": a.source, "kind": a.kind, "title": a.title, "body": a.body,
                    "priority": a.priority, "actions": list(dict.fromkeys(a.actions)) or ["ack"],
@@ -184,8 +195,6 @@ class Buddy:
                 rec["_exp"] = now + a.delay_seconds + a.expires_in
                 rec["expires_at"] = datetime.fromtimestamp(rec["_exp"], timezone.utc).isoformat()
             self._alerts[aid] = rec
-            while len(self._alerts) > MAX_ALERTS:
-                self._alerts.pop(next(iter(self._alerts)))
             self._fire_due_locked()
             return {"ok": True, "routed": "alert", "id": aid, "scheduled": not rec["fired"]}
 
@@ -206,7 +215,8 @@ class Buddy:
             self._event_id += 1
             public = {k: v for k, v in rec.items() if k not in ("due", "fired", "outcome", "snooze_until", "_exp", "outcome_at")}
             self._events.append({"id": self._event_id, "kind": "alert", "text": rec["title"],
-                                 "source": rec["source"], "ts": now, "alert": public})
+                                 "source": rec["source"], "ts": now, "alert": public,
+                                 "snooze": "snooze" in rec["actions"]})
 
     def alert_outcome(self, aid: str, action: str, minutes: int = SNOOZE_DEFAULT_MIN) -> dict:
         with self._cv:
@@ -230,8 +240,15 @@ class Buddy:
     def events(self, since: int = 0) -> dict:
         with self._cv:
             self._fire_due_locked()
-            return {"ok": True, "events": [dict(e) for e in self._events if e["id"] > since],
-                    "last": self._event_id}
+            fresh = [e for e in self._events if e["id"] > since]
+            out, used = [], 0
+            for e in fresh:
+                used += len(json.dumps(e))
+                if out and used > EVENTS_BUDGET:   # page oldest-first; the device continues from `last`
+                    break
+                out.append(dict(e))
+            last = out[-1]["id"] if out and len(out) < len(fresh) else self._event_id
+            return {"ok": True, "events": out, "last": last}
 
     def request(self, tool: str, summary: str, session_id: str = "", project: str = "") -> dict:
         with self._cv:
@@ -371,6 +388,8 @@ def install_buddy_routes(api: FastAPI, buddy: Buddy | None = None) -> Buddy:
             return buddy.post_alert(body)
         except ValueError as error:
             raise HTTPException(400, str(error))
+        except OverflowError as error:
+            raise HTTPException(429, str(error))
 
     @api.get("/buddy/alerts")
     def buddy_alerts():
