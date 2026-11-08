@@ -299,8 +299,8 @@ String statusJson(bool unlocked) {
     j += ",\"largest_block\":" + String(Sys.largestFreeBlock);
     j += ",\"loop_max\":" + String(Sys.loopMaxMs);
     j += ",\"screen_bytes\":" + String(SCREEN_BYTES);
-    j += ",\"volume\":" + String(Cfg.volume * 100 / 255);
-    j += ",\"brightness\":" + String(Cfg.brightness * 100 / 255);
+    j += ",\"volume\":" + String((Cfg.volume * 100 + 127) / 255);
+    j += ",\"brightness\":" + String((Cfg.brightness * 100 + 127) / 255);
     j += ",\"staging_supported\":"; j += Sys.storage == Storage::SD ? "true" : "false";
     j += host::fwStatusJson();
     if (unlocked) {
@@ -378,10 +378,13 @@ ActionResult runAction(const String& body) {
     return {400, "Unknown action."};
 }
 
-uint8_t percentToByte(const String& v, uint8_t fallback) {
+uint8_t percentToByte(const String& v, uint8_t fallback, int minPct) {
+    if (v.isEmpty() || v.length() > 3) return fallback;
+    for (char c : v) if (c < '0' || c > '9') return fallback;
     const int p = v.toInt();
-    return (v.isEmpty() || p < 0 || p > 100) ? fallback : static_cast<uint8_t>(p * 255 / 100);
+    return p > 100 ? fallback : static_cast<uint8_t>((max(p, minPct) * 255 + 50) / 100);
 }
+int toPct(uint8_t b) { return (b * 100 + 127) / 255; }
 
 // Agent remote control: keys queued here, injected from update() ~60 ms apart into the real key queue.
 struct PendingKey { uint8_t code; char ch; };
@@ -430,7 +433,7 @@ String queueKeys(const String& body) {
         const int star = tok.lastIndexOf('*');
         if (star > 0) { repeat = constrain(tok.substring(star + 1).toInt(), 1, 64); tok = tok.substring(0, star); }
         uint8_t code; char ch;
-        if (!keyByName(tok, code, ch)) return "{\"ok\":false,\"error\":\"unknown_key\",\"key\":\"" + tok + "\"}";
+        if (!keyByName(tok, code, ch)) { gKeyCount = 0; return "{\"ok\":false,\"error\":\"unknown_key\"}"; }
         for (int r = 0; r < repeat && gKeyCount < 80; ++r) gKeys[gKeyCount++] = {code, ch};
     }
     if (!gKeyCount) return "{\"ok\":false,\"error\":\"keys_required\"}";
@@ -441,13 +444,13 @@ String queueKeys(const String& body) {
 String saveConfig(const String& body) {
     const String vol = formValue(body, "volume"), bright = formValue(body, "brightness");
     if (!vol.isEmpty() || !bright.isEmpty()) {
-        Cfg.volume = percentToByte(vol, Cfg.volume);
-        Cfg.brightness = percentToByte(bright, Cfg.brightness);
+        Cfg.volume = percentToByte(vol, Cfg.volume, 0);
+        Cfg.brightness = percentToByte(bright, Cfg.brightness, 10);  // never save a black screen
         Cfg.applyToHardware();
         // volume/brightness-only posts (agents, Core) must not blank the connection fields below
         if (body.indexOf("host_addr=") < 0) {
             Cfg.save();
-            return "{\"ok\":true,\"volume\":" + String(Cfg.volume * 100 / 255) + ",\"brightness\":" + String(Cfg.brightness * 100 / 255) + "}";
+            return "{\"ok\":true,\"volume\":" + String(toPct(Cfg.volume)) + ",\"brightness\":" + String(toPct(Cfg.brightness)) + "}";
         }
     }
     const String hostAddr = formValue(body, "host_addr");
