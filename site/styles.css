@@ -462,3 +462,9 @@ h2 { max-width: 20ch; text-wrap: balance; }
 .waitlist-check input { width: 22px; height: 22px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 .footer-link { color: inherit; font-weight: 700; }
+
+/* referral share box */
+.share-box { max-width: 520px; margin: var(--space-5) auto 0; text-align: center; }
+.share-box h3 { margin: 0 0 var(--space-2); }
+.share-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: center; margin-top: var(--space-3); }
+.share-box[hidden], .share-actions [hidden] { display: none; }

@@ -27,7 +27,7 @@ test("all four pages have semantic structure and indexed identity", () => {
 test("all internal paths, static assets and hash targets resolve locally", () => {
   for (const [page, html] of Object.entries(contents)) {
     for (const url of [...attrs(html, "href"), ...attrs(html, "src")]) {
-      if (/^(https?:|mailto:|tel:|data:)/.test(url)) continue;
+      if (/^(https?:|mailto:|tel:|data:|\/_vercel\/)/.test(url)) continue; // /_vercel/* is served by Vercel at runtime
       const [location, fragment] = url.split("#", 2);
       const route = location.startsWith("/") ? location : location ? (page + location) : page;
       if (location) assert.ok(existsSync(locallyResolve(route)), page + " missing " + route);
@@ -147,4 +147,39 @@ test("media references use piblo-* files that exist, and no nod-* media remains"
   assert.deepEqual(readdirSync(join(root, "media")).filter(f => /nod/i.test(f)), []);
   assert.match(html, /name="piblo_hp_field"/);
   assert.ok(existsSync(join(root, "media/piblo-og.jpg")));
+});
+
+test("analytics script is on every page and the share box and ref handling exist", () => {
+  const all = [...pages.map(p => contents[p]), readFileSync(join(root, "concepts/b/index.html"), "utf8")];
+  for (const html of all) assert.match(html, /<script defer src="\/_vercel\/insights\/script\.js"><\/script>/);
+  assert.match(contents["/privacy/"], /Vercel Web Analytics[^.]*without cookies/);
+  assert.match(contents["/"], /id="share-box"[^>]*hidden/);
+  assert.match(contents["/"], /name="ref"/);
+  assert.match(contents["/"], /data-va="cta_click"/);
+});
+
+test("script.js: ref is validated and stored safely, share box shows only the user's link, events fire", () => {
+  const src = readFileSync(join(root, "script.js"), "utf8");
+  const events = [];
+  const shareBox = { hidden: true, el: {}, querySelector(sel) { return (this.el[sel] ||= { hidden: true, value: "", textContent: "" }); } };
+  const refInput = { value: "" };
+  const form = { querySelector: () => ({ textContent: "", classList: { toggle() {} } }), addEventListener() {} };
+  const store = {};
+  const run = (search) => vm.runInNewContext(src, {
+    window: { va: (...a) => events.push(a), matchMedia: () => ({ matches: true }) }, navigator: { share: () => Promise.resolve() },
+    location: { search }, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = v; } },
+    URLSearchParams, IntersectionObserver: class { observe() {} }, matchMedia: () => ({ matches: true, addEventListener() {} }),
+    document: { querySelectorAll: () => [], querySelector: () => refInput, getElementById: id => id === "share-box" ? shareBox : id === "waitlist-form" ? form : null, documentElement: {}, body: {} },
+    console, setTimeout, fetch: async () => ({}),
+  });
+  try { run("?ref=AbCd1234"); } catch (e) { if (!/reading|null|undefined/.test(String(e))) throw e; }
+  assert.equal(store.piblo_ref, "abcd1234");
+  assert.equal(refInput.value, "abcd1234");
+  delete store.piblo_ref;
+  try { run("?ref=%3Cscript%3E"); } catch {}
+  assert.equal(store.piblo_ref, undefined);
+  try { run("?subscribed=1&code=zz99yy88"); } catch {}
+  assert.equal(shareBox.hidden, false);
+  assert.equal(shareBox.querySelector("#share-link").value, "https://piblo.co.uk/?ref=zz99yy88");
+  assert.ok(events.some(e => e[0] === "event" && e[1].name === "waitlist_signup"));
 });
