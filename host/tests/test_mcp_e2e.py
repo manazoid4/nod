@@ -51,10 +51,13 @@ def _build_mcp() -> None:
     """Build dist/index.js once. CI may pre-build it; here we build on demand so `pytest` is self-contained."""
     if DIST.exists():
         return
-    if not shutil.which("npm"):
+    # Windows Node distributions expose npm.cmd; subprocess without a shell cannot execute
+    # the bare "npm" shim on the GitHub Windows runner.
+    npm = shutil.which("npm.cmd") or shutil.which("npm")
+    if not npm:
         pytest.skip("npm unavailable, cannot build piblo-mcp")
-    subprocess.run(["npm", "ci"], cwd=MCP_DIR, check=True, capture_output=True, timeout=300)
-    subprocess.run(["npm", "run", "build"], cwd=MCP_DIR, check=True, capture_output=True, timeout=300)
+    subprocess.run([npm, "ci"], cwd=MCP_DIR, check=True, capture_output=True, timeout=300)
+    subprocess.run([npm, "run", "build"], cwd=MCP_DIR, check=True, capture_output=True, timeout=300)
 
 
 def mcp_call(url: str, tool: str, args: dict, timeout: int = 90) -> dict:
@@ -118,20 +121,21 @@ class CoreHandle:
         self.data_dir = data_dir
         cfg = Settings(token=TOKEN, buddy_db=str(data_dir / "buddy.sqlite3"), _env_file=None)
         self.app = create_app(cfg)
-        self._thread = threading.Thread(
-            target=uvicorn.run, kwargs={"app": self.app, "host": "127.0.0.1", "port": self.port, "log_level": "error"},
-            daemon=True,
-        )
+        self.server = uvicorn.Server(uvicorn.Config(self.app, host="127.0.0.1", port=self.port, log_level="error"))
+        self._thread = threading.Thread(target=self.server.run, daemon=True)
         self._thread.start()
         self.base = f"http://127.0.0.1:{self.port}"
         # wait for readiness
-        c = httpx.Client(base_url=self.base, headers=H, timeout=5)
-        _wait_until(lambda: _ping(c), timeout=15.0)
+        with httpx.Client(base_url=self.base, headers=H, timeout=5) as c:
+            assert _wait_until(lambda: _ping(c), timeout=15.0), "Core did not start"
 
     def stop(self) -> None:
-        # uvicorn.run in a daemon thread has no clean stop handle here; the process ends with the test.
-        # Closing client connections is enough for the test harness.
-        pass
+        """Actually terminate the HTTP server before re-opening the same persistent DB."""
+        if not self._thread.is_alive():
+            return
+        self.server.should_exit = True
+        self._thread.join(timeout=15)
+        assert not self._thread.is_alive(), "Core failed to stop"
 
 
 def _ping(c) -> bool:
@@ -141,14 +145,18 @@ def _ping(c) -> bool:
         return False
 
 
-@pytest.fixture(scope="module")
-def core(tmp_path_factory):
+@pytest.fixture
+def core(tmp_path):
     if not NODE:
         pytest.skip("node unavailable, skipping piblo-mcp e2e")
     _build_mcp()
-    data_dir = tmp_path_factory.mktemp("piblo-e2e")
+    data_dir = tmp_path / "piblo-e2e"
+    data_dir.mkdir()
     handle = CoreHandle(data_dir)
-    yield handle, data_dir
+    try:
+        yield handle, data_dir
+    finally:
+        handle.stop()
 
 
 # ---------------------------------------------------------------------------
@@ -188,25 +196,19 @@ def test_success_flow_restart_and_history(core):
     httpx.post(base + "/buddy/demo", headers=H)  # second approval, also pending, for good measure
     handle.stop()
 
-    cfg = Settings(token=TOKEN, buddy_db=str(data_dir / "buddy.sqlite3"), _env_file=None)
-    app2 = create_app(cfg)
-    port2 = _free_port()
-    t2 = threading.Thread(target=uvicorn.run,
-                          kwargs={"app": app2, "host": "127.0.0.1", "port": port2, "log_level": "error"}, daemon=True)
-    t2.start()
-    base2 = f"http://127.0.0.1:{port2}"
-    c2 = httpx.Client(base_url=base2, headers=H, timeout=10)
-    _wait_until(lambda: _ping(c2), timeout=15.0)
-
-    # history persisted
-    hist2 = c2.get("/buddy/history").json()
-    assert any("Deploy to prod" in a["tool"] for a in hist2["approvals"])
-    # no pending approval survived the restart (they all expired on open)
-    summary = c2.get("/buddy/summary").json()
-    assert summary["items"] == [], summary
-    # the specific unanswered one reads as expired, never pending
-    state = c2.get("/buddy/state", params={"id": unanswered["id"]}).json()
-    assert state["decision"] == "cancel" and state.get("expired") is True
+    # New Core instance reads the same WAL-backed SQLite file after the old HTTP server stopped.
+    restarted = CoreHandle(data_dir)
+    try:
+        with httpx.Client(base_url=restarted.base, headers=H, timeout=10) as c2:
+            hist2 = c2.get("/buddy/history").json()
+            assert any("Deploy to prod" in a["tool"] for a in hist2["approvals"])
+            # no pending approval survived the restart (they all expired on open)
+            summary = c2.get("/buddy/summary").json()
+            assert summary["items"] == [], summary
+            state = c2.get("/buddy/state", params={"id": unanswered["id"]}).json()
+            assert state["decision"] == "cancel" and state.get("expired") is True
+    finally:
+        restarted.stop()
 
 
 def test_duplicate_idempotency_key_single_record(core):
