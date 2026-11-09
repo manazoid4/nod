@@ -4,7 +4,10 @@
 #include <string>
 #include <vector>
 
+#include <nod_hold.h>
+
 #include "../audio/sfx.h"
+#include "../input/keyboard.h"
 #include "../net/host_worker.h"
 #include "../net/mazhost.h"
 #include "../ui/theme.h"
@@ -19,6 +22,7 @@ namespace {
 
 struct Req {
     std::string id, tool, summary, project, session;
+    bool        nod = false;
     uint32_t    deadline = 0;  // millis() when Core's 60 s window closes
 };
 
@@ -32,6 +36,9 @@ uint16_t                 gMsgColor = 0;
 uint32_t                 gMsgUntil = 0, gNextPoll = 0;
 uint8_t                  gRetries = 0, gFails = 0;
 bool                     gSubmitted = false;
+// The Nod hold-to-approve: gHoldKey is the Y/ENTER code being held (0 = none).
+uint8_t                  gHoldKey = 0;
+uint32_t                 gHoldStart = 0, gHintUntil = 0;
 
 bool done(const std::string& id) { return std::find(gDone.begin(), gDone.end(), id) != gDone.end(); }
 void markDone(const std::string& id) {
@@ -54,7 +61,8 @@ bool absorb(const host::BuddyPoll& p) {
     std::vector<Req> next;
     for (const host::BuddyItem& it : p.items) {
         if (done(it.id)) continue;
-        Req r{it.id, it.tool, it.summary, it.project, it.session, now + static_cast<uint32_t>(it.left) * 1000u};
+        Req r{it.id, it.tool, it.summary, it.project, it.session, it.nod,
+              now + static_cast<uint32_t>(it.left) * 1000u};
         for (const Req& old : gQueue) if (old.id == it.id) { r.deadline = old.deadline; break; }
         next.push_back(std::move(r));
     }
@@ -70,12 +78,21 @@ bool absorb(const host::BuddyPoll& p) {
 }
 
 void send(const char* decision) {
+    gHoldKey = 0;
     if (gQueue.empty() || gPhase != Phase::Showing) return;
     gSendId = gQueue.front().id;
     gSendDecision = decision;
     gRetries = 0;
     gSubmitted = false;
     gPhase = Phase::Sending;
+}
+
+// Line i of Core's three-line detail (head, amount, to recipient) (Core already truncated and cased them).
+std::string nodLine(const std::string& s, int i) {
+    size_t a = 0;
+    while (i-- > 0 && a != std::string::npos) { a = s.find('\n', a); if (a != std::string::npos) a++; }
+    if (a == std::string::npos) return "";
+    return s.substr(a, s.find('\n', a) - a);
 }
 
 std::string clip(const std::string& s, size_t from, size_t n, bool more) {
@@ -88,6 +105,7 @@ std::string clip(const std::string& s, size_t from, size_t n, bool more) {
 }  // namespace
 
 bool active() { return gPhase != Phase::Idle; }
+bool holding() { return gHoldKey != 0; }
 
 bool update(bool screenOff) {
     bool arrived = false;
@@ -116,6 +134,13 @@ bool update(bool screenOff) {
                 }
             }
         }
+    }
+
+    // 2a. Nod hold: approve once Y/ENTER has stayed down long enough; drop the hold if the
+    // key is gone (lost release event) or the request is no longer on screen.
+    if (gHoldKey) {
+        if (gPhase != Phase::Showing || gQueue.empty() || !gQueue.front().nod || !KB.held(gHoldKey)) gHoldKey = 0;
+        else if (nod::holdDone(now - gHoldStart)) send("allow");
     }
 
     // 2. Phase housekeeping.
@@ -155,9 +180,17 @@ bool update(bool screenOff) {
 
 bool handleKey(const KeyEvent& e) {
     if (gPhase == Phase::Idle) return false;
-    if (!e.down) return true;
+    const bool nodShown = gPhase == Phase::Showing && !gQueue.empty() && gQueue.front().nod;
+    if (!e.down) {
+        // Released before the hold finished: nothing happens except a hint.
+        if (gHoldKey && e.code == gHoldKey) { gHoldKey = 0; gHintUntil = millis() + 1500; }
+        return true;
+    }
     if (gPhase != Phase::Showing) return true;  // swallow while sending / confirming
-    if (e.code == KEY_Y || e.code == KEY_ENTER) send("allow");
+    if (e.code == KEY_Y || e.code == KEY_ENTER) {
+        if (!nodShown) send("allow");
+        else if (!gHoldKey) { gHoldKey = e.code; gHoldStart = millis(); }  // key repeats must not restart the hold
+    }
     else if (e.code == KEY_N || e.code == KEY_ESC) send("deny");
     // No session-wide approval shortcut: each action needs a deliberate decision.
     return true;
@@ -183,9 +216,13 @@ void render(M5Canvas& g) {
     const int32_t leftMs = static_cast<int32_t>(r.deadline - millis());
     const int left = leftMs > 0 ? (leftMs + 999) / 1000 : 0;
 
+    // The Nod: an approval with details gets amount/recipient lines; without them (older Core,
+    // plain agent asks) every line below renders exactly as before.
+    const bool details = r.summary.compare(0, 9, "THE NOD  ") == 0;
+    const std::string head = details ? nodLine(r.summary, 0) : "CLAUDE CODE NEEDS YOU";
     g.setFont(&fonts::Font0);
     g.setTextColor(ACCENT, PANEL);
-    g.drawString("CLAUDE CODE NEEDS YOU", x + 6, y + 5);
+    g.drawString(head.c_str(), x + 6, y + 5);
     if (gQueue.size() > 1) {
         char c[12];
         snprintf(c, sizeof(c), "+%u more", static_cast<unsigned>(gQueue.size() - 1));
@@ -204,11 +241,19 @@ void render(M5Canvas& g) {
         g.drawString(clip(r.project, 0, 18, false).c_str(), x + w - 6, y + 22);
         g.setTextDatum(top_left);
     }
+    if (details) {
+        g.setFont(&fonts::Font2);
+        g.setTextColor(WARN, PANEL);
+        g.drawString(nodLine(r.summary, 1).c_str(), x + 6, y + 36);
+    }
     g.setFont(&fonts::Font0);
     g.setTextColor(DIM, PANEL);
     const size_t N = 36;
-    g.drawString(clip(r.summary, 0, N, false).c_str(), x + 6, y + 40);
-    g.drawString(clip(r.summary, N, N, true).c_str(), x + 6, y + 52);
+    if (details) g.drawString(nodLine(r.summary, 2).c_str(), x + 6, y + 54);
+    else {
+        g.drawString(clip(r.summary, 0, N, false).c_str(), x + 6, y + 40);
+        g.drawString(clip(r.summary, N, N, true).c_str(), x + 6, y + 52);
+    }
 
     // Countdown bar (60 s window).
     const int bw = w - 44;
@@ -220,8 +265,15 @@ void render(M5Canvas& g) {
     g.setTextColor(TEXT, PANEL);
     g.drawString(t, x + bw + 12, y + 70);
 
-    g.setTextColor(gPhase == Phase::Sending ? WARN : ACCENT, PANEL);
-    g.drawString(gPhase == Phase::Sending ? "Sending..." : "Y/ENT once  N/ESC deny", x + 6, y + 85);
+    // Nod: a hold bar under the hint fills while Y/ENT stays down.
+    const bool hint = r.nod && gHintUntil && static_cast<int32_t>(millis() - gHintUntil) < 0;
+    g.setTextColor(gPhase == Phase::Sending || hint ? WARN : ACCENT, PANEL);
+    g.drawString(gPhase == Phase::Sending ? "Sending..." : hint ? "hold Y to approve"
+                 : r.nod ? "HOLD Y/ENT  N/ESC stop" : "Y/ENT once  N/ESC deny", x + 6, y + (r.nod ? 80 : 85));
+    if (r.nod) {
+        g.drawRect(x + 6, y + 90, w - 12, 7, ACCENT);
+        if (gHoldKey) g.fillRect(x + 7, y + 91, (w - 14) * nod::holdPercent(millis() - gHoldStart) / 100, 5, OK);
+    }
 }
 
 }  // namespace approvals

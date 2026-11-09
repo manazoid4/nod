@@ -147,3 +147,69 @@ def test_approval_kind_routes_through_existing_queue_and_halt():
     assert r2["decision"] == "deny"
     # the only way to approve is still /buddy/decide
     assert c.post("/buddy/decide", json={"id": r2["id"], "decision": "allow"}, headers=H).json()["decision"] == "deny"
+
+
+# ---- The Nod: details + long-press flag + nod log ----
+def _nod(c, **kw):
+    body = {"kind": "approval", "title": "Pay Acme", "source": "bank", "nod": True, "amount": "£42.00",
+            "recipient": "Acme Ltd", "category": "payment", **kw}
+    return c.post("/buddy/alert", json=body, headers=H).json()
+
+
+def test_nod_fields_reach_the_device_summary():
+    c = api()
+    r = _nod(c)
+    item = c.get("/buddy/summary", headers=H).json()["items"][0]
+    assert item["id"] == r["id"] and item["amount"] == "£42.00" and item["recipient"] == "Acme Ltd"
+    assert item["category"] == "payment" and item["nod"] is True
+    # the firmware reads one text field: head / amount / recipient on three lines
+    assert item["summary"] == "THE NOD  PAYMENT" + chr(10) + "£42.00" + chr(10) + "to Acme Ltd"
+
+
+def test_nod_fields_are_truncated_and_category_normalised():
+    c = api()
+    _nod(c, amount="£" + "9" * 40, recipient="R" * 90, category="Wire-Transfer")
+    item = c.get("/buddy/summary", headers=H).json()["items"][0]
+    assert len(item["amount"]) == 16 and len(item["recipient"]) == 40 and item["category"] == "other"
+    _nod(c, category="DELETE")
+    assert c.get("/buddy/summary", headers=H).json()["items"][1]["category"] == "delete"
+
+
+def test_plain_approval_summary_is_unchanged():
+    c = api()
+    c.post("/buddy/alert", json={"kind": "approval", "title": "Bash", "body": "npm test"}, headers=H)
+    item = c.get("/buddy/summary", headers=H).json()["items"][0]
+    assert not {"amount", "recipient", "category", "nod"} & set(item)
+
+
+def test_buddy_request_accepts_nod_fields():
+    c = api()
+    rid = c.post("/buddy/request", json={"tool": "Send email", "category": "send", "nod": True,
+                                         "recipient": "customer@example.com"}, headers=H).json()["id"]
+    item = c.get("/buddy/summary", headers=H).json()["items"][0]
+    assert item["id"] == rid and item["category"] == "send" and item["nod"] is True
+
+
+def test_nod_timeout_fails_closed_and_is_logged(monkeypatch):
+    c = api()
+    r = _nod(c)
+    real = buddy_mod.time.monotonic
+    monkeypatch.setattr(buddy_mod.time, "monotonic", lambda: real() + buddy_mod.TIMEOUT_S + 1)
+    assert c.get(f"/buddy/state?id={r['id']}", headers=H).json()["decision"] == "cancel"
+    assert c.post("/buddy/decide", json={"id": r["id"], "decision": "allow"}, headers=H).status_code == 409
+    assert c.get("/buddy/nods", headers=H).json()["nods"][0]["outcome"] == "expired"
+
+
+def test_nod_log_outcomes_and_auth():
+    c = api()
+    assert c.get("/buddy/nods").status_code == 401
+    a, b, d = _nod(c, title="Pay A"), _nod(c, title="Pay B", amount="£5"), _nod(c, title="Pay C")
+    pending = _nod(c, title="Pay D")
+    c.post("/buddy/decide", json={"id": a["id"], "decision": "allow"}, headers=H)
+    c.post("/buddy/decide", json={"id": b["id"], "decision": "deny"}, headers=H)
+    c.post("/buddy/decide", json={"id": d["id"], "decision": "cancel"}, headers=H)
+    nods = c.get("/buddy/nods", headers=H).json()["nods"]
+    assert [(n["title"], n["outcome"]) for n in nods] == [("Pay C", "stopped"), ("Pay B", "stopped"), ("Pay A", "approved")]
+    assert pending["id"] not in [n["id"] for n in nods]   # pending is not an outcome yet
+    assert nods[2]["amount"] == "£42.00" and nods[2]["category"] == "payment" and nods[2]["decided_at"] >= nods[2]["requested_at"]
+    assert len(c.get("/buddy/nods?limit=1", headers=H).json()["nods"]) == 1
