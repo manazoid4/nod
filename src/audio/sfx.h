@@ -11,6 +11,7 @@
 namespace maz {
 namespace sfx {
 
+void update();     // call every loop(): steps the queued multi-note chirps (non-blocking)
 void boot();       // device ready
 void select();     // menu move
 void confirm();    // enter / open
