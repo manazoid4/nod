@@ -159,6 +159,7 @@ p { margin: 0 0 var(--space-4); max-width: 60ch; }
 .footer { background: var(--ink); color: var(--paper); padding-block: var(--space-7); }
 .footer-inner { display: grid; grid-template-columns: 1fr auto; gap: var(--space-5) var(--space-7); align-items: start; }
 .footer .logo-dot { border-color: var(--paper); }
+.logo-img { display: block; height: 44px; width: auto; }
 .footer p { font-size: .95rem; color: var(--paper); margin: var(--space-3) 0 0; }
 .footer-links { display: flex; flex-wrap: wrap; gap: var(--space-5); font-weight: 700; }
 .legal { grid-column: 1 / -1; font-size: .85rem !important; opacity: .85; }
