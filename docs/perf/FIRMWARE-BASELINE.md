@@ -2,7 +2,7 @@
 
 Measured on `origin/main` @ `c9388f9` (v1.5.1), `pio run -e cardputer-adv`, PlatformIO 6.x,
 espressif32@6.9.0 (arduino-esp32 2.0.17, gcc 8.4.0 xtensa), built on a Windows laptop. Re-measure with
-`python scripts/fw-size-report.py --baseline docs/perf/fw-baseline-before.json`.
+`python scripts/fw-size-report.py --baseline docs/perf/fw-baseline.json`.
 
 | metric | bytes |
 |---|---:|
