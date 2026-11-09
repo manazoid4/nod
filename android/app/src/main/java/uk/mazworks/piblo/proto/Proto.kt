@@ -8,7 +8,11 @@ import org.json.JSONObject
 const val TITLE_MAX = 60      // docs/ALERTS.md
 const val BODY_MAX = 200      // docs/ALERTS.md
 const val SOURCE_MAX = 40     // AlertIn.source
+const val TEXT_MAX = 500      // phone keyboard text (easy-mode-task.md, POST /buddy/text)
 const val KIND_FIND_PHONE = "find_phone"
+
+/** POST /buddy/text `mode`: what the device does with the text in the focused field. */
+val TEXT_MODES = setOf("insert", "replace", "send")
 
 enum class Priority(val wire: String) {
     LOW("low"), NORMAL("normal"), HIGH("high"), URGENT("urgent");
@@ -94,6 +98,15 @@ object Proto {
             .toString()
 
     fun decideJson(id: String, allow: Boolean): String = JSONObject().put("id", id).put("decision", if (allow) "allow" else "deny").toString()
+
+    /** POST /buddy/text body. Text is always literal characters — it is never read as keys or commands. */
+    fun textJson(id: String, text: String, mode: String): String =
+        JSONObject().put("id", id).put("text", truncate(text, TEXT_MAX)).put("mode", mode).toString()
+
+    fun parseTextId(json: String): String = guard { JSONObject(json).getString("id") }
+
+    /** GET /buddy/text/{id} status: pending / inserted / no_field / too_long (device acks). */
+    fun parseTextStatus(json: String): String = guard { JSONObject(json).optString("status", "pending") }
 
     private inline fun <T> guard(block: () -> T): T = try { block() } catch (e: ProtoException) { throw e } catch (e: Exception) { throw ProtoException("unexpected response: ${e.message}") }
 }

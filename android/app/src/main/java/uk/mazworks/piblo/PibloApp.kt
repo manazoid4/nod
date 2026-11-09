@@ -30,6 +30,7 @@ import uk.mazworks.piblo.hub.LinkState
 import uk.mazworks.piblo.hub.Origin
 import uk.mazworks.piblo.hub.Transport
 import uk.mazworks.piblo.proto.CoreClient
+import uk.mazworks.piblo.proto.CoreHttpException
 import uk.mazworks.piblo.proto.Priority
 import uk.mazworks.piblo.proto.Proto
 import uk.mazworks.piblo.system.FindPhone
@@ -124,6 +125,20 @@ class PibloApp : Application() {
             }
             hub.localAlert(shownTitle, Proto.truncate(text, 200), Priority.NORMAL, "forwarded", label)
         }
+    }
+
+    /** Phone keyboard mode: send literal text to the focused Piblo field and wait for the device ack.
+     *  Returns the ack status (inserted / no_field / too_long) or a short failure reason. */
+    suspend fun sendText(text: String, mode: String): String {
+        val t = transport ?: return "no_computer"
+        val id = java.util.UUID.randomUUID().toString()
+        try { t.postText(id, text, mode) } catch (e: CoreHttpException) { return if (e.status == 429) "busy" else "send_failed" } catch (_: Exception) { return "send_failed" }
+        repeat(15) {  // poll ~3 s: the device acks when it inserts the text (or says no field / too long)
+            delay(200)
+            val s = try { t.textStatus(id) } catch (_: Exception) { null }
+            if (s != null && s != "pending") return s
+        }
+        return "pending"  // device is away or busy: dropped after Core's 2-minute TTL, never inserted late
     }
 
     companion object {

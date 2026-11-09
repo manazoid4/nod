@@ -195,6 +195,7 @@ fun ToolsScreen() {
     val scope = rememberCoroutineScope()
     val notes by dao.notes().collectAsStateWithLifecycle(emptyList())
     val reminders by dao.reminders().collectAsStateWithLifecycle(emptyList())
+    val state by a.hub.state.collectAsStateWithLifecycle()
     var noteText by remember { mutableStateOf("") }
     var remText by remember { mutableStateOf("") }
     // Notification permission is asked only when the person first sets a reminder or timer.
@@ -253,6 +254,53 @@ fun ToolsScreen() {
                 }
             }
         }
+        item { PhoneKeyboardSection(a, state.link == LinkState.ONLINE) }
+    }
+}
+
+// ---------------------------------------------------------------- Phone keyboard
+
+@Composable
+private fun PhoneKeyboardSection(a: PibloApp, online: Boolean) {
+    val scope = rememberCoroutineScope()
+    var text by remember { mutableStateOf("") }
+    var mode by remember { mutableStateOf("insert") }
+    var sending by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<String?>(null) }
+
+    fun send() {
+        val t = text.trim()
+        if (t.isEmpty() || sending) return
+        sending = true; result = null
+        scope.launch {
+            val status = withContext(Dispatchers.IO) { a.sendText(t, mode) }
+            result = when (status) {
+                "inserted" -> "Text sent to Piblo."
+                "no_field" -> "No text field is focused on Piblo. Open a note or message there first."
+                "too_long" -> "That text is too long for the field on Piblo."
+                "no_computer" -> "Connect your computer first (Connections tab)."
+                "busy" -> "Piblo is busy. Try again in a moment."
+                "send_failed" -> "Couldn't reach your computer."
+                "pending" -> "No answer from Piblo yet — it may be away."
+                else -> "Piblo said: $status"
+            }
+            if (status == "inserted") text = ""
+            sending = false
+        }
+    }
+
+    Section("Type on Piblo") {
+        Text("Use your phone's keyboard to type into whatever field is focused on Piblo. The text is sent as plain characters — it can never run a shortcut or approve anything.")
+        OutlinedTextField(text, { text = it.take(500) }, Modifier.fillMaxWidth().testTag("phone_text"), label = { Text("Message") }, minLines = 2)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("insert" to "Type into field", "replace" to "Replace field", "send" to "Type and submit").forEach { (m, label) ->
+                AssistChip({ mode = m }, { Text(label) }, Modifier.testTag("mode_$m"))
+                if (mode == m) Text("✓", color = MaterialTheme.colorScheme.primary)
+            }
+        }
+        Button(::send, Modifier.testTag("phone_send"), enabled = !sending && text.isNotBlank()) { Text(if (sending) "Sending..." else "Send to Piblo") }
+        if (!online) Text("Not connected to your computer. Phone typing needs a connected computer.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        result?.let { Text(it, Modifier.testTag("phone_result"), color = if (it.startsWith("Text sent") || it.startsWith("Piblo said: inserted")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface) }
     }
 }
 

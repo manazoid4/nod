@@ -20,6 +20,12 @@ class CoreClient(baseUrl: String, private val token: String, private val clientV
     }
     fun postAlert(json: String): String = Proto.parsePostedId(call("POST", "/buddy/alert", json))
 
+    /** Phone keyboard mode: send literal text to the focused Piblo field. Returns the record id. */
+    fun postText(id: String, text: String, mode: String): String = Proto.parseTextId(call("POST", "/buddy/text", Proto.textJson(id, text, mode)))
+
+    /** The device's answer for a text send: pending / inserted / no_field / too_long. */
+    fun textStatus(id: String): String = Proto.parseTextStatus(call("GET", "/buddy/text/${java.net.URLEncoder.encode(id, "UTF-8")}"))
+
     private fun call(method: String, path: String, body: String? = null): String = request(base, method, path, body, token, clientVersion)
 
     companion object {

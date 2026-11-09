@@ -12,6 +12,8 @@ import uk.mazworks.piblo.proto.CoreClient
 import uk.mazworks.piblo.proto.Priority
 import uk.mazworks.piblo.proto.Proto
 import uk.mazworks.piblo.proto.ProtoException
+import uk.mazworks.piblo.proto.TEXT_MAX
+import uk.mazworks.piblo.proto.TEXT_MODES
 
 /** Fixtures are real responses from Core (host/mazhost) captured by android/tools/gen-fixtures.sh. */
 fun fixture(name: String): String =
@@ -99,6 +101,22 @@ class ProtoTest {
     @Test fun decideJsonUsesCoreWords() {
         assertEquals("allow", JSONObject(Proto.decideJson("a1", true)).getString("decision"))
         assertEquals("deny", JSONObject(Proto.decideJson("a1", false)).getString("decision"))
+    }
+
+    @Test fun textJsonIsLiteralAndTruncated() {
+        val id = "e5c1b3f0-1234-4abc-9def-000000000000"
+        val j = JSONObject(Proto.textJson(id, "t".repeat(700), "insert"))
+        assertEquals(id, j.getString("id"))
+        assertEquals(TEXT_MAX, j.getString("text").length)   // capped at 500, never rejected
+        assertEquals("insert", j.getString("mode"))
+        assertEquals(setOf("insert", "replace", "send"), TEXT_MODES)
+    }
+
+    @Test fun parseTextStatusAndId() {
+        assertEquals("pending", Proto.parseTextStatus("""{"id":"x","status":"pending"}"""))
+        assertEquals("inserted", Proto.parseTextStatus("""{"id":"x","status":"inserted"}"""))
+        assertEquals("pending", Proto.parseTextStatus("""{"id":"x"}"""))  // no status yet = still pending
+        assertEquals("e5c1", Proto.parseTextId("""{"id":"e5c1"}"""))
     }
 
     @Test fun normalizeBase() {
