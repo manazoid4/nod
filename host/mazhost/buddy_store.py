@@ -189,8 +189,8 @@ class BuddyStore:
     def set_approval_decision(self, rid: str, decision: str, by: str = "", reason: str | None = None) -> None:
         # Only an undecided row may change: the first answer wins, also across a restart.
         self._run("UPDATE approvals SET decision=?, decided_at=?, decided_by=?, reason=COALESCE(?, reason) "
-                  "WHERE id=? AND (decision IS NULL OR (decision='allow' AND ?='deny'))",
-                  (decision, time.time(), by, reason, rid, decision))
+                  "WHERE id=? AND decision IS NULL",
+                  (decision, time.time(), by, reason, rid))
 
     def approval_row(self, rid: str) -> dict | None:
         rows = self._all("SELECT * FROM approvals WHERE id=?", (rid,))
