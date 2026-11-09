@@ -223,6 +223,7 @@ class Buddy:
                     name = OTHER
                 self._agents[name] = self._agents.get(name, 0) + 1
             self._event_id += 1
+            self._db("record_event_id", self._event_id)
             ev = {"id": self._event_id, "kind": kind, "text": text[:160],
                   "source": source, "ts": time.time()}
             self._events.append(ev)
@@ -282,6 +283,7 @@ class Buddy:
                 continue
             rec["fired"], rec["outcome"] = True, None   # (re)fire: an expired snooze nags again
             self._event_id += 1
+            self._db("record_event_id", self._event_id)
             public = {k: v for k, v in rec.items() if k not in _PRIVATE}
             ev = {"id": self._event_id, "kind": "alert", "text": rec["title"],
                   "source": rec["source"], "ts": now, "alert": public, "snooze": "snooze" in rec["actions"]}
