@@ -210,3 +210,28 @@ def test_connect_info_has_ready_configs_without_a_token(tmp_path):
     assert info["claude_code_cmd"].startswith("claude mcp add piblo")
     assert "[mcp_servers.piblo]" in info["codex_toml"] and "dist/index.js" in info["codex_toml"]
     assert TOKEN not in str(info)
+
+
+def test_approval_storage_cannot_reverse_first_decision(tmp_path):
+    store = BuddyStore(tmp_path / "s.sqlite3")
+    store.add_approval({"id": "immutable", "tool": "Deploy", "t": time.time()})
+    store.set_approval_decision("immutable", "allow", "device")
+    store.set_approval_decision("immutable", "deny", "late-client")
+    row = store.approval_row("immutable")
+    assert (row["decision"], row["decided_by"]) == ("allow", "device")
+    store.close()
+
+
+def test_event_cursor_survives_when_all_notifications_are_pruned(tmp_path):
+    c = boot(tmp_path)
+    response = c.post("/buddy/event", json={"kind": "done", "text": "before"}, headers=H)
+    assert response.status_code == 200
+    first = c.get("/buddy/events", headers=H).json()["last"]
+    # Retention can erase every notification, but the next event ID must still increase.
+    store = BuddyStore(tmp_path / "buddy.sqlite3")
+    store.db.execute("DELETE FROM notifications")
+    store.close()
+    restarted = boot(tmp_path)
+    after = restarted.post("/buddy/event", json={"kind": "done", "text": "after"}, headers=H).json()
+    assert after["id"] > first
+    assert [e["text"] for e in restarted.get(f"/buddy/events?since={first}", headers=H).json()["events"]] == ["after"]
