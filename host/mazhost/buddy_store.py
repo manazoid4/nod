@@ -221,8 +221,20 @@ class BuddyStore:
 
     # ---- notifications (the /buddy/events ring, durable; its id IS the event id)
     def max_event_id(self) -> int:
+        # The notifications table is bounded and may become empty after retention.
+        # The cursor cannot move backwards or devices polling with since=old_id
+        # will silently miss subsequent events after a Core restart.
         with self._lock:
-            return self.db.execute("SELECT COALESCE(MAX(id), 0) FROM notifications").fetchone()[0]
+            retained = self.db.execute("SELECT COALESCE(MAX(id), 0) FROM notifications").fetchone()[0]
+            high_water = self.get_pref("_event_cursor", 0)
+            return max(retained, int(high_water))
+
+    def record_event_id(self, event_id: int) -> None:
+        """Persist an event ID independently from expiring notification history."""
+        with self._lock:
+            prev = int(self.get_pref("_event_cursor", 0))
+            if event_id > prev:
+                self.set_pref("_event_cursor", event_id)
 
     def add_notification(self, ev: dict, agent: str = "", idem: str | None = None) -> None:
         extra = {k: v for k, v in ev.items() if k not in ("id", "kind", "text", "source", "ts")}
