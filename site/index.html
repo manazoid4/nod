@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#fff4e0">
-  <meta name="description" content="Piblo is a pocket device for the things you'd otherwise lose. Hold a key and talk. Designed in the UK. Heading to Kickstarter.">
-  <meta property="og:title" content="Piblo. Ask. Listen. Remember.">
-  <meta property="og:description" content="Less screen. More life. Piblo is an everyday pocket helper — heading to Kickstarter.">
+  <meta name="description" content="Piblo is a pocket companion that helps you remember, focus and get things done. No mandatory subscription, open-source software. Designed in the UK. Heading to Kickstarter.">
+  <meta property="og:title" content="Piblo. Your pocket companion for getting things done.">
+  <meta property="og:description" content="A small pocket companion for reminders, focus and getting things done. Heading to Kickstarter.">
   <meta property="og:type" content="website">
   <link rel="canonical" href="https://piblo.co.uk/">
   <meta property="og:url" content="https://piblo.co.uk/">
@@ -16,21 +16,22 @@
   <meta property="og:image:height" content="630">
   <meta property="og:site_name" content="Piblo">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Piblo. Ask. Listen. Remember.">
-  <meta name="twitter:description" content="Less screen. More life. Piblo is an everyday pocket helper — heading to Kickstarter.">
+  <meta name="twitter:title" content="Piblo. Your pocket companion for getting things done.">
+  <meta name="twitter:description" content="A small pocket companion for reminders, focus and getting things done. Heading to Kickstarter.">
   <meta name="twitter:image" content="https://piblo.co.uk/media/piblo-og.jpg">
   <meta name="twitter:image:alt" content="Piblo. Less screen. More life. Designed in the UK. piblo.co.uk">
-  <title>Piblo. Ask. Listen. Remember.</title>
+  <title>Piblo. Your pocket companion for getting things done.</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/tokens.css">
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/clarity.css">
   <script defer src="/script.js"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Product",
     "name": "Piblo",
-    "description": "A pocket AI device for asking, saving thoughts and approving PC actions. Open-source prototype in development.",
+    "description": "A pocket companion for reminders, focus and getting things done. Open-source prototype in development.",
     "url": "https://piblo.co.uk/",
     "applicationCategory": "PersonalAssistant",
     "slogan": "Less screen. More life.",
@@ -53,43 +54,130 @@
 <main id="main">
   <section class="hero wrap" id="top">
     <div class="hero-text">
-      <h1><span class="h-ask">Ask.</span> <span class="h-listen">Listen.</span> <span class="h-end">Remember.</span></h1>
-      <p class="hero-promise">Less screen. More life.</p>
-      <p class="lede">A small pocket device for the things you'd otherwise lose: the note, the idea, the bins on Thursday. Type it, put it away, get on with your evening.</p>
+      <p class="eyebrow">Heading to Kickstarter</p>
+      <h1>A pocket companion that helps you remember, focus and get things done.</h1>
+      <p class="lede">Piblo is a small screen with real keys. It reminds you of what matters, lets you answer yes, no or later with one press, and saves what you say. No apps, no feeds.</p>
       <div class="actions">
-        <a class="btn btn-tomato" href="#waitlist">Join the launch list</a>
+        <a class="btn btn-tomato btn-big" href="#waitlist">Join the launch list</a>
+        <a class="btn btn-ghost" href="#how">How it works</a>
       </div>
+      <p class="fine">Free to join. One email when the Kickstarter opens, plus real progress updates.</p>
     </div>
-    <figure class="hero-film">
-      <video class="film" data-autoplay controls muted loop playsinline preload="metadata" poster="/media/piblo-everyday-poster.jpg" aria-label="Short film, 12 seconds, no speech. A man about to leave the house remembers: bins out tonight. The note is typed on a concept Piblo, whose screen then goes to sleep. Ends on: One less thing on your mind.">
-        <source src="/media/piblo-everyday.mp4" type="video/mp4">
-      </video>
-      <figcaption>Concept film. Generated scene; the screen is simulated.</figcaption>
+    <!-- Swap this illustration for a real prototype photo as soon as one exists. -->
+    <figure class="hero-device">
+      <div class="device" aria-hidden="true">
+        <div class="device-body">
+          <div class="screen">
+            <div class="screen-top"><span>piblo</span><span class="battery"></span></div>
+            <svg class="bface b-attention screen-buddy" viewBox="0 0 100 100"><circle class="bf-head" cx="50" cy="50" r="44"/><circle class="bf-ink" cx="35" cy="42" r="7"/><circle class="bf-ink" cx="65" cy="42" r="7"/><circle class="bf-ink" cx="50" cy="70" r="6"/></svg>
+            <p class="screen-say">Bins out tonight</p>
+            <div class="screen-chips"><span>A done</span><span>S later</span></div>
+          </div>
+          <div class="keys"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div>
+      <figcaption>Illustration of the reminder screen we are building now. Photos of the working prototype are next.</figcaption>
     </figure>
   </section>
 
+  <section class="band-paper steps-section" id="how">
+    <div class="wrap">
+      <h2>How Piblo works</h2>
+      <ol class="steps">
+        <li><span class="step-n" aria-hidden="true">1</span><h3>Connect</h3><p>Join your Wi-Fi and pair Piblo with the free Piblo Core app on your Windows PC.</p></li>
+        <li><span class="step-n" aria-hidden="true">2</span><h3>It tells you</h3><p>Reminders, meetings and alerts you chose arrive with a chime, one at a time.</p></li>
+        <li><span class="step-n" aria-hidden="true">3</span><h3>You answer</h3><p>Press a key for done, later, yes or no. Or hold a key and say a note.</p></li>
+      </ol>
+      <div class="needs">
+        <h3>What you need</h3>
+        <ul>
+          <li><strong>A Windows PC on the same Wi-Fi</strong> running Piblo Core. It stores your notes and sends the alerts. Mac and standalone use are goals, not ready yet.</li>
+          <li><strong>Internet only for some things.</strong> Spoken answers use a speech or AI service you pick. Some are free, some charge, and you can run one on your own PC instead.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="uses wrap" id="uses">
+    <h2>What it's for</h2>
+    <ul class="use-grid">
+      <li class="use use-1"><h3>Reminders</h3><p>"Bins out tonight." One press for done, one for later. Your phone stays in your pocket.</p></li>
+      <li class="use use-2"><h3>Meetings</h3><p>A nudge ten minutes before, so you're not watching the clock.</p></li>
+      <li class="use use-3"><h3>Voice notes</h3><p>Hold a key, say the thought, let go. It lands in your notes on your PC.</p></li>
+      <li class="use use-4"><h3>Alerts that matter</h3><p>Only the ones you choose. No app pings, no feed to fall into.</p></li>
+      <li class="use use-5"><h3>For work</h3><p>"Ticket waiting 2 hours" or "Build failed". Any tool that can send a webhook can reach Piblo, and you approve or reject with a key.</p></li>
+    </ul>
+  </section>
+
+  <section class="band-mint buddy-section" id="buddy">
+    <div class="wrap">
+      <h2>Meet Piblo Buddy</h2>
+      <p class="buddy-lede">Buddy lives on the screen and shows how things are at a glance, so you know without reading.</p>
+      <ol class="buddy-day" aria-label="Piblo Buddy through a day">
+        <li><svg class="bface b-sleeping" viewBox="0 0 100 100" role="img" aria-label="Sleepy face"><circle class="bf-head" cx="50" cy="50" r="44"/><path class="bf-line" d="M27 46q8 8 16 0M57 46q8 8 16 0M42 68h16"/></svg><h3>Sleeping</h3><p>You're away. Screen off, battery saved.</p></li>
+        <li><svg class="bface b-idle" viewBox="0 0 100 100" role="img" aria-label="Calm face"><circle class="bf-head" cx="50" cy="50" r="44"/><circle class="bf-ink" cx="35" cy="42" r="6"/><circle class="bf-ink" cx="65" cy="42" r="6"/><path class="bf-line" d="M36 66q14 10 28 0"/></svg><h3>Calm</h3><p>Nothing needs you.</p></li>
+        <li><svg class="bface b-attention" viewBox="0 0 100 100" role="img" aria-label="Alert face"><circle class="bf-head" cx="50" cy="50" r="44"/><circle class="bf-ink" cx="35" cy="42" r="7"/><circle class="bf-ink" cx="65" cy="42" r="7"/><circle class="bf-ink" cx="50" cy="70" r="6"/></svg><h3>Needs you</h3><p>A reminder arrives with a chime.</p></li>
+        <li><svg class="bface b-working" viewBox="0 0 100 100" role="img" aria-label="Focused face"><circle class="bf-head" cx="50" cy="50" r="44"/><path class="bf-line" d="M27 42h16M57 42h16M42 68h16"/></svg><h3>Working</h3><p>Saving your note or waiting on a long job.</p></li>
+        <li><svg class="bface b-celebrating" viewBox="0 0 100 100" role="img" aria-label="Happy face"><circle class="bf-head" cx="50" cy="50" r="44"/><path class="bf-line" d="M27 46q8-12 16 0M57 46q8-12 16 0"/><path class="bf-fill" d="M34 62q16 24 32 0z"/></svg><h3>Celebrating</h3><p>You pressed done. A small cheer.</p></li>
+      </ol>
+      <p class="status-note"><span class="chip">In testing</span> All five moods are drawn by the Piblo software in our current test build. They have not been checked on a real device yet, so the faces above are illustrations.</p>
+    </div>
+  </section>
+
+  <section class="own wrap" id="own-it">
+    <h2>Yours to keep</h2>
+    <ul class="own-grid">
+      <li><h3>No mandatory subscription</h3><p>Pay once. Piblo's own features won't sit behind a monthly fee.</p></li>
+      <li><h3>Open-source software</h3><p>Anyone can read, change and fix it. <a class="link" href="https://github.com/manazoid4/piblo" target="_blank" rel="noopener noreferrer">See it on GitHub</a>.</p></li>
+      <li><h3>Updates and add-ons</h3><p>Software updates arrive over Wi-Fi from Piblo Core. The board has a standard port for add-ons; we'll only sell accessories once they're tested.</p></li>
+      <li><h3>Not tied to us</h3><p>Piblo Core runs on your own PC, not our servers. Outside services you choose may change or charge, so Piblo lets you switch.</p></li>
+    </ul>
+  </section>
+
+  <section class="band-paper editions" id="editions">
+    <div class="wrap">
+      <h2>Two editions are planned</h2>
+      <div class="edition-grid">
+        <article class="edition">
+          <h3>Piblo Original</h3>
+          <p>The approachable one. Everything you need to get started, at the friendliest price we can manage.</p>
+        </article>
+        <article class="edition edition-founder">
+          <h3>Piblo Founder's Edition</h3>
+          <p>A small, numbered run in machined aluminium with a refined finish, for the people who back us first.</p>
+        </article>
+      </div>
+      <p class="fine">Prices go to the launch list first, once supplier quotes are in. Accessories such as a clip-on touchscreen are only being explored.</p>
+    </div>
+  </section>
+
   <section class="films-section wrap" id="films">
-    <h2 class="visually-hidden">Concept films</h2>
-    <div class="films">
-      <figure class="film-card">
-        <video class="film" controls muted playsinline preload="none" poster="/media/piblo-product-poster.jpg" aria-label="Product film, 15 seconds, no speech: the Piblo concept on a table, a close look at the keys and screen, and the three proposed colours.">
-          <source src="/media/piblo-product.mp4" type="video/mp4">
-        </video>
-        <figcaption>Concept film · 15 seconds</figcaption>
-      </figure>
-      <figure class="film-card">
-        <video class="film" controls muted playsinline preload="none" poster="/media/piblo-launch-poster.jpg" aria-label="Launch film, 21 seconds, no speech: bins out tonight, typed on a concept Piblo, then the device, its colours and a close look at the keys.">
-          <source src="/media/piblo-launch.mp4" type="video/mp4">
-        </video>
-        <figcaption>Concept film · 21 seconds</figcaption>
-      </figure>
+    <figure class="film-card film-solo">
+      <video class="film" controls muted playsinline preload="none" poster="/media/piblo-everyday-poster.jpg" aria-label="Short film, 12 seconds, no speech. A man about to leave the house remembers: bins out tonight. The note is typed on a concept Piblo, whose screen then goes to sleep. Ends on: One less thing on your mind.">
+        <source src="/media/piblo-everyday.mp4" type="video/mp4">
+      </video>
+      <figcaption>Concept film, 12 seconds. Generated scene; the screen is simulated.</figcaption>
+    </figure>
+  </section>
+
+  <section class="faq-section wrap" id="faq">
+    <h2>Straight answers</h2>
+    <div class="faq">
+      <details><summary>What works today?</summary><p>On our prototype (built on an off-the-shelf pocket computer) we have tested pairing with a Windows PC over Wi-Fi, showing its screen on the PC, and saving a spoken note to the PC. Voice questions work but answers are still slow. Reminders, alerts, the answer keys and Buddy are written and being tested now.</p></details>
+      <details><summary>Does it need a computer?</summary><p>Yes, for now. Piblo pairs with the free Piblo Core app on a Windows PC on the same Wi-Fi, which stores your notes and sends alerts. Mac support and a standalone mode are goals, not ready yet.</p></details>
+      <details><summary>Does it work offline?</summary><p>It needs your home or office Wi-Fi to reach your PC. Reminders and notes are designed to stay on your own PC, without the internet. Spoken answers need a speech or AI service, which is usually online unless you run one on your PC.</p></details>
+      <details><summary>How is it different from my phone?</summary><p>It does a few things and nothing else. No apps, no feeds, no notifications you didn't ask for. It shows one thing at a time and you answer with a real key, so you can deal with it and get back to your day.</p></details>
+      <details><summary>How much will it cost?</summary><p>Prices aren't set yet. We'll share them with the launch list first, once supplier quotes are in. Shipping will be extra.</p></details>
+      <details><summary>Is there a monthly fee?</summary><p>No mandatory Piblo subscription. If you choose an optional outside service, that company may charge for it.</p></details>
+      <details><summary>When does the Kickstarter start, and when would it ship?</summary><p>There is no date yet. We'll only set one when the prototype is proven and the costs are checked, and backers will get an honest ship estimate based on real manufacturing progress.</p></details>
+      <details><summary>Where is it made?</summary><p>Designed in the UK. Some parts, such as the electronics, are made elsewhere.</p></details>
     </div>
   </section>
 
   <section class="join wrap" id="waitlist">
     <div class="join-card">
-      <h2>Be there when Piblo launches.</h2>
-      <p>No spam, no pressure. Real updates when there is something worth sharing. Unsubscribe any time.</p>
+      <h2>Hear first when Piblo launches.</h2>
+      <p>One email when the Kickstarter opens, plus the occasional real progress update. Unsubscribe any time.</p>
       <form class="waitlist-form" id="waitlist-form" action="/api/waitlist" method="post" novalidate>
         <input class="waitlist-hp" type="text" name="piblo_hp_field" tabindex="-1" autocomplete="off" aria-hidden="true">
         <div class="waitlist-fields">
