@@ -146,6 +146,13 @@ void pullAgentEvents(const std::string& base, bool remote, BeamMessage& out) {
                 ev.body = a["body"] | "";
                 ev.priority = a["priority"] | "normal";
                 ev.alertActions = e["snooze"] | false ? 3 : 1;  // Core flags whether snooze is offered
+            } else if (ev.kind == "text_input") {
+                // Phone keyboard text (piblo-proto v1): data only, still
+                // never a key. Bounds mirror docs/protocol/PHONE-KEYBOARD.md.
+                JsonObject ti = e["text_input"];
+                ev.textInputId = ti["id"] | "";
+                ev.textInputMode = ti["mode"] | "insert";
+                ev.eventTs = static_cast<int64_t>(e["ts"] | 0.0);
             }
             out.events.push_back(std::move(ev));
         }
@@ -226,6 +233,31 @@ Reply beamSend(const std::string& text) {
     Sys.hostOnline = false;
     out.error = "hub unreachable";
     return out;
+}
+
+bool textAck(const std::string& id, const std::string& status) {
+    if (id.empty() || id.size() > 64 || id.find('/') != std::string::npos ||
+        (status != "inserted" && status != "no_field" && status != "too_long"))
+        return false;
+    JsonDocument req;
+    req["status"] = status;
+    String body;
+    serializeJson(req, body);
+    for (const auto& base : fieldBases()) {
+        NodHttp http;
+        if (!beginField(http, base.first, ("/buddy/text/" + id + "/ack").c_str(), base.second)) continue;
+        http.setTimeout(4000);
+        http.addHeader("Content-Type", "application/json");
+        const int code = http.POST(body);
+        http.end();
+        if (code <= 0) continue;
+        if (code == 200) {
+            fieldOnline();
+            return true;
+        }
+        return false;  // 404 expired/unknown, 400 bad status: never retried blindly
+    }
+    return false;
 }
 
 bool haltNow(bool on) {

@@ -43,6 +43,7 @@ void Settings::load() {
     ttsEnabled       = prefs.getBool("tts", ttsEnabled);
     nudgePollMinutes = prefs.getUChar("npoll", nudgePollMinutes);
     firstRunComplete = prefs.getBool("firstrun", firstRunComplete);
+    easyMode         = prefs.getBool("easy", easyMode);
     fieldMode        = prefs.getBool("field", fieldMode);
     quick1           = prefs.getString("q1", quick1.c_str()).c_str();
     quick2           = prefs.getString("q2", quick2.c_str()).c_str();
@@ -82,6 +83,7 @@ void Settings::save() const {
     prefs.putBool("tts", ttsEnabled);
     prefs.putUChar("npoll", nudgePollMinutes);
     prefs.putBool("firstrun", firstRunComplete);
+    prefs.putBool("easy", easyMode);
     prefs.putBool("field", fieldMode);
     prefs.putString("q1", quick1.c_str());
     prefs.putString("q2", quick2.c_str());
