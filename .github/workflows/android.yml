@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "android/**"
+      - ".github/workflows/android.yml"
   workflow_dispatch:
 
 permissions:
@@ -30,7 +31,7 @@ jobs:
 
       - name: Build + unit tests
         working-directory: android
-        run: ./gradlew assembleDebug testDebugUnitTest
+        run: bash ./gradlew assembleDebug testDebugUnitTest
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
