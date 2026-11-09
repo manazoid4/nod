@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-from .buddy import Buddy
+from .buddy import AlertIn, Buddy
 from .buddy_store import BuddyStore
 
 MCP_ENTRY = Path(__file__).resolve().parents[1] / "mcp" / "dist" / "index.js"
@@ -96,3 +96,13 @@ def install_companion_routes(api: FastAPI, buddy: Buddy, port: int = 8787) -> No
     @api.get("/buddy/connect-info")
     def connect():
         return {"ok": True, **connect_info(port)}
+
+    @api.post("/buddy/demo")
+    def demo():
+        """'Test Piblo': one notification + one approval so the flow has both to show. No device needed."""
+        note = buddy.post_alert(AlertIn(source="piblo", kind="info", title="Hello from Piblo",
+                                        body="This is a demo notification. Everything is working.",
+                                        priority="normal"))
+        approval = buddy.request("Test Piblo", "Demo approval: approve to see the answer reach the app.",
+                                 agent="demo", sensitive=False)
+        return {"ok": True, "notification_id": note.get("id"), "approval_id": approval["id"]}
