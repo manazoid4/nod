@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><title>Piblo</title><rect width="512" height="512" rx="112" fill="#ffc93c"/>
+  <g transform="rotate(-8 256 262)">
+    <rect x="118" y="110" width="276" height="330" rx="58" fill="#2a1a12"/>
+    <rect x="118" y="92" width="276" height="330" rx="58" fill="#8fdcb8" stroke="#2a1a12" stroke-width="14"/>
+    <rect x="150" y="124" width="212" height="172" rx="30" fill="#2a1a12"/>
+    <circle cx="256" cy="212" r="60" fill="#ee5a36"/>
+    <ellipse cx="235" cy="200" rx="10" ry="14" fill="#fff4e0"/>
+    <ellipse cx="277" cy="200" rx="10" ry="14" fill="#fff4e0"/>
+    <path d="M234 230 Q256 250 278 230" fill="none" stroke="#fff4e0" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="214" cy="226" r="7" fill="#ffc93c" opacity=".85"/>
+    <circle cx="298" cy="226" r="7" fill="#ffc93c" opacity=".85"/>
+    <rect x="150" y="326" width="44" height="36" rx="11" fill="#fff4e0" stroke="#2a1a12" stroke-width="6"/>
+    <rect x="206" y="326" width="44" height="36" rx="11" fill="#fff4e0" stroke="#2a1a12" stroke-width="6"/>
+    <rect x="262" y="326" width="44" height="36" rx="11" fill="#ee5a36" stroke="#2a1a12" stroke-width="6"/>
+    <rect x="318" y="326" width="44" height="36" rx="11" fill="#fff4e0" stroke="#2a1a12" stroke-width="6"/>
+    <rect x="178" y="374" width="156" height="22" rx="11" fill="#fff4e0" stroke="#2a1a12" stroke-width="6"/>
+  </g></svg>
