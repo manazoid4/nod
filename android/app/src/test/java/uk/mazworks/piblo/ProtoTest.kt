@@ -1,0 +1,111 @@
+package uk.mazworks.piblo
+
+import org.json.JSONObject
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import org.junit.Test
+import uk.mazworks.piblo.proto.CoreClient
+import uk.mazworks.piblo.proto.Priority
+import uk.mazworks.piblo.proto.Proto
+import uk.mazworks.piblo.proto.ProtoException
+
+/** Fixtures are real responses from Core (host/mazhost) captured by android/tools/gen-fixtures.sh. */
+fun fixture(name: String): String =
+    ProtoTest::class.java.getResource("/fixtures/$name.json")!!.readText()
+
+class ProtoTest {
+    @Test fun summaryIdle() {
+        val s = Proto.parseSummary(fixture("summary_idle"))
+        assertEquals("idle", s.agent); assertEquals(0, s.count); assertTrue(s.items.isEmpty())
+    }
+
+    @Test fun summaryWithPendingApproval() {
+        val s = Proto.parseSummary(fixture("summary_pending"))
+        assertEquals("needs_you", s.agent)
+        val a = s.items.single()
+        assertEquals("Bash", a.tool); assertEquals("piblo", a.project); assertEquals(59, a.leftSeconds)
+        assertEquals("rm -rf build/ && npm run build", a.summary)
+    }
+
+    @Test fun eventsMixedKeepsAlertsAndOtherKinds() {
+        val p = Proto.parseEvents(fixture("events_mixed"))
+        assertEquals(3, p.last)
+        assertEquals(listOf("done", "alert", "alert"), p.events.map { it.kind })
+        val sla = p.events[1].alert!!
+        assertEquals("sla", sla.kind); assertEquals(Priority.URGENT, sla.priority)
+        assertEquals(listOf("ack", "snooze"), sla.actions)
+        assertEquals("SLA breach: ticket #123", sla.title)
+        assertFalse(sla.isFindPhone)
+        assertNull(p.events[0].alert)
+    }
+
+    @Test fun emptyEvents() {
+        val p = Proto.parseEvents(fixture("events_empty"))
+        assertTrue(p.events.isEmpty()); assertEquals(0, p.last)
+    }
+
+    @Test fun unknownKindsAndFieldsAreIgnoredNotFatal() {
+        val p = Proto.parseEvents("""{"ok":true,"last":9,"events":[{"id":9,"kind":"hologram","text":"x","future":{"a":1}},{"id":8,"kind":"alert","alert":{"id":"al-1","kind":"find_phone","title":"t","priority":"urgent"}}]}""")
+        assertEquals(2, p.events.size)
+        assertTrue(p.events[1].alert!!.isFindPhone)
+        assertEquals(listOf("ack"), p.events[1].alert!!.actions)   // default when the field is missing
+    }
+
+    @Test fun findPhoneInterimWireFormIsRecognised() {
+        val e = Proto.parseEvents("""{"events":[{"id":1,"kind":"alert","alert":{"id":"al-2","source":"find_phone","kind":"info","title":"Find my phone"}}],"last":1}""")
+        assertTrue(e.events.single().alert!!.isFindPhone)
+    }
+
+    @Test fun garbageThrowsProtoException() {
+        try { Proto.parseSummary("<html>"); fail() } catch (_: ProtoException) {}
+        try { Proto.parseEvents("not json"); fail() } catch (_: ProtoException) {}
+    }
+
+    @Test fun errorDetails() {
+        assertEquals("authentication_required", Proto.parseError(fixture("error_401")))
+        assertEquals("request_not_found", Proto.parseError(fixture("decide_not_found")))
+        assertEquals("action_not_offered", Proto.parseError(fixture("alert_snooze_not_offered")))
+        assertEquals("invalid_or_expired_code", Proto.parseError(fixture("pair_claim_bad")))
+        assertEquals("bad_request", Proto.parseError("""{"detail":[{"loc":["body"],"msg":"x"}]}"""))   // FastAPI 422 shape
+        assertEquals("", Proto.parseError("garbage"))
+    }
+
+    @Test fun claimAndPostResponses() {
+        assertTrue(Proto.parseToken(fixture("pair_claim_ok")).isNotEmpty())
+        assertEquals("al-88c94838", Proto.parsePostedId(fixture("alert_posted")))
+    }
+
+    @Test fun alertJsonTruncatesToCoreLimits() {
+        val j = JSONObject(Proto.alertJson("s".repeat(80), "info", "t".repeat(100), "b".repeat(500), Priority.HIGH))
+        assertEquals(40, j.getString("source").length); assertEquals(60, j.getString("title").length); assertEquals(200, j.getString("body").length)
+        assertEquals("high", j.getString("priority")); assertEquals("ack", j.getJSONArray("actions").getString(0))
+    }
+
+    @Test fun truncateNeverSplitsASurrogatePair() {
+        val s = "a" + "😀".repeat(70)   // 71 code points, 141 UTF-16 units
+        val t = Proto.truncate(s, 60)
+        assertEquals(60, t.codePointCount(0, t.length))
+        assertFalse(Character.isHighSurrogate(t.last()))
+    }
+
+    @Test fun emptyTitleGetsPlaceholder() {
+        assertEquals("(no title)", JSONObject(Proto.alertJson("x", "info", "  ", "", Priority.LOW)).getString("title"))
+    }
+
+    @Test fun decideJsonUsesCoreWords() {
+        assertEquals("allow", JSONObject(Proto.decideJson("a1", true)).getString("decision"))
+        assertEquals("deny", JSONObject(Proto.decideJson("a1", false)).getString("decision"))
+    }
+
+    @Test fun normalizeBase() {
+        assertEquals("http://192.168.1.20:8787", CoreClient.normalizeBase("192.168.1.20"))
+        assertEquals("http://pc:9000", CoreClient.normalizeBase(" pc:9000/ "))
+        assertEquals("https://core.example.net", CoreClient.normalizeBase("https://core.example.net"))
+        assertNull(CoreClient.normalizeBase("")); assertNull(CoreClient.normalizeBase("ftp://x")); assertNull(CoreClient.normalizeBase("a b"))
+        assertNotNull(CoreClient.normalizeBase("localhost"))
+    }
+}
