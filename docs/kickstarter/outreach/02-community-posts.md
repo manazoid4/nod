@@ -12,6 +12,18 @@ Rule reminder: honest device status only; no price; link to piblo.co.uk; lead wi
 - r/selfhosted: local-first posts do well; no home-data exposure; "no cloud/account" angle helps.
 - Hacker News Show HN: launch + demo story; answer first comments fast; no marketing adjectives.
 
+**v2 note (9 Nov, Claude):** these five are developer and maker communities, so leading with what works today (voice notes, Brain Dump, approvals) stays: it's honest and it's what these readers care about. The shortlist features are not built yet, so they are never claimed as working. Instead, end every post with this block, which turns each post into a feature vote and a waitlist sign-up:
+
+> **What I'm building next, and I'd like your vote:**
+> 1. **The Nod**: anything big (a payment, a message to a customer, a deleted file) waits until you long-press yes.
+> 2. **Follow me**: "when the pasta's done, carry on my show on the TV". Core knows what was playing on your laptop and continues it on the Chromecast from the same second.
+> 3. **Phone-free mode**: phone in a drawer, Piblo shows only messages from people you choose.
+> 4. **Family**: a first device for kids that isn't a phone, and a one-key "I'm OK" check-in for older relatives.
+>
+> Which would you actually use? Launch list (no spam, no card): piblo.co.uk
+
+For the general public (TikTok, Instagram, Facebook groups), use the hooks in `01-waitlist-hook-copy.md` v2 instead, not these posts.
+
 Do not post anywhere before Maz reviews. Placeholder `[CLIP: name.mp4]` must be replaced with the actual uncut clip.
 
 ---
