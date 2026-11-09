@@ -93,7 +93,7 @@ test('a consenting valid email goes into the Piblo segment only', async () => {
   assert.equal(res.statusCode, 200);
   assert.equal(f.calls.length, 2, 'contact, then the owner alert');
   assert.equal(f.calls[0].url, 'https://api.resend.com/contacts');
-  assert.deepEqual(f.calls[0].body, { email: 'ali@example.co.uk', first_name: 'Ali', unsubscribed: false, segments: [{ id: 'seg_piblo' }] });
+  assert.deepEqual(f.calls[0].body, { email: 'ali@example.co.uk', first_name: 'Ali', unsubscribed: false, segments: [{ id: 'seg_piblo' }], properties: { referral_code: f.calls[0].body.properties.referral_code } });
 });
 
 test('owner alert goes from the Piblo sender to the configured inbox', async () => {
@@ -185,7 +185,7 @@ test('no-JS form post redirects back to the form', async () => {
   const res = fakeRes();
   await handler(fakeReq({ email: 'ali@example.co.uk', consent: 'yes' }, { json: false }), res, f.impl);
   assert.equal(res.statusCode, 303);
-  assert.equal(res.headers.location, '/?subscribed=1#waitlist');
+  assert.match(res.headers.location, /^\/\?subscribed=1&code=[a-z0-9]{8}#waitlist$/);
 });
 
 test('oversized body is rejected', async () => {
@@ -200,4 +200,55 @@ test('GET is not allowed', async () => {
   const res = fakeRes();
   await handler(fakeReq(undefined, { method: 'GET' }), res, recordingFetch().impl);
   assert.equal(res.statusCode, 405);
+});
+
+test('signup returns a stable referral code and stores it, plus a valid referred_by', async () => {
+  const f = recordingFetch();
+  const res = fakeRes();
+  await handler(fakeReq({ email: 'new@example.com', consent: true, ref: ' ABCD1234 ' }), res, f.impl);
+  const out = JSON.parse(res.body);
+  assert.match(out.ref, /^[a-z0-9]{8}$/);
+  assert.deepEqual(f.calls[0].body.properties, { referral_code: out.ref, referred_by: 'abcd1234' });
+  const again = fakeRes();
+  await handler(fakeReq({ email: 'new@example.com', consent: true }), again, recordingFetch().impl);
+  assert.equal(JSON.parse(again.body).ref, out.ref, 'repeat signup keeps the same link');
+});
+
+test('junk or self-referrals are dropped and never reach Resend', async () => {
+  for (const ref of ['x', '../etc', '<script>', 'a'.repeat(40), 42]) {
+    const f = recordingFetch();
+    await handler(fakeReq({ email: 'junk@example.com', consent: true, ref }), fakeRes(), f.impl);
+    assert.deepEqual(Object.keys(f.calls[0].body.properties), ['referral_code'], String(ref));
+  }
+  const f = recordingFetch();
+  const res = fakeRes();
+  await handler(fakeReq({ email: 'me@example.com', consent: true }), res, f.impl);
+  const mine = JSON.parse(res.body).ref;
+  const g = recordingFetch();
+  await handler(fakeReq({ email: 'me@example.com', consent: true, ref: mine }), fakeRes(), g.impl);
+  assert.equal(g.calls[0].body.properties.referred_by, undefined);
+});
+
+test('if Resend rejects the referral properties the signup is still saved without them', async () => {
+  const calls = [];
+  const impl = async (url, init) => {
+    if (init.method === 'GET') return { ok: true, status: 200, text: async () => '{"data":[]}' };
+    const body = JSON.parse(init.body);
+    calls.push(body);
+    const bad = body.properties;
+    return { ok: !bad, status: bad ? 422 : 200, text: async () => '' };
+  };
+  const res = fakeRes();
+  await handler(fakeReq({ email: 'p@example.com', consent: true, ref: 'abcd1234' }), res, impl);
+  assert.equal(res.statusCode, 200);
+  assert.equal(calls.length >= 2 && calls[1].properties, undefined);
+});
+
+test('honeypot and consent still block before any referral work', async () => {
+  const f = recordingFetch();
+  await handler(fakeReq({ email: 'b@example.com', consent: true, piblo_hp_field: 'x', ref: 'abcd1234' }), fakeRes(), f.impl);
+  const r = fakeRes();
+  await handler(fakeReq({ email: 'b@example.com', ref: 'abcd1234' }), r, f.impl);
+  assert.equal(r.statusCode, 400);
+  assert.equal(f.calls.length, 0);
 });

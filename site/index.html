@@ -41,6 +41,7 @@
     }
   }
   </script>
+  <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -58,7 +59,7 @@
       <h1>A pocket companion that helps you remember, focus and get things done.</h1>
       <p class="lede">Piblo is a small screen with real keys. It reminds you of what matters, lets you answer yes, no or later with one press, and saves what you say. No apps, no feeds.</p>
       <div class="actions">
-        <a class="btn btn-tomato btn-big" href="#waitlist">Join the launch list</a>
+        <a class="btn btn-tomato btn-big" href="#waitlist" data-va="cta_click">Join the launch list</a>
         <a class="btn btn-ghost" href="#how">How it works</a>
       </div>
       <p class="fine">Free to join. One email when the Kickstarter opens, plus real progress updates.</p>
@@ -179,6 +180,7 @@
       <h2>Hear first when Piblo launches.</h2>
       <p>One email when the Kickstarter opens, plus the occasional real progress update. Unsubscribe any time.</p>
       <form class="waitlist-form" id="waitlist-form" action="/api/waitlist" method="post" novalidate>
+        <input type="hidden" name="ref" value="">
         <input class="waitlist-hp" type="text" name="piblo_hp_field" tabindex="-1" autocomplete="off" aria-hidden="true">
         <div class="waitlist-fields">
           <label class="waitlist-label">
@@ -199,6 +201,16 @@
         <button class="btn btn-tomato btn-big waitlist-submit" type="submit">Join the launch list</button>
         <p class="fine waitlist-status" aria-live="polite">We'll only email you about Piblo. Unsubscribe any time.</p>
       </form>
+      <div class="share-box" id="share-box" hidden>
+        <h3>Know someone who'd like Piblo?</h3>
+        <p>Share your link.</p>
+        <input class="waitlist-input" id="share-link" type="text" readonly aria-label="Your share link">
+        <div class="share-actions">
+          <button class="btn btn-ghost" type="button" id="share-copy">Copy link</button>
+          <button class="btn btn-tomato" type="button" id="share-native" hidden>Share</button>
+        </div>
+        <p class="fine share-note" aria-live="polite"></p>
+      </div>
     </div>
   </section>
 </main>

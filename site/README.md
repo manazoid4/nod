@@ -38,3 +38,7 @@ The sender is `signups@mazworks.uk` for now. The form works without JavaScript (
 - Do not copy other products' designs or claim NFC/RFID functionality.
 - Claims about capabilities must be grounded in `NOD_STATUS.md` and physical test evidence.
 - Test at 360px / 390px / 768px / 1280px, with keyboard and reduced motion.
+
+## Analytics and referral
+- Vercel Web Analytics (cookie-free) loads from `/_vercel/insights/script.js` on every page; enable it in the Vercel project dashboard. Custom events: `waitlist_signup`, `cta_click`, `referral_copy`, `referral_share`.
+- Each signup gets a stable 8-char referral code (HMAC of the email, keyed with the Resend key) returned as `ref`. It is stored on the Resend contact as properties `referral_code` and `referred_by`; create both as text contact properties in Resend. Until they exist, signups still save without them.

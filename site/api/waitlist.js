@@ -2,6 +2,8 @@
 // contacts go into the Piblo Resend segment (RESEND_SEGMENT_ID), the owner alert is
 // sent from the verified mazworks.uk domain. Server-side so the API key never
 // reaches a browser, and the form works without JavaScript (303 redirect).
+import { createHmac } from 'node:crypto';
+
 const CONTACTS_URL = 'https://api.resend.com/contacts';
 const EMAILS_URL = 'https://api.resend.com/emails';
 // Resend stores contacts silently, so each signup is also emailed to the owner.
@@ -13,7 +15,14 @@ const TIMEOUT_MS = 10000;
 const LOOKUP_TIMEOUT_MS = 4000;
 
 // Deliberately loose: the goal is to reject typos and junk, not to be an RFC.
+// Referral codes: lowercase letters and digits only; anything else in ref is dropped.
+const REF = /^[a-z0-9]{6,12}$/;
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
+
+// Stable per email and unguessable (keyed with the server secret), so a repeat signup keeps its link.
+export function referralCode(email) {
+  return createHmac('sha256', process.env.RESEND_API_KEY || '').update(email).digest('base64url').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
+}
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -50,11 +59,11 @@ function reply(req, res, status, result) {
   }
   // No JavaScript: send the visitor back to the form with the outcome in the URL.
   res.statusCode = 303;
-  res.setHeader('location', `/?subscribed=${result.ok ? '1' : '0'}#waitlist`);
+  res.setHeader('location', `/?subscribed=${result.ok ? '1' : '0'}${result.ok && result.ref ? `&code=${result.ref}` : ''}#waitlist`);
   return res.end();
 }
 
-export async function addContact(email, firstName, fetchImpl = fetch) {
+export async function addContact(email, firstName, fetchImpl = fetch, referral = null) {
   const apiKey = process.env.RESEND_API_KEY || '';
   const segmentId = process.env.RESEND_SEGMENT_ID || '';
   // Without a segment the contact would land in the shared account list, so refuse.
@@ -62,12 +71,15 @@ export async function addContact(email, firstName, fetchImpl = fetch) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const response = await fetchImpl(CONTACTS_URL, {
+    const post = (properties) => fetchImpl(CONTACTS_URL, {
       method: 'POST',
       headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ email, ...(firstName && { first_name: firstName }), unsubscribed: false, segments: [{ id: segmentId }] }),
+      body: JSON.stringify({ email, ...(firstName && { first_name: firstName }), unsubscribed: false, segments: [{ id: segmentId }], ...(properties && { properties }) }),
       signal: controller.signal,
     });
+    let response = await post(referral);
+    // referral_code / referred_by must exist as Resend contact properties. If Resend refuses them, still save the signup.
+    if (referral && response.status >= 400 && response.status < 500 && response.status !== 409 && response.status !== 429) response = await post(null);
     if (response.ok) return { ok: true };
     // Signing up twice is not an error from the visitor's side: they are on the list.
     const detail = await response.text().catch(() => '');
@@ -169,7 +181,11 @@ export default async function handler(req, res, fetchImpl = fetch) {
   // Checked before saving, because saving adds them to the segment. Only needed for the alert.
   const repeat = process.env.SIGNUP_NOTIFY_EMAIL ? await alreadyInSegment(email, fetchImpl) : false;
   // Still saved on a repeat: it re-subscribes someone who unsubscribed and ticked consent again.
-  const result = await addContact(email, firstName, fetchImpl);
+  const ref = referralCode(email);
+  const refBy = typeof body.ref === 'string' ? body.ref.trim().toLowerCase() : '';
+  const referral = { referral_code: ref, ...(REF.test(refBy) && refBy !== ref && { referred_by: refBy }) };
+  const result = await addContact(email, firstName, fetchImpl, referral);
+  if (result.ok) result.ref = ref;
   // Awaited, not fired-and-forgotten: the function can be frozen once it replies.
   if (result.ok && !repeat) await notifyOwner(email, firstName, fetchImpl);
   return reply(req, res, result.ok ? 200 : 502, result);
