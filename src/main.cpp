@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "audio/sfx.h"
 #include "audio/voice.h"
 #include "core/ambient.h"
 #include "core/field.h"
@@ -97,6 +98,7 @@ void loop() {
     portal::update();
     shell::loop();
     ambient::update();
+    sfx::update();     // non-blocking alert/approval/alarm chirps
     host::linkIdle();  // WiFi power saving back on 20 s after the last voice request, from any screen
 
     health::observeLoop(millis() - loopStarted);

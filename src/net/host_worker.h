@@ -10,7 +10,7 @@ namespace maz {
 namespace host_worker {
 
 enum class State : uint8_t { Idle, Queued, Running, Done, FailedToStart };
-enum class JobKind : uint8_t { None, TalkAudio, PcAction, OutboxAudio, OutboxBeam, BeamPull, SystemStatus, Today, WorkSummary, WorkIncrement, Workflow, Teach, CoreInfo, BuddyPoll, BuddyDecide };
+enum class JobKind : uint8_t { None, TalkAudio, PcAction, OutboxAudio, OutboxBeam, BeamPull, SystemStatus, Today, WorkSummary, WorkIncrement, Workflow, Teach, CoreInfo, BuddyPoll, BuddyDecide, TextAck };
 enum class WorkflowKind : uint8_t { Plan, Crew, Retro, Prompt };
 enum class TeachKind : uint8_t { Displays, Start, Mark, Stop, Status };
 
@@ -51,6 +51,8 @@ bool submitCoreInfo();
 bool submitBuddyPoll();
 bool submitBuddyDecide(const std::string& id, const std::string& decision);
 struct BuddyDecideResult { std::string id, decision, applied; bool ok = false; };
+bool submitTextAck(const std::string& id, const std::string& status);
+struct TextAckResult { std::string id, status; bool ok = false; };
 bool submitSystemStatus();
 bool submitToday();
 bool submitWorkSummary();
@@ -75,6 +77,7 @@ bool takeBeamPullResult(host::BeamMessage& result);
 bool takeCoreInfoResult(host::CoreInfo& result);
 bool takeBuddyPollResult(host::BuddyPoll& result);
 bool takeBuddyDecideResult(BuddyDecideResult& result);
+bool takeTextAckResult(TextAckResult& result);
 bool takeSystemStatusResult(host::SystemStatus& result);
 bool takeTodayResult(host::TodayStatus& result);
 bool takeWorkSummaryResult(host::WorkSummary& result);

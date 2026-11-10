@@ -84,6 +84,9 @@ struct AgentEvent {
     // kind == "alert" (generic notification, see docs/ALERTS.md); otherwise unused.
     std::string alertId, alertKind, title, body, priority;
     uint8_t     alertActions = 0;  // alert_policy::ACT_* bits offered by Core
+    // kind == "text_input" (phone keyboard, see docs/protocol/PHONE-KEYBOARD.md).
+    std::string textInputId, textInputMode;
+    int64_t     eventTs = 0;  // Core wall-clock seconds for the 2-minute TTL
 };
 
 struct BeamMessage {
@@ -229,6 +232,8 @@ TeachStatus teachStatus(const std::string& sessionId);
 Reply beamSend(const std::string& text);
 BeamMessage beamPull();
 bool haltNow(bool on);    // immediate authenticated POST; never stops running processes
+// Phone-keyboard ack: POST /buddy/text/{id}/ack {"status": inserted|no_field|too_long}.
+bool textAck(const std::string& id, const std::string& status);
 SystemStatus systemStatus();
 TodayStatus todayStatus();
 WorkSummary workSummary();
