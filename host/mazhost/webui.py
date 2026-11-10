@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse
 
 router = APIRouter()
 PAGE = Path(__file__).parent / "static" / "ui.html"
+SIM_PAGE = Path(__file__).parent / "static" / "sim" / "index.html"
 
 
 @router.get("/ui", response_class=HTMLResponse, include_in_schema=False)
@@ -15,5 +16,15 @@ def ui() -> HTMLResponse:
     # Public path (see security.PUBLIC_PATHS): the page holds no data; every fetch it makes sends the token.
     return HTMLResponse(
         PAGE.read_text(encoding="utf-8"),
+        headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
+    )
+
+
+@router.get("/sim", response_class=HTMLResponse, include_in_schema=False)
+def sim() -> HTMLResponse:
+    # Public static page only (see security.PUBLIC_PATHS): the simulator drives the same
+    # /buddy/* routes as firmware and sends the bearer token on every request.
+    return HTMLResponse(
+        SIM_PAGE.read_text(encoding="utf-8"),
         headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
     )

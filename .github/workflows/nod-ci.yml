@@ -43,6 +43,12 @@ jobs:
       - name: Core tests
         run: python -m pytest host/tests -q -n auto
 
+      - name: MCP server tests (TypeScript)
+        run: |
+          cd host/mcp
+          npm ci
+          npm test
+
       - name: Firmware logic tests (state machine, layout, theme)
         run: make -C firmware/nod test
 
@@ -60,6 +66,14 @@ jobs:
           echo "headroom: $headroom bytes"
           if [ "$size" -gt "$limit" ]; then echo "::error::firmware.bin exceeds app slot by $((size - limit)) bytes"; exit 1; fi
           if [ "$headroom" -lt 16384 ]; then echo "::error::firmware.bin headroom only $headroom bytes (< 16384) of the app slot"; exit 1; fi
+
+      - name: Size report vs baseline (headroom floor 32 KB)
+        run: |
+          set -o pipefail
+          rc=0
+          python scripts/fw-size-report.py --baseline docs/perf/fw-baseline.json --min-headroom 32768 | tee size-report.txt || rc=$?
+          { echo '```'; cat size-report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $rc
 
       - name: Manifest
         run: python scripts/fw_manifest.py .pio/build/cardputer-adv/firmware.bin dist/

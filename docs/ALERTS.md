@@ -69,5 +69,7 @@ Demo: `MAZ_TOKEN=... python scripts/demo-alerts.py`
 - Delivery is "device polls Core": an alert that fired while the device was offline is delivered only if it
   is still inside the 20-event ring when the device reconnects; there is no replay of older unacked alerts yet.
 - The device answer (ack/snooze) is fire-and-forget on the shared worker; if it fails, Core keeps the alert open.
-- Tone playback blocks the UI loop for up to about 0.4 s (same pattern as the approval chime).
+- Tone playback no longer blocks the UI loop: alert, approval, agent-done and Focus chirps are queued
+  and stepped from `loop()` by `sfx::update()` (`firmware/nod/include/tone_seq.h`). Needs a device test
+  (timing by ear; mic/recording behaviour unchanged because `recStart`/`recStop` stay synchronous).
 - `kind: approval` cannot be delayed (`delay_seconds` is rejected with 400).

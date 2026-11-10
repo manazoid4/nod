@@ -23,6 +23,7 @@
 .use-4, .use-5 { grid-column: span 3; }
 .use-1 { background: var(--sun); }
 .use-5 { background: var(--ink); color: var(--paper); }
+.use-6 { grid-column: span 6; background: var(--mint); }
 
 .buddy-lede { max-width: 46ch; font-size: 1.15rem; }
 .buddy-day { grid-template-columns: repeat(5, 1fr); counter-reset: none; }
@@ -52,7 +53,7 @@
 @media (max-width: 900px) {
   .steps, .own-grid, .edition-grid { grid-template-columns: 1fr; }
   .use-grid { grid-template-columns: 1fr; }
-  .use, .use-4, .use-5 { grid-column: auto; }
+  .use, .use-4, .use-5, .use-6 { grid-column: auto; }
   .buddy-day { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
   .buddy-day li + li::before { display: none; }
   .buddy-day .bface { width: 100%; max-width: 4rem; height: auto; }

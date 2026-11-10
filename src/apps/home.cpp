@@ -28,15 +28,33 @@ using namespace theme;
 
 namespace {
 
+// Easy Mode home: plain words, UP/DOWN + ENTER, no Fn. Each row opens a real
+// screen; nothing here pretends to work. "Messages" is the results inbox and
+// "Shortcuts" is the saved snippets list (see docs/KEYS.md).
+struct EasyItem { const char* label; const char* target; };
+constexpr EasyItem EASY_ITEMS[] = {
+    {"Notes", "notes"},       {"Reminders", "reminders"}, {"Messages", "inbox"},
+    {"Tasks", "tasks"},       {"Shortcuts", "snippets"},  {"Settings", "settings"},
+    {"Help", "help"},
+};
+constexpr int EASY_COUNT = sizeof(EASY_ITEMS) / sizeof(EASY_ITEMS[0]);
+
 class HomeApp : public App {
 public:
     const char* id() const override { return "home"; }
     const char* title() const override { return "Piblo"; }
-    const char* hints() const override { return _hints; }
+    const char* hints() const override {
+        if (Cfg.easyMode) {
+            const char* link = linkSentence(true);
+            return link ? link : "UP/DOWN choose  ENTER open";
+        }
+        return _hints;
+    }
 
     void onEnter() override {
         buildPrimary();
         _spaceArmed = false;
+        _easyCursor.clamp(EASY_COUNT);
         lvui::setActive(true);
         rebuildHints();
         invalidate();
@@ -47,6 +65,31 @@ public:
     bool onKey(const KeyEvent& e) override {
         if (!e.down) {
             if (e.code == KEY_SPACE) _spaceArmed = false;
+            return false;
+        }
+
+        // Easy Mode: one list, plain old keys. The shell's dispatch already
+        // routes every key to the approval overlay first, so nothing here can
+        // approve; ESC at Home is a no-op (depth 1 pops to itself).
+        if (Cfg.easyMode) {
+            if (e.code == KEY_UP || e.code == KEY_DOWN) {
+                _easyCursor.onKey(e, EASY_COUNT);
+                sfx::select();
+                invalidate();
+                return true;
+            }
+            if (e.code == KEY_ENTER) {
+                sfx::confirm();
+                shell::pushById(EASY_ITEMS[_easyCursor.sel].target);
+                return true;
+            }
+            if (e.code >= KEY_1 && e.code <= KEY_4 && !(e.mods & MOD_FN)) {
+                field::runQuick(static_cast<int>(e.code - KEY_1) + 1);
+                invalidate();
+                return true;
+            }
+            if (e.code == KEY_U && host::updateReady()) { shell::confirmFwUpdate(); return true; }
+            if (e.code == KEY_SPACE) { _spaceArmed = true; return true; }
             return false;
         }
 
@@ -74,10 +117,8 @@ public:
             if (dir) { _focus = nod::moveTalkFocus(_focus, dir); sfx::select(); invalidate(); return true; }
         } else {
             if (e.code == KEY_ENTER) { open(_sel); return true; }
-            if (e.code == KEY_RIGHT) { move(+1); return true; }
-            if (e.code == KEY_LEFT)  { move(-1); return true; }
-            if (e.code == KEY_DOWN)  { move(+TABLE_COLS); return true; }
-            if (e.code == KEY_UP)    { move(-TABLE_COLS); return true; }
+            if (e.code == KEY_DOWN)  { move(+1); return true; }
+            if (e.code == KEY_UP)    { move(-1); return true; }
         }
 
         size_t n = 0;
@@ -105,6 +146,8 @@ public:
     }
 
     std::string contextSnapshot() const override {
+        if (Cfg.easyMode)
+            return std::string("Home selected ") + EASY_ITEMS[_easyCursor.sel].label + "; NOW: " + field::nowText();
         if (!_grid) return std::string("Home: Talk circle; NOW: ") + field::nowText();
         if (_primary.empty() || _sel < 0 || _sel >= static_cast<int>(_primary.size()))
             return field::nowText();
@@ -112,19 +155,43 @@ public:
     }
 
     void render(M5Canvas& g) override {
+        if (Cfg.easyMode) { renderEasy(g); return; }
         if (!_grid) { renderTalk(g); return; }
-        std::array<lvui::Cell, TABLE_PAGE> cells{};
-        for (size_t i = 0; i < _primary.size() && i < cells.size(); ++i) {
-            cells[i].title = _primary[i]->cellTitle();
-            cells[i].badge = _primary[i]->shortcut ? static_cast<char>('A' + (_primary[i]->shortcut - KEY_A)) : ' ';
-        }
-        lvui::Status st;
-        st.version = "v" NOD_FW_VERSION;
-        statusFor(st);
-        lvui::renderHome(g, cells.data(), _primary.size(), _sel, st);
+        renderMore(g);
     }
 
 private:
+    // Same pill list as More (no header row, no footer text over the list); offline shows in the hint bar.
+    void renderEasy(M5Canvas& g) {
+        g.fillRect(0, BODY_Y, SCREEN_W, BODY_H, nod::theme::BG);
+        for (int i = 0; i < MORE_ROWS && _easyCursor.first + i < EASY_COUNT; ++i) {
+            const int idx = _easyCursor.first + i;
+            ui::pillRow(g, BODY_Y + 1 + i * MORE_PITCH, MORE_PITCH - 2, idx == _easyCursor.sel, EASY_ITEMS[idx].label, "");
+        }
+        ui::scrollBar(g, EASY_COUNT, _easyCursor.first, MORE_ROWS);
+    }
+
+    // More: plain-English names for the registry's home surfaces (the old grid showed CAPS).
+    static const char* moreLabel(const Descriptor* d) {
+        if (!strcmp(d->id, "talk")) return "Call";
+        if (!strcmp(d->id, "desk")) return "Device & PC";
+        return d->title;
+    }
+
+    // Same pill look as the Talk circle's buttons; one row per surface, scrolls past 5.
+    void renderMore(M5Canvas& g) {
+        g.fillRect(0, BODY_Y, SCREEN_W, BODY_H, nod::theme::BG);
+        const int n = static_cast<int>(_primary.size());
+        if (_sel < _first) _first = _sel;
+        if (_sel >= _first + MORE_ROWS) _first = _sel - MORE_ROWS + 1;
+        for (int i = 0; i < MORE_ROWS && _first + i < n; ++i) {
+            const Descriptor* d = _primary[_first + i];
+            char key[2] = {d->shortcut ? static_cast<char>('A' + (d->shortcut - KEY_A)) : '\0', '\0'};
+            ui::pillRow(g, BODY_Y + 1 + i * MORE_PITCH, MORE_PITCH - 2, _first + i == _sel, moreLabel(d), key);
+        }
+        ui::scrollBar(g, n, _first, MORE_ROWS);
+    }
+
     void activate(nod::TalkFocus f) {
         sfx::confirm();
         switch (f) {
@@ -219,7 +286,7 @@ private:
         size_t n = 0;
         const Descriptor* t = apps::table(n);
         for (size_t i = 0; i < n; ++i)
-            if (t[i].onHome && strcmp(t[i].id, "home") && _primary.size() < TABLE_PAGE) _primary.push_back(&t[i]);
+            if (t[i].onHome && strcmp(t[i].id, "home")) _primary.push_back(&t[i]);
         if (_sel >= static_cast<int>(_primary.size())) _sel = 0;
     }
 
@@ -231,9 +298,9 @@ private:
                                                                 : "ENTER live  hold SPACE save";
             return;
         }
-        _hints = (linkSentence(true) && !Sys.wifiConnected) ? "SPACE dump  ENTER open  W wifi"
-               : host::updateReady()                        ? "SPACE dump  ENTER open  U update"
-                                                            : "SPACE dump  ENTER open  1-4 quick";
+        _hints = (linkSentence(true) && !Sys.wifiConnected) ? "ENTER open  ESC back  W wifi"
+               : host::updateReady()                        ? "ENTER open  ESC back  U update"
+                                                            : "ENTER open  ESC back";
     }
 
     void move(int delta) {
@@ -249,9 +316,12 @@ private:
 
     std::vector<const Descriptor*> _primary;
     int _sel = 0;
+    int _first = 0;
+    static constexpr int MORE_ROWS = 5, MORE_PITCH = 21;
     bool _spaceArmed = false;
-    bool _grid = false;  // false = Talk circle, true = More (the six-surface grid)
+    bool _grid = false;  // false = Talk circle, true = More (pill list of every surface)
     nod::TalkFocus _focus = nod::FOCUS_TALK;
+    ListCursor _easyCursor;
     uint32_t _lastAnim = 0;
     const char* _hints = "";
 };

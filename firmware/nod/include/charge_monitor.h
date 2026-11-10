@@ -17,6 +17,7 @@ public:
     static const uint32_t kMinWindowMs = 90000;  // need 90 s before judging by trend
     static constexpr float kRiseMvPerMin = 3.0f; // >= this => charging
     static constexpr float kFallMvPerMin = -2.0f;// <= this => on battery
+    static constexpr float kStallMvPerMin = 0.5f;// Charging but rising slower than this (below full) => on battery
     static const int kFullMv = 4150;
 
     // vbus: -1 unknown, 0 absent, 1 present.
@@ -78,6 +79,9 @@ private:
         if (s >= kRiseMvPerMin) { _state = PowerState::Charging; }
         else if (s <= kFallMvPerMin) { _state = PowerState::OnBattery; }
         else if (_state == PowerState::Charging && _mv >= kFullMv) { _state = PowerState::Full; }
+        // A charging cell keeps rising until full. Flat or slowly falling below full means the rise was a
+        // load-recovery bump (Wi-Fi burst, flash write, backlight dim) or the charger was pulled: un-stick.
+        else if (_state == PowerState::Charging && s < kStallMvPerMin) { _state = PowerState::OnBattery; }
         else if (_state == PowerState::Unknown) { _state = PowerState::OnBattery; }
     }
     uint32_t _t[kCap] = {};

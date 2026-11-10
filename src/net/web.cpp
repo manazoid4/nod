@@ -226,7 +226,17 @@ void sendScreen(WiFiClient& c) {
     const uint8_t* pixels = static_cast<const uint8_t*>(canvas.getBuffer());
     if (!pixels) { sendText(c, 500, "application/json", "{\"ok\":false,\"error\":\"screen_unavailable\"}"); return; }
     sendHead(c, 200, "application/octet-stream", SCREEN_BYTES);
-    c.write(pixels, SCREEN_BYTES);
+    // M5Canvas is big-endian RGB565; send little-endian (RGB565LE) by swapping per chunk.
+    uint8_t chunk[512];
+    for (size_t at = 0; at < SCREEN_BYTES; at += sizeof(chunk)) {
+        size_t n = SCREEN_BYTES - at;
+        if (n > sizeof(chunk)) n = sizeof(chunk);
+        for (size_t i = 0; i + 1 < n; i += 2) {
+            chunk[i] = pixels[at + i + 1];
+            chunk[i + 1] = pixels[at + i];
+        }
+        c.write(chunk, n);
+    }
 }
 
 void handleClient(WiFiClient& c) {

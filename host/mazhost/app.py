@@ -25,7 +25,9 @@ from .braindump import structure_braindump
 from .dump_routes import build_dump_router, save_safely
 from .library_routes import build_library_router
 from .bridge import BridgeWorker
-from .buddy import AlertIn, install_buddy_routes
+from .buddy import AlertIn, Buddy, install_buddy_routes
+from .buddy_companion import install_companion_routes
+from .buddy_store import BuddyStore
 from .needs_routes import build_needs_router
 from .commands import parse_command
 from .config import Settings
@@ -33,6 +35,7 @@ from .control_routes import install_control_routes
 from .core import CoreError, MazCore
 from .debug_capsule import DebugCapsules
 from .device import DeviceMonitor
+from .discovery import DiscoveryResponder
 from . import fw
 from .errors import ErrorCode, RouteError
 from .focus import Focus, install_focus_routes
@@ -59,7 +62,7 @@ from .telemetry import SystemTelemetry
 from . import netpool
 from .speakplan import SpeakPlanner, TimingLog
 from .tts import SpeechOut
-from .voices import install_voice_routes
+from .voices import install_voice_routes, resolve_data_dir
 from .webui import router as webui_router
 from .validation import install_validation_exception_handler
 from .version import CORE_VERSION
@@ -241,6 +244,16 @@ def create_app(
     @api.on_event("shutdown")
     def stop_selfupdate() -> None:
         updates.stop()
+
+    discovery = DiscoveryResponder(cfg.discovery_port, cfg.port)
+
+    @api.on_event("startup")
+    def start_discovery() -> None:
+        discovery.start()
+
+    @api.on_event("shutdown")
+    def stop_discovery() -> None:
+        discovery.stop()
 
     @api.on_event("startup")
     def start_bridge() -> None:
@@ -947,7 +960,10 @@ def create_app(
     # intentionally reachable with no token, since exchanging a short-lived
     # code for the real credential is the whole point.
     api.mount("/pair", build_pairing_app(cfg, security))
-    buddy = install_buddy_routes(api)
+    buddy_store = None if cfg.buddy_db == "off" else BuddyStore(
+        cfg.buddy_db or resolve_data_dir(cfg) / "buddy.sqlite3")
+    buddy = install_buddy_routes(api, Buddy(store=buddy_store))
+    install_companion_routes(api, buddy, cfg.port)
 
     api.include_router(build_dump_router(cfg, model_router))
     api.include_router(webui_router)

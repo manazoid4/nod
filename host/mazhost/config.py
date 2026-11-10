@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     repo_dir: str = ""  # git checkout Core updates; default: the checkout containing mazhost
     bind: str = "0.0.0.0"
     port: int = 8787
+    discovery_port: int = 8788  # MAZ_DISCOVERY_PORT: UDP LAN discovery for Piblo pairing; 0 = off
     remote_url: str = ""  # MAZ_REMOTE_URL; empty = auto-detect the Tailscale Funnel URL
     remote_detect: bool = True  # MAZ_REMOTE_DETECT=0 disables the background tailscale probe
     whisper_model: str = "base.en"
@@ -78,12 +79,22 @@ class Settings(BaseSettings):
     default_route: Literal["local", "auto", "cloud", "mazlatest"] = "local"
     build_id: str = Field(default="dev", min_length=1, max_length=120)
 
-    live_end_silence_ms: int = Field(default=600, ge=100, le=3000)  # live voice: silence that ends the user's turn
+    live_end_silence_ms: int = Field(default=450, ge=100, le=3000)  # live voice: silence that ends the user's turn
     # live voice: digital gain on device mic audio before VAD + model. Cardputer ADV speech arrives at
     # rms ~100-290 (peak ~1k of 32k, measured 8 Nov 2026), far below normal speech levels.
     live_mic_gain: float = Field(default=10.0, ge=0.1, le=64.0)
     # live voice: ignore the mic this long after Piblo stops talking (speaker tail / room echo caused false turns)
     live_listen_holdoff_ms: int = Field(default=600, ge=0, le=3000)
+    # live voice brain: "cloud" = LFM3 hears/speaks, OpenRouter thinks (falls back to Ollama, then LFM3);
+    # "lfm" = today's direct LFM3 speech-to-speech.
+    live_brain: Literal["cloud", "lfm"] = "cloud"
+    live_cloud_default: str = "nemotron"  # voice alias resolved to a :free OpenRouter id until Maz switches by voice
+    # tried in order when the chosen cloud model fails (429 etc.), before the slow local fallback. Measured 8 Nov 2026:
+    # nemotron-3.5-lightning:free ~0.6 s first token; deepseek-v4.1-flash (cheap paid) ~0.7 s; gemma :free was 429ing.
+    live_cloud_backups: list[str] = ["nvidia/nemotron-3.5-lightning:free", "deepseek/deepseek-v4.1-flash"]
+    live_ollama_model: str = "qwen36-heretic:latest"
+    live_memory_github: str = "manazoid4/unified-memory-database:piblo/MEMORY.md"  # needs github_token; skipped if unset
+    live_memory_file: str = ""  # "remember ..." notes; empty = <data_dir>/piblo-memory.md
     max_upload_mb: int = Field(default=12, ge=1, le=64)
     max_audio_seconds: int = Field(default=900, ge=1, le=3600)
     session_ttl_minutes: int = Field(default=120, ge=1, le=1440)
@@ -100,6 +111,7 @@ class Settings(BaseSettings):
     kokoro_voice: str = Field(default="am_michael", min_length=3, max_length=32)
     kokoro_speed: float = Field(default=1.05, ge=0.75, le=1.35)
     data_dir: str = ""  # MAZ_DATA_DIR; empty = host/data in the install dir (voice choice, previews)
+    buddy_db: str = ""  # MAZ_BUDDY_DB: saved alerts/approvals/history; empty = <data dir>/buddy.sqlite3, "off" = memory only
     nudge_url: str = "http://127.0.0.1:47831"
     nudge_token: str = ""
     nudge_token_file: str = "~/.agent-nudge/control-plane.key"

@@ -295,7 +295,8 @@ private:
 const char* SET_NAMES[] = {"Brightness",    "Volume",        "UI sounds",
                            "Screen timeout", "Mic gain",     "Storage",
                            "Time zone",      "Wi-Fi & host", "Keys & help",
-                           "Voice",           "Quiet mode", "Quiet for"};
+                           "Voice",           "Quiet mode", "Quiet for",
+                           "Easy Mode"};
 constexpr int SET_COUNT = sizeof(SET_NAMES) / sizeof(SET_NAMES[0]);
 
 class SettingsApp : public App {
@@ -372,6 +373,9 @@ public:
                 quiet::set(quiet::level(), dur);
                 break;
             }
+            case 12:
+                if (e.code == KEY_ENTER) Cfg.easyMode = !Cfg.easyMode;
+                break;
             default:
                 break;
         }
@@ -433,6 +437,8 @@ private:
             }
             case 11:
                 return quiet::durLabel(Cfg.quietDur);
+            case 12:
+                return Cfg.easyMode ? "on" : "off";
             default:
                 return "";
         }
@@ -750,6 +756,21 @@ private:
 
 // ------------------------------------------------------------------- Help
 const char* HELP_LINES[] = {
+    "#EASY MODE (start here)",
+    "UP/DOWN     choose",
+    "ENTER       open",
+    "ESC         back (once you are",
+    "            inside a text field)",
+    "Type as     normal. LEFT/RIGHT",
+    "            move the cursor.",
+    "Phone       send text to any",
+    "            open field and it",
+    "            lands here, literal.",
+    "Ctrl+P      next saved shortcut",
+    "Ctrl+H      next recent phrase",
+    "Ctrl+SPACE  talk to fill a field",
+    "Settings >  Easy Mode turns this",
+    "            whole screen off.",
     "#GLOBAL",
     "Ctrl+K      command palette",
     "Ctrl+L      back to M5Launcher",
