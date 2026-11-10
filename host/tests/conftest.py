@@ -12,3 +12,4 @@ if sys.platform != "win32":  # Windows keeps browsers under LOCALAPPDATA, which 
 _home = tempfile.mkdtemp(prefix=f"piblo-test-{os.environ.get('PYTEST_XDIST_WORKER', 'main')}-")
 os.environ["HOME"] = os.environ["USERPROFILE"] = _home
 os.environ["MAZ_DATA_DIR"] = os.path.join(_home, "data")
+os.environ["MAZ_BUDDY_DB"] = "off"  # existing suites assume a fresh in-memory Buddy; persistence tests pass buddy_db explicitly

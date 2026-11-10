@@ -100,6 +100,7 @@ class Settings(BaseSettings):
     kokoro_voice: str = Field(default="am_michael", min_length=3, max_length=32)
     kokoro_speed: float = Field(default=1.05, ge=0.75, le=1.35)
     data_dir: str = ""  # MAZ_DATA_DIR; empty = host/data in the install dir (voice choice, previews)
+    buddy_db: str = ""  # MAZ_BUDDY_DB: saved alerts/approvals/history; empty = <data dir>/buddy.sqlite3, "off" = memory only
     nudge_url: str = "http://127.0.0.1:47831"
     nudge_token: str = ""
     nudge_token_file: str = "~/.agent-nudge/control-plane.key"
