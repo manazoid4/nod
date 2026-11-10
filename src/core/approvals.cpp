@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <poll_backoff.h>
+
 #include "../audio/sfx.h"
 #include "../net/host_worker.h"
 #include "../net/mazhost.h"
@@ -49,7 +51,7 @@ void toast(const char* msg, uint16_t color, uint32_t ms = 1000) {
 bool absorb(const host::BuddyPoll& p) {
     const uint32_t now = millis();
     Sys.buddy = p.ok ? (p.agent == "needs_you" ? 2 : p.agent == "working" ? 1 : 0) : 0;
-    if (!p.ok) { if (++gFails >= 3) gQueue.clear(); return false; }
+    if (!p.ok) { if (gFails < 255) ++gFails; if (gFails >= 3) gQueue.clear(); return false; }
     gFails = 0;
     std::vector<Req> next;
     for (const host::BuddyItem& it : p.items) {
@@ -147,7 +149,9 @@ bool update(bool screenOff) {
     }
     if (static_cast<int32_t>(now - gNextPoll) >= 0) {
         const bool hot = gPhase == Phase::Showing || gPhase == Phase::Result;
-        gNextPoll = now + (hot ? 2500u : screenOff ? 12000u : 5000u);
+        // Core unreachable (laptop asleep): each failed poll doubles the wait, capped at 15 s so a
+        // returning Core is still seen well inside the 60 s approval window.
+        gNextPoll = now + nod::backoffMs(hot ? 2500u : screenOff ? 12000u : 5000u, gFails, 15000u);
         host_worker::submitBuddyPoll();
     }
     return arrived;

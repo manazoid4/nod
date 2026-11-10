@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <ctime>
+#include <poll_backoff.h>
 
 #include "../apps/apps.h"
 #include "../audio/sfx.h"
@@ -399,7 +400,10 @@ void update() {
     if (static_cast<int32_t>(millis() - gNextBeamPoll) >= 0) {
         // Schedule before submitting: returning first re-polled every tick and
         // kept the single worker busy, so Call reported "busy".
-        gNextBeamPoll = millis() + (Cfg.fieldMode ? 45000u : 15000u);
+        // Hub offline (the previous poll failed): back off to 30 s instead of burning a connect timeout every 15 s.
+        static uint8_t offlinePolls = 0;
+        offlinePolls = Sys.hostOnline ? 0 : (offlinePolls < 255 ? offlinePolls + 1 : 255);
+        gNextBeamPoll = millis() + nod::backoffMs(Cfg.fieldMode ? 45000u : 15000u, offlinePolls, 30000u);
         host_worker::submitBeamPull();
     }
 }
