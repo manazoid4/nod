@@ -32,6 +32,23 @@ class CoreClient(baseUrl: String, private val token: String, private val clientV
         const val DEFAULT_PORT = 8787
         private const val MAX_BODY = 64 * 1024
 
+        /**
+         * The legacy device/Core protocol uses cleartext HTTP on a trusted local network.
+         * Never send bearer tokens over plain HTTP to arbitrary public hosts.
+         * Away from the local network, configure HTTPS (e.g. through a secure tunnel).
+         */
+        private fun permitsLocalHttp(host: String): Boolean {
+            val h = host.lowercase().removePrefix("[").removeSuffix("]")
+            if (h == "localhost" || h == "::1" || h.endsWith(".local")) return true
+            if ('.' !in h && ':' !in h) return true  // a short local machine name
+            val octets = h.split('.').map { it.toIntOrNull() }
+            if (octets.size != 4 || octets.any { it == null || it !in 0..255 }) return false
+            val a = octets[0]!!; val b = octets[1]!!
+            return a == 10 || a == 127 || (a == 172 && b in 16..31) ||
+                (a == 192 && b == 168) || (a == 169 && b == 254) ||
+                (a == 100 && b in 64..127) // Tailscale / RFC6598 private overlay
+        }
+
         /** "192.168.1.20" / "pc:8787" / "http://pc:8787/" -> "http://host:port". Returns null if it is not a usable address. */
         fun normalizeBase(input: String): String? {
             var s = input.trim().trimEnd('/')
@@ -40,6 +57,7 @@ class CoreClient(baseUrl: String, private val token: String, private val clientV
             val u = try { URL(s) } catch (_: Exception) { return null }
             if (u.protocol != "http" && u.protocol != "https") return null
             if (u.host.isNullOrEmpty()) return null
+            if (u.protocol == "http" && !permitsLocalHttp(u.host)) return null
             val port = if (u.port == -1 && u.protocol == "http") ":$DEFAULT_PORT" else if (u.port == -1) "" else ":${u.port}"
             return "${u.protocol}://${u.host}$port"
         }
@@ -60,7 +78,10 @@ class CoreClient(baseUrl: String, private val token: String, private val clientV
         }
 
         internal fun request(base: String, method: String, path: String, body: String?, token: String?, clientVersion: String): String {
-            val c = URL(base + path).openConnection() as HttpURLConnection
+            val url = URL(base + path)
+            if (url.protocol == "http" && !permitsLocalHttp(url.host))
+                throw IOException("HTTPS required for non-local Piblo Core")
+            val c = url.openConnection() as HttpURLConnection
             try {
                 c.requestMethod = method
                 c.connectTimeout = 4000
