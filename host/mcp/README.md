@@ -28,7 +28,7 @@ The token is resolved in this order: `PIBLO_TOKEN` / `NOD_TOKEN` / `MAZ_TOKEN` e
 | `piblo_status` | Connected / simulated / last seen, halt state. | Read-only. |
 | `piblo_notify` | Show a notification (info / task_done / reminder / deadline). | ack-only; nothing in it is run. |
 | `piblo_task_update` | Report a task's status + progress %. | Same `task_id` for every update. |
-| `piblo_request_approval` | Ask the user to approve/reject ONE action; waits ~55 s. | Returns `approved` / `rejected` / `expired`. Treat expired like rejected. `sensitive=true` asks for the Nod hold. |
+| `piblo_request_approval` | Ask the user to approve/reject ONE action; waits ~55 s. | Returns `approved` / `rejected` / `expired`. Treat expired like rejected. `sensitive=true` asks for the Nod hold once PR #63 ships; until then it is a normal approve/reject. |
 | `piblo_device_state` | Battery + connectivity only. | Allow-listed fields. |
 
 Agent identity: `PIBLO_AGENT_NAME`, else the MCP app's announced client name. Length-limited and

@@ -63,10 +63,32 @@ export class CoreError extends Error {
   }
 }
 
+/**
+ * The bearer token travels in every request, so plain http is allowed only to this machine or a
+ * private LAN / Tailscale address (same rule as the Android app). Anything else must be https.
+ */
+export function urlAllowed(raw: string): boolean {
+  let u: URL;
+  try { u = new URL(raw); } catch { return false; }
+  if (u.protocol === "https:") return true;
+  if (u.protocol !== "http:") return false;
+  const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (h === "localhost" || h === "::1" || h.endsWith(".local")) return true;
+  if (!h.includes(".") && !h.includes(":")) return true; // short local machine name
+  const o = h.split(".").map(Number);
+  if (o.length !== 4 || o.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return false;
+  const [a, b] = o;
+  return a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) ||
+    (a === 169 && b === 254) || (a === 100 && b >= 64 && b <= 127);
+}
+
 export class CoreClient {
   constructor(private readonly cfg: CoreConfig) {}
 
   private async call<T>(method: "GET" | "POST", path: string, body?: unknown, timeoutMs = 10_000): Promise<T> {
+    if (!urlAllowed(this.cfg.url)) {
+      throw new CoreError("insecure_url", `Refusing to send the Piblo token to ${this.cfg.url}: use https for anything outside this machine or your home network.`);
+    }
     if (!this.cfg.token) {
       throw new CoreError("no_token", "No Piblo token found. Set PIBLO_TOKEN or start Core from a folder with host/.env.");
     }
