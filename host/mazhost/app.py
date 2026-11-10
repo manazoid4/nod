@@ -35,6 +35,7 @@ from .control_routes import install_control_routes
 from .core import CoreError, MazCore
 from .debug_capsule import DebugCapsules
 from .device import DeviceMonitor
+from .discovery import DiscoveryResponder
 from . import fw
 from .errors import ErrorCode, RouteError
 from .focus import Focus, install_focus_routes
@@ -243,6 +244,16 @@ def create_app(
     @api.on_event("shutdown")
     def stop_selfupdate() -> None:
         updates.stop()
+
+    discovery = DiscoveryResponder(cfg.discovery_port, cfg.port)
+
+    @api.on_event("startup")
+    def start_discovery() -> None:
+        discovery.start()
+
+    @api.on_event("shutdown")
+    def stop_discovery() -> None:
+        discovery.stop()
 
     @api.on_event("startup")
     def start_bridge() -> None:
