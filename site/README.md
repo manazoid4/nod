@@ -13,7 +13,7 @@ Signups are saved to a Resend segment and a notification email is sent to the te
 The sender is `signups@mazworks.uk` for now. The form works without JavaScript (303 redirect). Honeypot field is `piblo_hp_field` (the old `nod_hp_field` is still treated as a bot for cached pages). `/privacy/` must stay in step with what this function collects.
 
 ## Routes
-- `/` homepage with films, concepts, honest build status and the waitlist form.
+- `/` homepage with **Piblo Standard and Piblo Pro** concept lineup, films, honest build status and the waitlist form.
 - `/roadmap/` public four-stage roadmap of 21 proposed delivery packages.
 - `/readiness/` noindex founder audit and launch gates. Public URL, not a private portal.
 - `/privacy/` privacy notice.
@@ -29,6 +29,7 @@ The sender is `signups@mazworks.uk` for now. The form works without JavaScript (
 
 ## Content rules
 - Lead with **"Less screen. More life."** and explain everyday value before technology.
+- Standard / Pro concept illustrations are proposals, not final CAD, specifications or photographed hardware. Pro processor selection and standalone operation are research goals.
 - Orange, cream and mint cases are **proposed** FDM-printed colours. No case has been printed or fit-tested.
 - Piblo Flip, Slide and Snap are **concepts**, labelled as such. Films and renders are AI-generated concepts and must be captioned that way.
 - **Designed in the UK** only: no town, address or postcode anywhere.
