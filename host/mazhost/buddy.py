@@ -445,10 +445,15 @@ class Buddy:
         with self._cv:
             seen = sorted(self._clients.values(), key=lambda c: -c["ts"])
         live = [c for c in seen if now - c["ts"] < CONNECTED_S]
-        top = live[0] if live else (seen[0] if seen else None)
-        return {"ok": True, "connected": bool(live), "simulated": bool(live) and live[0]["kind"] == "simulator",
-                "client": top["client"] if top else None, "last_seen": top["ts"] if top else None,
-                "last_seen_ago_s": round(now - top["ts"], 1) if top else None,
+        # A phone polling the hub is NOT evidence that the physical Piblo is online.
+        # Prefer a real firmware connection over a simulator when both are active.
+        device = next((c for c in live if c["kind"] == "firmware"), None)
+        if device is None:
+            device = next((c for c in live if c["kind"] == "simulator"), None)
+        return {"ok": True, "connected": device is not None,
+                "simulated": device is not None and device["kind"] == "simulator",
+                "client": device["client"] if device else None, "last_seen": device["ts"] if device else None,
+                "last_seen_ago_s": round(now - device["ts"], 1) if device else None,
                 "device": dict(self._device_state), "halted": self.halt_state()["halted"]}
 
     def set_device_state(self, state: dict, client: str = "") -> dict:
