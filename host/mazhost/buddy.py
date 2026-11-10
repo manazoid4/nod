@@ -13,7 +13,7 @@ from datetime import date
 from typing import Callable, Literal
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .buddy_store import BuddyStore
 
@@ -50,15 +50,45 @@ AlertKind = Literal["reminder", "meeting", "deadline", "sla", "computer", "task_
 Priority = Literal["low", "normal", "high", "urgent"]
 AlertAction = Literal["ack", "snooze", "approve", "reject"]
 OTHER = "other"
+NOD_CATEGORIES = ("payment", "send", "delete", "post", "share", "other")
+MAX_AMOUNT, MAX_RECIPIENT = 16, 40
+MAX_NODS = 50
 TaskStatus = Literal["waiting", "running", "done", "failed"]
 CONNECTED_S = 20      # a client that polled this recently counts as connected
 KIND_KEY = {"done": "done", "needs": "needs", "error": "errors", "usage": "usage"}
+
+def _nod_summary(i: dict) -> str:
+    """Device text for a detailed approval, in the existing `summary` field so the firmware parses nothing new:
+    head, amount, recipient on three lines."""
+    to = "to " + i["recipient"] if i["recipient"] else ""
+    return f"THE NOD  {i['category'].upper()}\n{i['amount']}\n{to}"
+
 
 def _local_today() -> str:
     return date.today().isoformat()
 
 
-class BuddyRequest(BaseModel):
+class NodFields(BaseModel):
+    """The Nod: optional details shown on the device, truncated (not rejected) at the boundary.
+    `nod: true` makes the device require a deliberate long-press to approve."""
+    amount: str = ""
+    recipient: str = ""
+    category: str = ""
+    nod: bool = False
+
+    @field_validator("amount", "recipient", mode="before")
+    @classmethod
+    def _clip(cls, v, info):
+        return str(v or "").strip()[:MAX_AMOUNT if info.field_name == "amount" else MAX_RECIPIENT]
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def _category(cls, v):
+        v = str(v or "").strip().lower()
+        return v if v in NOD_CATEGORIES else (OTHER if v else "")
+
+
+class BuddyRequest(NodFields):
     tool: str = Field(min_length=1, max_length=120)
     summary: str = Field(default="", max_length=200)
     session_id: str = Field(default="", max_length=120)
@@ -83,7 +113,7 @@ class BuddyEvent(BaseModel):
     idempotency_key: str = Field(default="", max_length=80)
 
 
-class AlertIn(BaseModel):
+class AlertIn(NodFields):
     """Generic notification (reminder, webhook, ...). kind=approval is routed into the
     existing approval queue, never into the notify ring."""
     source: str = Field(default="webhook", max_length=40)
@@ -200,6 +230,7 @@ class Buddy:
                         if item["decision"] is None:
                             self._bump("denied")
                         item["decision"], item["reason"] = "deny", HALT_REASON
+                        item["decided_t"] = time.time()
                         self._db("set_approval_decision", item["id"], "deny", "halt", HALT_REASON)
                 self._cv.notify_all()
             else:
@@ -251,8 +282,9 @@ class Buddy:
             if a.delay_seconds:
                 raise ValueError("approval_cannot_be_delayed")
             # Same queue, same authority/halt/timeout rules as the Claude Code hook.
-            item = self.request(a.title, a.body, project=a.source[:60], agent=a.agent,
-                                idem=a.idempotency_key, sensitive=a.sensitive)
+            item = self.request(a.title, a.body, project=a.source[:60], amount=a.amount,
+                                recipient=a.recipient, category=a.category, nod=a.nod,
+                                agent=a.agent, idem=a.idempotency_key, sensitive=a.sensitive)
             return {"ok": True, "routed": "approval", "id": item["id"], "decision": item["decision"]}
         if any(x in ("approve", "reject") for x in a.actions):
             raise ValueError("approve_reject_only_for_approval_kind")
@@ -402,6 +434,7 @@ class Buddy:
                 **({"expired": True} if expired else {}), **({"reason": row["reason"]} if row["reason"] else {})}
 
     def request(self, tool: str, summary: str, session_id: str = "", project: str = "",
+                amount: str = "", recipient: str = "", category: str = "", nod: bool = False,
                 agent: str = "", idem: str = "", sensitive: bool = False) -> dict:
         with self._cv:
             if idem:
@@ -420,8 +453,12 @@ class Buddy:
                                 "session_id": session_id, "project": project, "t": time.time(),
                                 "deadline": time.monotonic() + TIMEOUT_S,
                                 "decision": auto, "agent": agent or project, "sensitive": sensitive}
+            if amount or recipient or category or nod:
+                self._items[rid].update(amount=amount, recipient=recipient,
+                                        category=category or OTHER, nod=nod)
             if auto:
                 self._items[rid]["reason"] = HALT_REASON
+                self._items[rid]["decided_t"] = time.time()
             if idem:
                 self._idem[idem] = rid
             self._db("add_approval", self._items[rid], idem or None)
@@ -441,7 +478,7 @@ class Buddy:
                     return self._stored_view(row) if row else {"id": rid, "decision": None, "known": False}
                 if time.monotonic() >= item["deadline"]:
                     if not item["decision"]:
-                        item["decision"] = "cancel"
+                        item["decision"], item["decided_t"] = "cancel", time.time()
                         self._db("set_approval_decision", rid, "expired", "timeout")
                         self._cv.notify_all()
                     # A grant consumed after its deadline is never safe, even if
@@ -468,10 +505,13 @@ class Buddy:
             live = [i for i in self._items.values()
                     if not i["decision"] and monotonic_now < i["deadline"]]
             recent = any(now - i["t"] < WORKING_S for i in self._items.values())
-            items = [{"id": i["id"], "tool": i["tool"], "summary": i["summary"],
+            items = [{"id": i["id"], "tool": i["tool"],
+                      "summary": _nod_summary(i) if "category" in i else i["summary"],
                       "project": i.get("project", ""), "agent": i.get("agent", ""),
                       "sensitive": bool(i.get("sensitive")), "session_id": i["session_id"],
-                      "left": max(0, int(i["deadline"] - monotonic_now))} for i in live[:limit]]
+                      "left": max(0, int(i["deadline"] - monotonic_now)),
+                      **{k: i[k] for k in ("amount", "recipient", "category", "nod") if k in i}}
+                     for i in live[:limit]]
             return {"ok": True, "agent": "needs_you" if live else "working" if recent else "idle",
                     "count": len(live), "items": items}
 
@@ -484,7 +524,7 @@ class Buddy:
                 raise ValueError("session_wide_approval_disabled")
             if time.monotonic() >= item["deadline"]:
                 if not item["decision"]:
-                    item["decision"] = "cancel"
+                    item["decision"], item["decided_t"] = "cancel", time.time()
                     self._db("set_approval_decision", rid, "expired", "timeout")
                     self._cv.notify_all()
                 raise TimeoutError("approval_expired")
@@ -495,13 +535,37 @@ class Buddy:
             if self._halted_locked() and decision == "allow":
                 decision = "deny"
                 item["reason"] = HALT_REASON
-            item["decision"] = decision
+            item["decision"], item["decided_t"] = decision, time.time()
             self._db("set_approval_decision", rid, decision, by, item.get("reason"))
             if decision != "cancel":
                 self._roll()
                 self._bump("approved" if decision == "allow" else "denied")
             self._cv.notify_all()
             return dict(item)
+
+    def nods(self, limit: int = 20) -> dict:
+        """Nod log: recent approval outcomes, newest first, from the in-memory queue (last MAX_ITEMS)."""
+        iso = lambda t: datetime.fromtimestamp(t, timezone.utc).isoformat()  # noqa: E731
+        out, now = [], time.monotonic()
+        with self._cv:
+            for i in reversed(list(self._items.values())):
+                expired = now >= i["deadline"]
+                d = i["decision"]
+                if d == "allow":
+                    outcome = "approved"
+                elif d == "deny" or (d == "cancel" and not expired):
+                    outcome = "stopped"
+                elif expired:
+                    outcome = "expired"
+                else:
+                    continue   # still pending
+                out.append({"id": i["id"], "title": i["tool"], "amount": i.get("amount", ""),
+                            "recipient": i.get("recipient", ""), "category": i.get("category", ""),
+                            "nod": i.get("nod", False), "outcome": outcome, "requested_at": iso(i["t"]),
+                            "decided_at": iso(i.get("decided_t") or i["t"] + TIMEOUT_S)})
+                if len(out) >= limit:
+                    break
+        return {"ok": True, "nods": out}
 
     # ---- who is connected, tasks, device state
     def touch_client(self, client: str) -> None:
@@ -566,7 +630,12 @@ def install_buddy_routes(api: FastAPI, buddy: Buddy | None = None) -> Buddy:
     @api.post("/buddy/request")
     def buddy_request(body: BuddyRequest):
         return buddy.request(body.tool, body.summary, body.session_id, body.project,
+                             body.amount, body.recipient, body.category, body.nod,
                              agent=body.agent, idem=body.idempotency_key, sensitive=body.sensitive)
+
+    @api.get("/buddy/nods")
+    def buddy_nods(limit: int = 20):
+        return buddy.nods(min(max(limit, 1), MAX_NODS))
 
     @api.get("/buddy/state")
     def buddy_state(id: str, wait: float = 0):

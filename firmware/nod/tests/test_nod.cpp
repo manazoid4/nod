@@ -4,6 +4,7 @@
 #include "../include/alert_policy.h"
 #include "../include/charge_monitor.h"
 #include "../include/poll_backoff.h"
+#include "../include/nod_hold.h"
 #include "../include/tone_seq.h"
 #include "../include/easy_keys.h"
 #include "../include/home_layout.h"
@@ -192,6 +193,12 @@ int main() {
       CHECK(!shouldSound(2, Priority::High) && shouldSound(2, Priority::Urgent));
       CHECK(forced(Priority::Urgent) && !forced(Priority::High));
       CHECK(moodFor(Priority::Low, true) == Mood::Celebrating && moodFor(Priority::Urgent, false) == Mood::NeedsAttention); }
+    { using namespace maz::nod;  // The Nod: hold-to-approve timing
+      CHECK(!holdDone(0) && !holdDone(HOLD_MS - 1) && holdDone(HOLD_MS) && holdDone(HOLD_MS + 5000));
+      CHECK(holdPercent(0) == 0 && holdPercent(HOLD_MS / 2) == 50 && holdPercent(HOLD_MS) == 100 && holdPercent(60000) == 100);
+      for (uint32_t ms = 0; ms < HOLD_MS + 50; ms += 7) CHECK(holdPercent(ms) <= holdPercent(ms + 7));  // monotonic
+      CHECK(HOLD_MS >= 500 && HOLD_MS <= 1200);  // deliberate, not tedious
+      CHECK(holdPercent(HOLD_MS - 1) == 99); }
     // tone sequencer: notes start on schedule, never early, never skipped, and nothing blocks
     { ToneSeq q; ToneStep s{};
       CHECK(!q.poll(0, s) && !q.playing(0));  // empty queue is silent

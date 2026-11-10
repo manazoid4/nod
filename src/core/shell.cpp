@@ -557,7 +557,7 @@ void loop() {
     top->update();
 
     static uint32_t lastPaint = 0;
-    const bool due = millis() - lastPaint > 250;
+    const bool due = millis() - lastPaint > (approvals::holding() ? 50u : 250u);
     if (!top->dirty() && !due) return;
     if (gScreenOff) return;
 

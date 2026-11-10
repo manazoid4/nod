@@ -127,6 +127,7 @@ BuddyPoll buddyPoll() {
         b.project = it["project"] | "";
         b.session = it["session_id"] | "";
         b.left = it["left"] | 0;
+        b.nod = it["nod"] | false;
         if (!b.id.empty()) out.items.push_back(std::move(b));
     }
     return out;
