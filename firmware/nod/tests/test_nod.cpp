@@ -5,7 +5,9 @@
 #include "../include/charge_monitor.h"
 #include "../include/poll_backoff.h"
 #include "../include/tone_seq.h"
+#include "../include/easy_keys.h"
 #include "../include/home_layout.h"
+#include "../include/phone_text.h"
 #include "../include/talk_home.h"
 #include "../include/nod_theme.h"
 #include "../include/safe_file.h"
@@ -218,6 +220,76 @@ int main() {
     CHECK(backoffMs(2500, 1, 15000) == 5000);
     CHECK(backoffMs(0xC0000000u, 255, 0xFFFFFFFFu) == 0xFFFFFFFFu);  // no overflow wrap-around
     for (uint8_t f = 0; f < 20; f++) CHECK(backoffMs(5000, f, 15000) <= backoffMs(5000, f + 1, 15000));
+
+    // ---- Easy Mode keys: only Y/ENTER approve; phone text never can ----
+    { using namespace maz::easy_keys;
+      CHECK(isApproveKey(KEY_Y) && isApproveKey(KEY_ENTER));
+      CHECK(!isApproveKey(KEY_N) && !isApproveKey(KEY_ESC) && !isApproveKey(KEY_SPACE));
+      CHECK(!isApproveKey(KEY_UP) && !isApproveKey(KEY_DOWN) && !isApproveKey(KEY_LEFT) && !isApproveKey(KEY_RIGHT));
+      CHECK(!isApproveKey(KEY_BACKSPACE) && !isApproveKey(0) && !isApproveKey(0xFF));
+      CHECK(isRejectKey(KEY_N) && isRejectKey(KEY_ESC) && !isRejectKey(KEY_Y) && !isRejectKey(KEY_ENTER));
+      CHECK(isEasyNavKey(KEY_UP) && isEasyNavKey(KEY_DOWN) && isEasyNavKey(KEY_ENTER) && isEasyNavKey(KEY_ESC));
+      CHECK(escGoesBack(false) && !escGoesBack(true));
+      CHECK(backspaceGoesBack(false) && !backspaceGoesBack(true));
+      CHECK(!phoneTextMayApprove()); }
+
+    // ---- Phone text: literal insert only; never keys, never approve ----
+    { using namespace maz::phone_text;
+      std::string dst, clean; size_t dropped = 0, cur = 0; Mode m = Mode::Insert;
+      CHECK(parseMode("insert", m) && m == Mode::Insert);
+      CHECK(parseMode("replace", m) && m == Mode::Replace);
+      CHECK(parseMode("send", m) && m == Mode::Send);
+      CHECK(!parseMode("approve", m) && !parseMode("", m) && !parseMode(nullptr, m));
+      // literal: approval words, "Y"/newlines/ESC stay plain text, never keys
+      dst = "Say "; cur = dst.size();
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "Y approve\nENTER\x1b", true) == Status::Inserted);
+      CHECK(dst == "Say Y approveENTER" && cur == dst.size());
+      CHECK(dst.find('\n') == std::string::npos && dst.find('\x1b') == std::string::npos);
+      // controls never become separators; non-ASCII bytes dropped
+      sanitize(std::string("a\tb\xC3\xA9" "c"), clean, dropped);
+      CHECK(clean == "abc" && dropped == 3);
+      // no field focused -> NoField and untouched
+      dst = "keep"; cur = 2;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "hello", false) == Status::NoField);
+      CHECK(dst == "keep" && cur == 2);
+      // too long -> rejected whole, never partially inserted
+      dst = "ab"; cur = 2;
+      CHECK(applyPhoneText(dst, 4, cur, Mode::Insert, "cdef", true) == Status::TooLong);
+      CHECK(dst == "ab" && cur == 2);
+      CHECK(applyPhoneText(dst, 4, cur, Mode::Replace, "abcdef", true) == Status::TooLong);
+      CHECK(dst == "ab" && cur == 2);
+      // insert at cursor; cursor follows the insert
+      dst = "ac"; cur = 1;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "b", true) == Status::Inserted);
+      CHECK(dst == "abc" && cur == 2);
+      // replace swaps the whole buffer and moves the cursor to the end
+      dst = "old"; cur = 1;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Replace, "new", true) == Status::Inserted);
+      CHECK(dst == "new" && cur == 3);
+      // send inserts only: no trailing ENTER/separator is ever synthesized
+      dst.clear(); cur = 0;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Send, "send it", true) == Status::Inserted);
+      CHECK(dst == "send it");
+      // cursor clamps to the end, never past it
+      dst = "ab"; cur = 99;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "c", true) == Status::Inserted);
+      CHECK(dst == "abc" && cur == 3);
+      // empty text never inserts (Core validates 1..500; firmware is strict too)
+      dst = "ab"; cur = 0;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "\n\x1b", true) == Status::Inserted);
+      CHECK(dst == "ab" && cur == 0);
+      // freshness: 2 min TTL, inclusive at the boundary; unsafe clock -> fresh
+      CHECK(fresh(1000, 1120, true) && !fresh(1000, 1121, true));
+      CHECK(fresh(1000, 999999, false) && !fresh(0, 2000, true));
+      // ids: bounded printable; dedupe ring never holds a repeat
+      CHECK(validId("a-1") && !validId("") && !validId(nullptr));
+      char longId[80]; memset(longId, 'x', sizeof(longId) - 1); longId[sizeof(longId) - 1] = 0;
+      CHECK(!validId(longId));
+      SeenIds seen;
+      CHECK(!seen.seen("id-1")); seen.add("id-1"); CHECK(seen.seen("id-1"));
+      seen.add("id-1"); CHECK(seen.count == 1);  // re-adding a repeat is a no-op
+      for (int i = 2; i <= 10; ++i) { char id[16]; snprintf(id, sizeof(id), "id-%d", i); seen.add(id); }
+      CHECK(seen.count == kMaxSeenIds && !seen.seen("id-1") && seen.seen("id-10")); }
 
     printf("%d checks, %d failed\n", checks, fails);
     return fails ? 1 : 0;

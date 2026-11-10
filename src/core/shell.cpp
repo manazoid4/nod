@@ -20,6 +20,7 @@
 #include "approvals.h"
 #include "field.h"
 #include "notify.h"
+#include "phone_input.h"
 #include "quiet.h"
 #include "settings.h"
 #include "launcher.h"
@@ -543,6 +544,7 @@ void loop() {
     field::update();
     if (approvals::update(gScreenOff)) wake();
     alerts::update();
+    phone::update();  // phone-keyboard acks piggyback the host worker
     notify::update();
     quiet::update();
     apps::updateProductServices();

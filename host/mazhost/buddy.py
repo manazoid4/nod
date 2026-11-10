@@ -10,7 +10,7 @@ from collections import deque
 from datetime import date
 from typing import Callable, Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
 MAX_ITEMS = 50
@@ -26,6 +26,10 @@ SNOOZE_DEFAULT_MIN = 10
 SNOOZE_MAX_MIN = 240
 MAX_DELAY_S = 30 * 86400
 EVENTS_BUDGET = 4800   # bytes of event JSON per poll; the device reads at most 6144
+MAX_TEXT_PENDING = 20  # phone-keyboard queue bound (docs/protocol/PHONE-KEYBOARD.md)
+TEXT_TTL_S = 120       # queued phone text older than 2 minutes is dropped
+TEXT_MODES = ("insert", "replace", "send")
+TEXT_ACK_STATUSES = ("inserted", "no_field", "too_long")
 AlertKind = Literal["reminder", "meeting", "deadline", "sla", "computer", "task_done", "approval", "info"]
 Priority = Literal["low", "normal", "high", "urgent"]
 AlertAction = Literal["ack", "snooze", "approve", "reject"]
@@ -95,6 +99,7 @@ class Buddy:
         self._events: deque[dict] = deque(maxlen=MAX_EVENTS)  # separate from _items on purpose
         self._event_id = 0
         self._alerts: dict[str, dict] = {}   # id -> alert record incl. outcome
+        self._texts: dict[str, dict] = {}    # client uuid -> phone-keyboard record incl. ack status
         self._halt_until_mono = 0.0
         self._halt_until_wall = 0.0
         # No persistent session-wide grants: every sensitive action needs a fresh decision.
@@ -236,6 +241,61 @@ class Buddy:
             self._fire_due_locked()
             return {"ok": True, "alerts": [{k: v for k, v in r.items() if k != "_exp"}
                                            for r in self._alerts.values()]}
+
+    # ---- phone keyboard (/buddy/text; see docs/protocol/PHONE-KEYBOARD.md) ----
+    def _prune_texts_locked(self) -> None:
+        now = time.time()
+        for cid in [k for k, r in self._texts.items() if now - r["_created"] > TEXT_TTL_S]:
+            del self._texts[cid]
+
+    def _text_view(self, rec: dict) -> dict:
+        return {"ok": True, "id": rec["id"], "text": rec["text"], "mode": rec["mode"],
+                "status": rec["status"], "client": rec["client"],
+                "created_at": datetime.fromtimestamp(rec["_created"], timezone.utc).isoformat()}
+
+    def post_text(self, client_id: str, text: str, mode: str, client: str = "") -> dict:
+        """Queue one phone-keyboard message for the device.
+
+        Dedupe: a repeated client id returns the original record and never
+        creates a second ring event. Untrusted text is stored verbatim; it
+        never touches the approval queue.
+        """
+        now = time.time()
+        with self._cv:
+            self._prune_texts_locked()
+            if client_id in self._texts:
+                return self._text_view(self._texts[client_id])
+            pending = sum(1 for r in self._texts.values() if r["status"] == "pending")
+            if pending >= MAX_TEXT_PENDING:
+                raise OverflowError("text_table_full")
+            rec = {"id": client_id, "text": text, "mode": mode, "status": "pending",
+                   "client": (client or "")[:64], "_created": now}
+            self._texts[client_id] = rec
+            self._event_id += 1
+            self._events.append({"id": self._event_id, "kind": "text_input",
+                                 "text": text, "source": rec["client"] or "phone",
+                                 "ts": now,
+                                 "text_input": {"id": client_id, "text": text, "mode": mode}})
+            return self._text_view(rec)
+
+    def get_text(self, client_id: str) -> dict:
+        with self._cv:
+            self._prune_texts_locked()
+            rec = self._texts.get(client_id)
+            if rec is None:
+                raise KeyError(client_id)
+            return self._text_view(rec)
+
+    def ack_text(self, client_id: str, status: str) -> dict:
+        """Record the device outcome. First ack wins; repeats return it."""
+        with self._cv:
+            self._prune_texts_locked()
+            rec = self._texts.get(client_id)
+            if rec is None:
+                raise KeyError(client_id)
+            if rec["status"] == "pending":
+                rec["status"] = status
+            return self._text_view(rec)
 
     def events(self, since: int = 0) -> dict:
         with self._cv:
@@ -419,5 +479,49 @@ def install_buddy_routes(api: FastAPI, buddy: Buddy | None = None) -> Buddy:
     @api.post("/buddy/halt")
     def buddy_halt(body: HaltBody):
         return buddy.set_halt(body.on, body.minutes)
+
+    # ---- phone keyboard (piblo-proto v1 additive; see docs/protocol/PHONE-KEYBOARD.md)
+    # Validation failures answer 400 here (not Pydantic's 422) by design.
+    @api.post("/buddy/text")
+    async def buddy_text(request: Request, x_piblo_client: str | None = Header(default=None, alias="X-Piblo-Client")):
+        try:
+            body = await request.json()
+        except Exception:
+            raise HTTPException(400, "invalid_json")
+        if not isinstance(body, dict):
+            raise HTTPException(400, "invalid_body")
+        client_id, text, mode = body.get("id"), body.get("text"), body.get("mode")
+        if not isinstance(client_id, str):
+            raise HTTPException(400, "invalid_id")
+        try:
+            uuid.UUID(client_id)
+        except ValueError:
+            raise HTTPException(400, "invalid_id")
+        if not isinstance(text, str) or not (1 <= len(text) <= 500) or mode not in TEXT_MODES:
+            raise HTTPException(400, "invalid_text")
+        try:
+            return buddy.post_text(client_id, text, mode, x_piblo_client or "")
+        except OverflowError as error:
+            raise HTTPException(429, str(error))
+
+    @api.get("/buddy/text/{id}")
+    def buddy_text_get(id: str):
+        try:
+            return buddy.get_text(id)
+        except KeyError:
+            raise HTTPException(404, "text_not_found")
+
+    @api.post("/buddy/text/{id}/ack")
+    async def buddy_text_ack(id: str, request: Request):
+        try:
+            body = await request.json()
+        except Exception:
+            raise HTTPException(400, "invalid_json")
+        if not isinstance(body, dict) or body.get("status") not in TEXT_ACK_STATUSES:
+            raise HTTPException(400, "invalid_status")
+        try:
+            return buddy.ack_text(id, body["status"])
+        except KeyError:
+            raise HTTPException(404, "text_not_found")
 
     return buddy
