@@ -58,6 +58,11 @@ int main() {
     // full detection with VBUS, plateau at 4.17V
     { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 4170, 0.0f, 5, 1);
       CHECK(m.state() == PowerState::Full); CHECK(m.percent() == 100); }
+    // load-recovery bump then a slow light-load decline must not stay "charging" (live bug, 10 Nov)
+    { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 3800, 8.0f, 4); CHECK(m.state() == PowerState::Charging);
+      feedRun(m, t, 3832, -0.5f, 5); CHECK(m.state() == PowerState::OnBattery); }
+    // a real charge keeps rising, so it stays Charging
+    { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 3700, 4.0f, 10); CHECK(m.state() == PowerState::Charging); }
     // VBUS removed => immediately OnBattery
     { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 3700, 6.0f, 5, 1); CHECK(m.state() == PowerState::Charging);
       t += 10000; m.feed(t, 3900, 0); CHECK(m.state() == PowerState::OnBattery); }
