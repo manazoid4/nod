@@ -30,7 +30,16 @@ constexpr int64_t kTtlSeconds  = 120;   // 2 minutes, then drop
 constexpr int kMaxSeenIds = 8;          // firmware-side dedupe ring
 
 enum class Mode : uint8_t { Insert, Replace, Send };
-enum class Status : uint8_t { Inserted, NoField, TooLong };
+enum class Status : uint8_t { Inserted, NoField, TooLong, Unsupported };
+
+// The device font is ASCII only. Any byte >= 0x80 (UTF-8 accents, emoji,
+// non-Latin scripts) rejects the whole message so the phone is told the
+// truth instead of seeing "inserted" for text with letters silently missing.
+inline bool hasNonAscii(const std::string& s) {
+    for (char c : s)
+        if (static_cast<uint8_t>(c) >= 0x80) return true;
+    return false;
+}
 
 inline bool parseMode(const char* s, Mode& out) {
     if (!s) return false;
@@ -58,12 +67,14 @@ inline void sanitize(const std::string& in, std::string& out, size_t& dropped) {
 }
 
 // Apply one phone message to `dst` at `cursor` (clamped to dst size).
-// Returns NoField when `focused` is false, TooLong when the whole message
-// does not fit, Inserted otherwise. On TooLong/NoField `dst` is untouched.
+// Returns NoField when `focused` is false, Unsupported when it holds any
+// non-ASCII byte, TooLong when the whole message does not fit, Inserted
+// otherwise. On anything but Inserted `dst` is untouched.
 // On Inserted, `cursor` moves to just after the inserted text.
 inline Status applyPhoneText(std::string& dst, size_t limit, size_t& cursor,
                              Mode mode, const std::string& phone, bool focused) {
     if (!focused) return Status::NoField;
+    if (hasNonAscii(phone)) return Status::Unsupported;
     std::string clean;
     size_t dropped = 0;
     sanitize(phone, clean, dropped);

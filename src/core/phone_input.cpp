@@ -78,6 +78,9 @@ void onTextInput(const host::AgentEvent& ev) {
     if (st == phone_text::Status::TooLong) {
         notify::post(Note::Warn, "Phone text", "too long for this field");
         enqueueAck(id, "too_long");
+    } else if (st == phone_text::Status::Unsupported) {
+        notify::post(Note::Warn, "Phone text", "letters Piblo can't show");
+        enqueueAck(id, "unsupported");
     } else {
         enqueueAck(id, "inserted");
     }
