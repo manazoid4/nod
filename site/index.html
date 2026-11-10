@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#fff4e0">
-  <meta name="description" content="Piblo is a pocket companion that helps you remember, focus and get things done. No mandatory subscription, open-source software. Designed in the UK. Heading to Kickstarter.">
+  <meta name="description" content="Meet Piblo Standard and Piblo Pro. Two pocket companions for reminders, focus and doing more with less screen time. In development, heading to Kickstarter.">
   <meta property="og:title" content="Piblo. Your pocket companion for getting things done.">
   <meta property="og:description" content="A small pocket companion for reminders, focus and getting things done. Heading to Kickstarter.">
   <meta property="og:type" content="website">
@@ -26,6 +26,7 @@
   <link rel="stylesheet" href="/tokens.css">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/clarity.css">
+  <link rel="stylesheet" href="/lineup.css">
   <script defer src="/script.js"></script>
   <script type="application/ld+json">
   {
@@ -52,6 +53,11 @@
 <header class="header">
   <div class="wrap header-inner">
     <a class="logo" href="/" aria-label="Piblo home"><img class="logo-img" src="/media/brand/piblo-logo.svg" alt="Piblo" width="133" height="44"></a>
+    <nav class="product-nav" aria-label="Site sections">
+      <a href="#models">The models</a>
+      <a href="#uses">What Piblo does</a>
+      <a href="#faq">Questions</a>
+    </nav>
     <a class="btn btn-sun btn-small" href="#waitlist">Join the launch list</a>
   </div>
 </header>
@@ -60,41 +66,69 @@
   <section class="hero wrap" id="top">
     <div class="hero-text">
       <p class="eyebrow">Heading to Kickstarter</p>
-      <h1>A pocket companion that helps you remember, focus and get things done.</h1>
-      <p class="lede">Piblo is a small screen with real keys. It reminds you of what matters, lets you answer yes, no or later with one press, and saves what you say. No apps, no feeds.</p>
+      <h1>Less screen.<br>More life.</h1>
+      <p class="lede">Meet Piblo Standard and Piblo Pro. Two ideas for a calmer way to handle reminders, notes and the things that matter — without another endless feed.</p>
       <div class="actions">
         <a class="btn btn-tomato btn-big" href="#waitlist" data-va="cta_click">Join the launch list</a>
-        <a class="btn btn-ghost" href="#how">How it works</a>
+        <a class="btn btn-ghost" href="#models">Explore both models</a>
       </div>
       <p class="fine">Free to join. One email when the Kickstarter opens, plus real progress updates.</p>
     </div>
     <!-- Swap this illustration for a real prototype photo as soon as one exists. -->
-    <figure class="hero-device">
-      <div class="device" aria-hidden="true">
-        <div class="device-body">
-          <div class="screen">
-            <div class="screen-top"><span>piblo</span><span class="battery"></span></div>
-            <svg class="screen-buddy" viewBox="0 0 100 100"><rect x="6" y="6" width="88" height="88" rx="24" fill="#ffc93c" stroke="#2a1a12" stroke-width="5"/><circle cx="34" cy="42" r="8" fill="#2a1a12"/><circle cx="66" cy="42" r="8" fill="#2a1a12"/><circle cx="37" cy="39" r="3" fill="#fff4e0"/><circle cx="69" cy="39" r="3" fill="#fff4e0"/><path d="M35 62 Q50 77 65 62" fill="none" stroke="#2a1a12" stroke-width="6" stroke-linecap="round"/><ellipse cx="20" cy="62" rx="7" ry="4.5" fill="#ee5a36"/><ellipse cx="80" cy="62" rx="7" ry="4.5" fill="#ee5a36"/></svg>
-            <p class="screen-say">Bins out tonight</p>
-            <div class="screen-chips"><span>A done</span><span>S later</span></div>
-          </div>
-          <div class="keys"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        </div>
-      </div>
-      <figcaption>Illustration of the reminder screen we are building now. Photos of the working prototype are next.</figcaption>
+    <figure class="hero-lineup">
+      <img src="/media/piblo-lineup-concept.svg" width="1280" height="700" alt="Concept illustrations: warm yellow Piblo Standard with keyboard, and larger dark Piblo Pro with touchscreen and keyboard.">
+      <figcaption>Design concepts, not photographs or confirmed production hardware. Both editions are in development.</figcaption>
     </figure>
+  </section>
+
+<section class="band-paper model-section" id="models" aria-labelledby="models-heading">
+    <div class="wrap">
+      <div class="model-lead">
+        <div><p class="eyebrow">One idea. Two ways to use it.</p><h2 id="models-heading">Meet the Piblo family.</h2></div>
+        <p>Keep it simple with Standard, or help shape a more capable Pro. We're testing the hardware now — you get the real progress, not made-up launch promises.</p>
+      </div>
+      <div class="model-grid">
+        <article class="model-card model-card-standard" aria-labelledby="standard-title">
+          <div class="model-top"><span class="model-kicker">Current prototype direction</span><span class="model-number">01 / STANDARD</span></div>
+          <div class="model-art" aria-hidden="true"><span class="model-halo"></span><span class="mini-unit"><span class="mini-screen"><span class="mini-face">•ᴗ•</span></span><span class="mini-keys"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></span></div>
+          <h3 id="standard-title">Piblo Standard</h3>
+          <p class="model-summary">The friendly, affordable pocket companion. The essentials, made easy.</p>
+          <ul class="model-list">
+            <li>Small screen and real keyboard</li>
+            <li>Reminders, notes and one-press answers in development</li>
+            <li>Companion-first setup with Piblo Core on Windows</li>
+          </ul>
+          <a class="btn btn-tomato" href="#waitlist" data-va="cta_click">Follow Standard</a>
+          <p class="model-smallprint">Prototype platform: M5Stack Cardputer ADV (ESP32-S3). Final enclosure, features and price are not confirmed.</p>
+        </article>
+        <article class="model-card model-card-pro" aria-labelledby="pro-title">
+          <div class="model-top"><span class="model-kicker">Exploratory hardware design</span><span class="model-number">02 / PRO</span></div>
+          <div class="model-art" aria-hidden="true"><span class="model-halo"></span><span class="mini-unit mini-unit-pro"><span class="mini-screen"><span class="mini-widget"></span><span class="mini-widget"></span><span class="mini-widget"></span></span><span class="mini-keys"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></span></div>
+          <h3 id="pro-title">Piblo Pro</h3>
+          <p class="model-summary">A larger display, more room to grow, and the goal of doing more without a PC.</p>
+          <ul class="model-list">
+            <li>Touchscreen and improved sound are design goals</li>
+            <li>Linux-capable Rockchip + low-power ESP32 under evaluation</li>
+            <li>Standalone tools and local processing are research goals</li>
+          </ul>
+          <a class="model-link" href="#waitlist" data-va="cta_click">Follow Pro</a>
+          <p class="model-smallprint">Concept only. Processor selection, performance, battery life, functionality and price require testing and supplier quotes.</p>
+        </article>
+      </div>
+      <p class="model-disclaimer">Both illustrations are concepts. No preorders or fixed prices: join the free list for prototype updates, real demonstrations and Kickstarter information when available.</p>
+    </div>
   </section>
 
   <section class="band-paper steps-section" id="how">
     <div class="wrap">
-      <h2>How Piblo works</h2>
+      <h2>How the current prototype works</h2>
       <ol class="steps">
         <li><span class="step-n" aria-hidden="true">1</span><h3>Connect</h3><p>Join your Wi-Fi and pair Piblo with the free Piblo Core app on your Windows PC.</p></li>
         <li><span class="step-n" aria-hidden="true">2</span><h3>It tells you</h3><p>Reminders, meetings and alerts you chose arrive with a chime, one at a time.</p></li>
         <li><span class="step-n" aria-hidden="true">3</span><h3>You answer</h3><p>Press a key for done, later, yes or no. Or hold a key and say a note.</p></li>
       </ol>
       <div class="needs">
-        <h3>What you need</h3>
+        <h3>For the current Standard prototype</h3>
         <ul>
           <li><strong>A Windows PC on the same Wi-Fi</strong> running Piblo Core. It stores your notes and sends the alerts. Mac and standalone use are goals, not ready yet.</li>
           <li><strong>Internet only for some things.</strong> Spoken answers use a speech or AI service you pick. Some are free, some charge, and you can run one on your own PC instead.</li>
@@ -140,22 +174,7 @@
     </ul>
   </section>
 
-  <section class="band-paper editions" id="editions">
-    <div class="wrap">
-      <h2>Two editions are planned</h2>
-      <div class="edition-grid">
-        <article class="edition">
-          <h3>Piblo Original</h3>
-          <p>The approachable one. Everything you need to get started, at the friendliest price we can manage.</p>
-        </article>
-        <article class="edition edition-founder">
-          <h3>Piblo Founder's Edition</h3>
-          <p>A small, numbered run in machined aluminium with a refined finish, for the people who back us first.</p>
-        </article>
-      </div>
-      <p class="fine">Prices go to the launch list first, once supplier quotes are in. Accessories such as a clip-on touchscreen are only being explored.</p>
-    </div>
-  </section>
+  
 
   <section class="films-section wrap" id="films">
     <figure class="film-card film-solo">
@@ -169,8 +188,9 @@
   <section class="faq-section wrap" id="faq">
     <h2>Straight answers</h2>
     <div class="faq">
+      <details><summary>What is the difference between Standard and Pro?</summary><p>Standard is the smaller, affordable direction based on the Cardputer ADV prototype and Piblo Core for Windows. Pro is an unbuilt hardware concept with a larger touchscreen and more independent operation as goals. Neither is a finished retail product, and the specifications may change after testing.</p></details>
       <details><summary>What works today?</summary><p>On our prototype (built on an off-the-shelf pocket computer) we have tested pairing with a Windows PC over Wi-Fi, showing its screen on the PC, and saving a spoken note to the PC. Voice questions work but answers are still slow. Reminders, alerts, the answer keys and Buddy are written and being tested now.</p></details>
-      <details><summary>Does it need a computer?</summary><p>Yes, for now. Piblo pairs with the free Piblo Core app on a Windows PC on the same Wi-Fi, which stores your notes and sends alerts. Mac support and a standalone mode are goals, not ready yet.</p></details>
+      <details><summary>Does it need a computer?</summary><p>The current Standard prototype does, for now. Piblo pairs with the free Piblo Core app on a Windows PC on the same Wi-Fi, which stores your notes and sends alerts. Mac support and a standalone mode are goals, not ready yet.</p></details>
       <details><summary>Does it work offline?</summary><p>It needs your home or office Wi-Fi to reach your PC. Reminders and notes are designed to stay on your own PC, without the internet. Spoken answers need a speech or AI service, which is usually online unless you run one on your PC.</p></details>
       <details><summary>How is it different from my phone?</summary><p>It does a few things and nothing else. No apps, no feeds, no notifications you didn't ask for. It shows one thing at a time and you answer with a real key, so you can deal with it and get back to your day.</p></details>
       <details><summary>How much will it cost?</summary><p>Prices aren't set yet. We'll share them with the launch list first, once supplier quotes are in. Shipping will be extra.</p></details>
