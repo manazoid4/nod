@@ -110,6 +110,7 @@ constexpr HubItem AGENT_ITEMS[] = {
 };
 
 constexpr HubItem CONTROL_ITEMS[] = {
+    {"CONNECT TO COMPUTER", "code + Allow", "connect_pc"},
     {"PAIRING + PHONE", "token / approvals", "pairing"},
     {"HUB STATUS", "CPU / GPU / AI", "laptop"},
     {"PROJECTS + BUILDS", "git / tests", "core"},

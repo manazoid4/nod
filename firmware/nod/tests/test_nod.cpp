@@ -11,6 +11,7 @@
 #include "../include/talk_home.h"
 #include "../include/nod_theme.h"
 #include "../include/safe_file.h"
+#include "../include/pair_connect.h"
 #include <map>
 #include <string>
 using namespace nod;
@@ -295,6 +296,38 @@ int main() {
       seen.add("id-1"); CHECK(seen.count == 1);  // re-adding a repeat is a no-op
       for (int i = 2; i <= 10; ++i) { char id[16]; snprintf(id, sizeof(id), "id-%d", i); seen.add(id); }
       CHECK(seen.count == kMaxSeenIds && !seen.seen("id-1") && seen.seen("id-10")); }
+
+    // pair_connect.h: discovery reply, code format, device id, poll states
+    { using namespace nod::pair;
+      Discovery d;
+      CHECK(parseDiscovery("{\"piblo\":1,\"port\":8787,\"name\":\"MAZPC\",\"version\":\"1.2\"}", d));
+      CHECK(d.port == 8787 && d.name == "MAZPC");
+      CHECK(parseDiscovery("{ \"piblo\" : 1 , \"port\" : 9000 }", d) && d.port == 9000 && d.name.empty());
+      CHECK(!parseDiscovery("{\"piblo\":2,\"port\":8787}", d));
+      CHECK(!parseDiscovery("{\"port\":8787}", d));
+      CHECK(!parseDiscovery("{\"piblo\":1,\"port\":0}", d));
+      CHECK(!parseDiscovery("{\"piblo\":1,\"port\":70000}", d));
+      CHECK(!parseDiscovery("not json", d));
+      CHECK(printableName(std::string("ab\x01\x7f" "c"), 32) == "abc");
+      CHECK(printableName(std::string(50, 'x'), 32).size() == 32);
+      CHECK(formatCode("482913") == "482 913");
+      CHECK(formatCode("48291").empty() && formatCode("4829133").empty() && formatCode("48a913").empty());
+      const uint8_t mac[6] = {0x12, 0x34, 0x56, 0xAB, 0xCD, 0x0F};
+      CHECK(deviceIdFromMac(mac) == "piblo-abcd0f");
+      CHECK(requestBody("piblo-abcd0f", "Piblo") == "{\"device_id\":\"piblo-abcd0f\",\"name\":\"Piblo\"}");
+      std::string tok;
+      CHECK(jsonString("{\"status\": \"approved\", \"token\": \"t\\\"k\"}", "token", tok) && tok == "t\"k");
+      CHECK(nextPhase(Phase::Waiting, 200, "pending") == Phase::Waiting);
+      CHECK(nextPhase(Phase::Waiting, 200, "approved") == Phase::Approved);
+      CHECK(nextPhase(Phase::Waiting, 200, "denied") == Phase::Denied);
+      CHECK(nextPhase(Phase::Waiting, 200, "expired") == Phase::TimedOut);
+      CHECK(nextPhase(Phase::Waiting, 404, "") == Phase::TimedOut);
+      CHECK(nextPhase(Phase::Waiting, -1, "") == Phase::Waiting);
+      CHECK(nextPhase(Phase::Waiting, 500, "") == Phase::Waiting);
+      CHECK(nextPhase(Phase::Denied, 200, "approved") == Phase::Denied);
+      CHECK(afterElapsed(Phase::Waiting, 119999) == Phase::Waiting);
+      CHECK(afterElapsed(Phase::Waiting, 120000) == Phase::TimedOut);
+      CHECK(afterElapsed(Phase::Approved, 999999) == Phase::Approved); }
 
     printf("%d checks, %d failed\n", checks, fails);
     return fails ? 1 : 0;

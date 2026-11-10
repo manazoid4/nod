@@ -317,7 +317,7 @@ String statusJson(bool unlocked) {
 bool allowedApp(const String& id) {
     return id == "talk" || id == "braindump" || id == "agents" || id == "nudge" ||
            id == "plan" || id == "crew" || id == "retro" || id == "prompts" ||
-           id == "desk" || id == "recall" || id == "flow" || id == "pairing" ||
+           id == "desk" || id == "recall" || id == "flow" || id == "pairing" || id == "connect_pc" ||
            id == "laptop" || id == "beam" || id == "wifi" || id == "network" ||
            id == "tools" || id == "settings" || id == "core" || id == "control";
 }
@@ -660,8 +660,9 @@ void pumpTx() {
             const size_t count = remainingPixels < maxPixels ? remainingPixels : maxPixels;
             for (size_t i = 0; i < count; ++i) {
                 const uint16_t v = pixels[pixelsAt + i];
-                gIoScratch[i * 2] = static_cast<uint8_t>(v & 0xff);
-                gIoScratch[i * 2 + 1] = static_cast<uint8_t>(v >> 8);
+                // M5Canvas stores RGB565 big-endian; the wire format is RGB565LE, so swap.
+                gIoScratch[i * 2] = static_cast<uint8_t>(v >> 8);
+                gIoScratch[i * 2 + 1] = static_cast<uint8_t>(v & 0xff);
             }
             gScreenChunkAt = 0; gScreenChunkLen = count * 2;
         }
