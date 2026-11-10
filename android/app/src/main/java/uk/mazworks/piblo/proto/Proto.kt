@@ -9,6 +9,7 @@ const val TITLE_MAX = 60      // docs/ALERTS.md
 const val BODY_MAX = 200      // docs/ALERTS.md
 const val SOURCE_MAX = 40     // AlertIn.source
 const val TEXT_MAX = 500      // phone keyboard text (easy-mode-task.md, POST /buddy/text)
+const val KEY_MAX = 400       // cardputer key names (POST /core/cardputer/key)
 const val KIND_FIND_PHONE = "find_phone"
 
 /** POST /buddy/text `mode`: what the device does with the text in the focused field. */
@@ -104,6 +105,9 @@ object Proto {
         JSONObject().put("id", id).put("text", truncate(text, TEXT_MAX)).put("mode", mode).toString()
 
     fun parseTextId(json: String): String = guard { JSONObject(json).getString("id") }
+
+    /** POST /core/cardputer/key body. Key names the device presses, optionally repeated ("down*2"). */
+    fun keysJson(keys: String): String = JSONObject().put("keys", truncate(keys, KEY_MAX)).toString()
 
     /** GET /buddy/text/{id} status: pending / inserted / no_field / too_long (device acks). */
     fun parseTextStatus(json: String): String = guard { JSONObject(json).optString("status", "pending") }
