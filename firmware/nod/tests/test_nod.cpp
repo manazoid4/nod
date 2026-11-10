@@ -3,6 +3,8 @@
 #include <cmath>
 #include "../include/alert_policy.h"
 #include "../include/charge_monitor.h"
+#include "../include/poll_backoff.h"
+#include "../include/tone_seq.h"
 #include "../include/home_layout.h"
 #include "../include/talk_home.h"
 #include "../include/nod_theme.h"
@@ -182,6 +184,41 @@ int main() {
       CHECK(!shouldSound(2, Priority::High) && shouldSound(2, Priority::Urgent));
       CHECK(forced(Priority::Urgent) && !forced(Priority::High));
       CHECK(moodFor(Priority::Low, true) == Mood::Celebrating && moodFor(Priority::Urgent, false) == Mood::NeedsAttention); }
+    // tone sequencer: notes start on schedule, never early, never skipped, and nothing blocks
+    { ToneSeq q; ToneStep s{};
+      CHECK(!q.poll(0, s) && !q.playing(0));  // empty queue is silent
+      CHECK(q.push(880, 70)); CHECK(q.push(1175, 70)); CHECK(q.push(1480, 90, true, 150));
+      CHECK(q.playing(0));
+      CHECK(q.poll(1000, s) && s.hz == 880 && s.ms == 70 && !s.force);
+      CHECK(!q.poll(1069, s));                                   // first note still owns the speaker
+      CHECK(q.poll(1070, s) && s.hz == 1175);
+      CHECK(!q.poll(1139, s) && q.playing(1139));
+      CHECK(q.poll(1140, s) && s.hz == 1480 && s.force && s.slot == 150 && s.ms == 90);  // gap after the note
+      CHECK(!q.poll(1289, s) && q.playing(1289));
+      CHECK(!q.poll(1290, s) && !q.playing(1290));               // drained: silent again
+      // clock wrap: the schedule survives millis() rolling over
+      CHECK(q.push(500, 20)); CHECK(q.push(600, 20));
+      CHECK(q.poll(0xFFFFFFF0u, s) && s.hz == 500);
+      CHECK(!q.poll(0xFFFFFFFFu, s));
+      CHECK(q.poll(4u, s) && s.hz == 600);                       // 0xFFFFFFF0 + 20 wraps to 4
+      // overflow drops the extra notes instead of corrupting the queue; clear() cancels what is queued
+      q.clear();
+      for (int i = 0; i < ToneSeq::CAP; i++) CHECK(q.push(300 + i, 10));
+      CHECK(!q.push(999, 10));
+      CHECK(q.poll(5000, s) && s.hz == 300);
+      q.clear(); CHECK(!q.poll(9000, s) && !q.playing(9000));
+      // a replacement sequence starts at once even if the previous note was still sounding
+      CHECK(q.push(700, 50)); CHECK(q.poll(9001, s) && s.hz == 700);
+      q.clear(); CHECK(q.push(800, 50)); CHECK(q.poll(9002, s) && s.hz == 800); }
+
+    // poll back-off: doubles per failure, capped, never faster than the base cadence, resets with fails=0
+    CHECK(backoffMs(5000, 0, 15000) == 5000); CHECK(backoffMs(5000, 1, 15000) == 10000);
+    CHECK(backoffMs(5000, 2, 15000) == 15000); CHECK(backoffMs(5000, 200, 15000) == 15000);
+    CHECK(backoffMs(45000, 3, 30000) == 45000);  // field-mode cadence is already slower than the cap
+    CHECK(backoffMs(2500, 1, 15000) == 5000);
+    CHECK(backoffMs(0xC0000000u, 255, 0xFFFFFFFFu) == 0xFFFFFFFFu);  // no overflow wrap-around
+    for (uint8_t f = 0; f < 20; f++) CHECK(backoffMs(5000, f, 15000) <= backoffMs(5000, f + 1, 15000));
+
     printf("%d checks, %d failed\n", checks, fails);
     return fails ? 1 : 0;
 }
