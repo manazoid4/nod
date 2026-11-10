@@ -117,6 +117,9 @@ class ProtoTest {
         assertEquals("inserted", Proto.parseTextStatus("""{"id":"x","status":"inserted"}"""))
         assertEquals("pending", Proto.parseTextStatus("""{"id":"x"}"""))  // no status yet = still pending
         assertEquals("e5c1", Proto.parseTextId("""{"id":"e5c1"}"""))
+        // Core's answer for emoji / accents / other scripts, and the device ack for the same
+        assertEquals("unsupported_characters", Proto.parseError("""{"detail":"unsupported_characters"}"""))
+        assertEquals("unsupported", Proto.parseTextStatus("""{"id":"x","status":"unsupported"}"""))
     }
 
     @Test fun normalizeBase() {
