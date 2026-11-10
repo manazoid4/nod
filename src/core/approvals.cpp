@@ -176,7 +176,7 @@ bool update(bool screenOff) {
         const bool hot = gPhase == Phase::Showing || gPhase == Phase::Result;
         // Core unreachable (laptop asleep): each failed poll doubles the wait, capped at 15 s so a
         // returning Core is still seen well inside the 60 s approval window.
-        gNextPoll = now + nod::backoffMs(hot ? 2500u : screenOff ? 12000u : 5000u, gFails, 15000u);
+        gNextPoll = now + ::nod::backoffMs(hot ? 2500u : screenOff ? 12000u : 5000u, gFails, 15000u);
         host_worker::submitBuddyPoll();
     }
     return arrived;
