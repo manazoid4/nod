@@ -12,11 +12,7 @@ from collections import deque
 from datetime import date
 from typing import Callable, Literal
 
-<<<<<<< HEAD
 from fastapi import FastAPI, Header, HTTPException, Request
-=======
-from fastapi import FastAPI, HTTPException, Request
->>>>>>> origin/feat/mcp-companion
 from pydantic import BaseModel, Field
 
 from .buddy_store import BuddyStore
