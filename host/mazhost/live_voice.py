@@ -20,6 +20,7 @@ from starlette.routing import WebSocketRoute
 from websockets.asyncio.client import connect
 
 from .config import Settings
+from .live_brain import LiveBrain, is_noise, split_sentences, first_clause
 
 log = logging.getLogger("mazhost.live")
 
@@ -33,6 +34,7 @@ PREROLL_MS = 300
 FIRST_AUDIO_LIMIT_S = 4.0
 INSTRUCTIONS = ("You are Piblo, a friendly voice assistant on a tiny pocket device. Keep replies short "
                 "and spoken. Respond with interleaved text and audio.")
+TTS_INSTRUCTIONS = "Perform TTS in English using a female voice."
 
 
 def boost(pcm: bytes, gain: float) -> bytes:
@@ -157,6 +159,12 @@ class LiveBridge:
         self._guard: asyncio.TimerHandle | None = None
         self._need_reset = False
         self._t: dict = {}
+        # cloud brain: LFM3 only hears (ASR over HTTP) and speaks (TTS on the realtime socket)
+        self.cloud = cfg.live_brain == "cloud"
+        self.brain = LiveBrain(cfg) if self.cloud else None
+        self._turn: list[bytes] = []
+        self._cloud: asyncio.Task | None = None
+        self._tts_done = asyncio.Event()
 
     # ---- device side -----------------------------------------------------
     async def run(self) -> None:
@@ -203,14 +211,16 @@ class LiveBridge:
         return kind == "bye"
 
     async def _mic(self, pcm: bytes) -> None:
-        if self.state != "listening":
-            return  # half-duplex: the codec is playing, mic is not ours
+        if self.state != "listening" or self._cloud:
+            return  # half-duplex: the codec is playing (or a cloud turn is in flight), mic is not ours
         if time.monotonic() < self._mute_until:
             return  # tail of our own reply / codec switch noise: never a user turn
         if self.gain != 1.0:
             pcm = boost(pcm, self.gain)
         blocks, ended = self.vad.feed(pcm)
-        if blocks:
+        if blocks and self.cloud:
+            self._turn.extend(blocks)  # buffered on Core; transcribed once the turn ends
+        elif blocks:
             await self._up_send({"type": "input_audio_buffer.append",
                                  "audio": base64.b64encode(b"".join(blocks)).decode()})
         if ended:
@@ -224,6 +234,10 @@ class LiveBridge:
         self._rs = Resampler24to16()
         self._q = asyncio.Queue()
         self._played.clear()
+        if self.cloud:
+            pcm, self._turn = b"".join(self._turn), []
+            self._cloud = asyncio.create_task(self._cloud_turn(pcm))
+            return
         await self._set_state("thinking")
         await self._up_send({"type": "response.create"})
         self._guard = asyncio.get_running_loop().call_later(FIRST_AUDIO_LIMIT_S, self._slow)
@@ -248,6 +262,80 @@ class LiveBridge:
         if self._player and self._player is not asyncio.current_task():
             self._player.cancel()
         self._player = None
+        if self._cloud and self._cloud is not asyncio.current_task():
+            self._cloud.cancel()
+            self._cloud = None
+        self._turn = []
+
+    # ---- cloud brain turn ----------------------------------------------------
+    async def _cloud_turn(self, pcm: bytes) -> None:
+        """ASR -> (drop noise | voice command | cloud brain) -> sentence-by-sentence LFM3 TTS."""
+        t, sentences = self._t, asyncio.Queue()
+        self.brain.meta = {}
+        producer = None
+        try:
+            t0 = time.monotonic()
+            text = await self.brain.transcribe(pcm)
+            t["asr_ms"] = round((time.monotonic() - t0) * 1000)
+            if is_noise(text):
+                log.info("live: dropped noise turn %r", text)
+                return  # still "listening": the device never saw a state change
+            await self._send({"type": "text", "role": "user", "text": text})
+            await self._set_state("thinking")
+            self.brain.on_slow = lambda: sentences.put_nowait("One sec.")
+            reply = await self.brain.command(text)
+            if reply:
+                sentences.put_nowait(reply)
+                sentences.put_nowait(None)
+            else:
+                producer = asyncio.create_task(self._think(text, sentences))
+            while (sentence := await sentences.get()) is not None:
+                await self._tts(sentence)
+            self._q.put_nowait(None)
+            if "first" not in t:  # nothing was spoken
+                self._end_turn_tasks()
+                await self._set_state("listening")
+        except asyncio.CancelledError:
+            raise
+        except Exception as error:
+            log.warning("live: cloud turn failed: %s", error)
+            await self._send({"type": "error", "message": "Piblo's brain hit a snag"})
+            if not self._player:
+                await self._set_state("listening")
+        finally:
+            if producer:
+                producer.cancel()
+            if self._cloud is asyncio.current_task():
+                self._cloud = None
+
+    async def _think(self, text: str, sentences: asyncio.Queue) -> None:
+        buf, said = "", False
+        try:
+            async for piece in self.brain.stream(text):
+                buf += piece
+                done, buf = split_sentences(buf)
+                if not done and not said:
+                    done, buf = first_clause(buf)  # start speaking at the first comma: ~0.4 s sooner
+                said = said or bool(done)
+                for s in done:
+                    await self._send({"type": "text", "role": "assistant", "text": s + " "})
+                    sentences.put_nowait(s)
+            for s in split_sentences(buf, final=True)[0]:
+                await self._send({"type": "text", "role": "assistant", "text": s})
+                sentences.put_nowait(s)
+        finally:
+            sentences.put_nowait(None)
+
+    async def _tts(self, sentence: str) -> None:
+        self._tts_done.clear()
+        await self._up_send({"type": "conversation.item.create", "item": {
+            "type": "message", "role": "user", "content": [{"type": "input_text", "text": sentence}]}})
+        await self._up_send({"type": "response.create"})
+        try:
+            await asyncio.wait_for(self._tts_done.wait(), 20)
+        except asyncio.TimeoutError:
+            log.warning("live: TTS timed out")
+            self._need_reset = True
 
     async def _set_state(self, state: str) -> None:
         if state == "listening" and self.state != "listening":
@@ -267,7 +355,8 @@ class LiveBridge:
         self.up = await connect(self.url, max_size=None, open_timeout=5)
         json.loads(await self.up.recv())  # session.created
         await self.up.send(json.dumps({"type": "session.update", "session": {
-            "type": "realtime", "instructions": INSTRUCTIONS, "output_modalities": ["text", "audio"]}}))
+            "type": "realtime", "instructions": TTS_INSTRUCTIONS if self.cloud else INSTRUCTIONS,
+            "output_modalities": ["audio"] if self.cloud else ["text", "audio"]}}))
         json.loads(await self.up.recv())  # session.updated
         self._need_reset = False
         self._reader = asyncio.create_task(self._read_up())
@@ -301,7 +390,7 @@ class LiveBridge:
                 await self._interrupt()
         elif self.state == "listening":
             return  # stale events from a cancelled response
-        elif kind == "response.output_text.delta":
+        elif kind == "response.output_text.delta" and not self.cloud:
             await self._send({"type": "text", "role": "assistant", "text": ev.get("delta", "")})
         elif kind == "response.output_audio.delta":
             pcm = self._rs.feed(base64.b64decode(ev.get("delta", "")))
@@ -312,6 +401,8 @@ class LiveBridge:
                 self._player = asyncio.create_task(self._play())
             if pcm:
                 self._q.put_nowait(pcm)
+        elif kind == "response.done" and self.cloud:
+            self._tts_done.set()  # one sentence spoken; _cloud_turn closes the audio queue when all are
         elif kind == "response.done":
             self._t["done"] = time.monotonic()
             self._q.put_nowait(None)
@@ -352,6 +443,8 @@ class LiveBridge:
         row = {"live": True, "speech_ms": t["speech_ms"], "end_detect_ms": t["end_detect_ms"],
                "first_audio_ms": round((t["first"] - t["create"]) * 1000),
                "audio_s": round(audio_s, 2), "rtf": round(gen_s / audio_s, 2) if audio_s else None}
+        if self.cloud:  # rtf is per-sentence TTS here, meaningless; log the brain path instead
+            row.pop("rtf"), row.update(asr_ms=t.get("asr_ms"), **(self.brain.meta or {}))
         log.info("live_turn %s", row)
         if self.timings is not None:
             self.timings.add(row)

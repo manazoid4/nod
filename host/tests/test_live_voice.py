@@ -62,9 +62,10 @@ class FakeRealtime:
         assert name in self.events, self.events
 
 
-def make_client(fake: FakeRealtime, gain: float = 1.0) -> TestClient:
+def make_client(fake: FakeRealtime, gain: float = 1.0, **extra) -> TestClient:
+    extra.setdefault("live_brain", "lfm")  # these tests cover direct speech-to-speech; cloud is in test_live_brain.py
     cfg = Settings(token=TOKEN, llamacpp_url=f"http://127.0.0.1:{fake.port}", live_end_silence_ms=200, live_mic_gain=gain, live_listen_holdoff_ms=0,
-                   autoupdate=False, remote_detect=False)
+                   autoupdate=False, remote_detect=False, **extra)
     return TestClient(create_app(cfg))
 
 
