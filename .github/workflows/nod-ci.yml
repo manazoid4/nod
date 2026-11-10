@@ -43,6 +43,12 @@ jobs:
       - name: Core tests
         run: python -m pytest host/tests -q -n auto
 
+      - name: MCP server tests (TypeScript)
+        run: |
+          cd host/mcp
+          npm ci
+          npm test
+
       - name: Firmware logic tests (state machine, layout, theme)
         run: make -C firmware/nod test
 
