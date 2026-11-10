@@ -66,18 +66,18 @@
   --text-3: #6b5547;
 
   /* primary: tomato fill takes ink text per brand contrast rule */
-        --accent: var(--tomato);
-        --accent-hover: #e85a30;
-        --accent-soft: #f8e0d0;
-        --on-accent: var(--ink);
+            --accent: var(--tomato);
+            --accent-hover: #e85a30;
+            --accent-soft: #f0d0b8;
+            --on-accent: var(--ink);
 
   /* status: mint = connected/success, sun = highlight only */
-      --ok: var(--mint-deep);
-      --ok-soft: var(--mint);
-      --warn: var(--ink);
-      --warn-soft: #a06814;
-      --danger: var(--tomato-deep);
-      --danger-soft: #ffd1c4;
+          --ok: var(--mint-deep);
+          --ok-soft: var(--mint-soft);
+          --warn: var(--sun);
+          --warn-soft: #be8e18;
+          --danger: var(--tomato-deep);
+          --danger-soft: #ffd1c4;
 
   /* tactile pressed-button feel: solid ink offset, not a blur */
   --btn-stroke: 2px solid var(--ink);
@@ -120,11 +120,11 @@
           --on-accent: var(--ink);
 
           --ok: var(--mint);
-          --ok-soft: var(--mint);
-          --warn: var(--ink);
-          --warn-soft: #905800;
-          --danger: var(--tomato);
-          --danger-soft: #ffd1c4;
+                    --ok-soft: var(--mint);
+                    --warn: var(--ink);
+                    --warn-soft: #a87018;
+                    --danger: var(--tomato);
+                    --danger-soft: #ffd1c4;
 
           /* tactile: cream stroke/shadow on dark */
           --btn-stroke: 2px solid #fff4e0;
@@ -158,11 +158,11 @@
           --accent-soft: #ffd9c9;
           --on-accent: var(--ink);
           --ok: var(--mint);
-          --ok-soft: var(--mint);
-          --warn: var(--ink);
-          --warn-soft: #a06814;
-          --danger: var(--tomato);
-          --danger-soft: #ffd1c4;
+                    --ok-soft: var(--mint);
+                    --warn: var(--ink);
+                    --warn-soft: #a87018;
+                    --danger: var(--tomato);
+                    --danger-soft: #ffd1c4;
           --btn-stroke: 2px solid #fff4e0;
           --btn-shadow: 0 3px 0 #fff4e0;
           --btn-shadow-pressed: 0 0 0 #fff4e0;
