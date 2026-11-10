@@ -2,6 +2,8 @@
 
 #include <time.h>
 
+#include <nod_theme.h>
+
 #include "../core/settings.h"
 #include "../core/quiet.h"
 #include "../core/sys.h"
@@ -191,6 +193,25 @@ void listRow(M5Canvas& g, int visibleIndex, bool selected, const char* label,
         g.drawString(right, SCREEN_W - 12, y + 5);
         g.setTextDatum(top_left);
     }
+}
+
+void pillRow(M5Canvas& g, int y, int h, bool selected, const char* label, const char* right) {
+    namespace nt = nod::theme;  // same fill/outline as the Talk circle buttons
+    const int x = 8, w = SCREEN_W - x - 12;
+    g.fillRoundRect(x, y, w, h, 6, nt::BUTTON);
+    g.drawRoundRect(x, y, w, h, 6, selected ? nt::TEXT : nt::DIM);
+    if (selected) g.drawRoundRect(x + 1, y + 1, w - 2, h - 2, 5, nt::TEXT);
+    g.setFont(&fonts::Font2);
+    g.setTextDatum(middle_left);
+    g.setTextColor(nt::TEXT, nt::BUTTON);
+    g.drawString(label, x + 10, y + h / 2);
+    if (right && *right) {
+        g.setFont(&fonts::Font0);
+        g.setTextDatum(middle_right);
+        g.setTextColor(nt::DIM, nt::BUTTON);
+        g.drawString(right, x + w - 8, y + h / 2);
+    }
+    g.setTextDatum(top_left);
 }
 
 void scrollBar(M5Canvas& g, int total, int firstVisible, int visible) {
