@@ -39,6 +39,7 @@ uint8_t                  gRetries = 0, gFails = 0;
 bool                     gSubmitted = false;
 // The Nod hold-to-approve: gHoldKey is the Y/ENTER code being held (0 = none).
 uint8_t                  gHoldKey = 0;
+std::string              gHoldId;  // the request id the hold started on, so a front-swap can't inherit it
 uint32_t                 gHoldStart = 0, gHintUntil = 0;
 
 bool done(const std::string& id) { return std::find(gDone.begin(), gDone.end(), id) != gDone.end(); }
@@ -140,7 +141,7 @@ bool update(bool screenOff) {
     // 2a. Nod hold: approve once Y/ENTER has stayed down long enough; drop the hold if the
     // key is gone (lost release event) or the request is no longer on screen.
     if (gHoldKey) {
-        if (gPhase != Phase::Showing || gQueue.empty() || !gQueue.front().nod || !KB.held(gHoldKey)) gHoldKey = 0;
+        if (gPhase != Phase::Showing || gQueue.empty() || !gQueue.front().nod || gQueue.front().id != gHoldId || !KB.held(gHoldKey)) gHoldKey = 0;
         else if (nod::holdDone(now - gHoldStart)) send("allow");
     }
 
@@ -192,7 +193,7 @@ bool handleKey(const KeyEvent& e) {
     if (gPhase != Phase::Showing) return true;  // swallow while sending / confirming
     if (e.code == KEY_Y || e.code == KEY_ENTER) {
         if (!nodShown) send("allow");
-        else if (!gHoldKey) { gHoldKey = e.code; gHoldStart = millis(); }  // key repeats must not restart the hold
+        else if (!gHoldKey) { gHoldKey = e.code; gHoldStart = millis(); gHoldId = gQueue.front().id; }  // key repeats must not restart the hold
     }
     else if (e.code == KEY_N || e.code == KEY_ESC) send("deny");
     // No session-wide approval shortcut: each action needs a deliberate decision.

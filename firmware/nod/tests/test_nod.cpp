@@ -4,6 +4,7 @@
 #include "../include/alert_policy.h"
 #include "../include/charge_monitor.h"
 #include "../include/poll_backoff.h"
+#include "../include/nod_hold.h"
 #include "../include/tone_seq.h"
 #include "../include/easy_keys.h"
 #include "../include/home_layout.h"
