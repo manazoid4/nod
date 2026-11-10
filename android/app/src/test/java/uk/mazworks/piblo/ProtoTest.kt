@@ -125,5 +125,10 @@ class ProtoTest {
         assertEquals("https://core.example.net", CoreClient.normalizeBase("https://core.example.net"))
         assertNull(CoreClient.normalizeBase("")); assertNull(CoreClient.normalizeBase("ftp://x")); assertNull(CoreClient.normalizeBase("a b"))
         assertNotNull(CoreClient.normalizeBase("localhost"))
+        assertEquals("http://100.101.102.103:8787", CoreClient.normalizeBase("100.101.102.103"))
+        assertEquals("http://piblo.local:8787", CoreClient.normalizeBase("piblo.local"))
+        assertNull(CoreClient.normalizeBase("http://example.com:8787"))
+        assertNull(CoreClient.normalizeBase("http://8.8.8.8:8787"))
+        assertEquals("https://example.com", CoreClient.normalizeBase("https://example.com"))
     }
 }
