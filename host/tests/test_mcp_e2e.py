@@ -190,6 +190,22 @@ def test_success_flow_restart_and_history(core):
     hist = httpx.get(base + "/buddy/history", headers=H).json()
     assert any("Deploy to prod" in a["tool"] for a in hist["approvals"])
 
+    # 2b. Phone keyboard (the Android wire calls): one insert, a duplicate send, the device ack.
+    phone = {"Authorization": f"Bearer {TOKEN}", "X-Piblo-Client": "android/1"}
+    tid = "0b9f3c1e-5d7a-4c2b-9e8f-1a2b3c4d5e6f"
+    body = {"id": tid, "text": "milk, eggs", "mode": "insert"}
+    assert httpx.post(base + "/buddy/text", json=body, headers=phone).json()["status"] == "pending"
+    assert httpx.post(base + "/buddy/text", json=body, headers=phone).json()["status"] == "pending"  # retry, same id
+    texts = [e for e in _wait_until(lambda: sim.events() or None) if e["kind"] == "text_input"]
+    assert [e["text_input"]["id"] for e in texts] == [tid], "duplicate send must not create a second insert"
+    assert httpx.post(base + f"/buddy/text/{tid}/ack", json={"status": "inserted"}, headers=H).status_code == 200
+    assert httpx.get(base + f"/buddy/text/{tid}", headers=phone).json()["status"] == "inserted"
+    # phone text never became an approval, and a bad token gets nothing
+    assert all(p.get("tool") != "milk, eggs" for p in sim.pending())
+    assert httpx.post(base + "/buddy/text", json={**body, "id": "1b9f3c1e-5d7a-4c2b-9e8f-1a2b3c4d5e6f"},
+                      headers={"Authorization": "Bearer wrong"}).status_code == 401
+    cursor = sim.since
+
     # 3. leave an approval unanswered, restart, and prove it is NOT pending (it expired) while history survives.
     unanswered = httpx.post(base + "/buddy/request", json={"tool": "Later", "summary": "never answered", "agent": "x"},
                             headers=H).json()
@@ -207,6 +223,12 @@ def test_success_flow_restart_and_history(core):
             assert summary["items"] == [], summary
             state = c2.get("/buddy/state", params={"id": unanswered["id"]}).json()
             assert state["decision"] == "cancel" and state.get("expired") is True
+            # event numbering continues: a device polling from its old cursor sees the next event
+            c2.post("/buddy/event", json={"kind": "done", "text": "after restart"})
+            evs = c2.get("/buddy/events", params={"since": cursor}).json()["events"]
+            assert [e["text"] for e in evs] == ["after restart"] and evs[0]["id"] > cursor
+            # phone text is ephemeral: gone after restart, never re-delivered
+            assert c2.get(f"/buddy/text/{tid}").status_code == 404
     finally:
         restarted.stop()
 
