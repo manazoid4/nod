@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { after, before, describe, test } from "node:test";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
-import { tokenFromEnvFile } from "../dist/core.js";
+import { tokenFromEnvFile, urlAllowed } from "../dist/core.js";
 import { toDecision } from "../dist/server.js";
 
 const ENTRY = join(dirname(fileURLToPath(import.meta.url)), "..", "dist", "index.js");
@@ -136,6 +136,18 @@ describe("piblo-mcp without a working Core", () => {
       assert.equal(r.decision, "rejected");
       assert.equal(r.error, "core_unreachable");
       assert.equal((await call(client, "piblo_status")).error, "core_unreachable");
+    } finally { await client.close(); }
+  });
+
+  test("token is never sent over plain http to a public host (fail closed)", async () => {
+    for (const ok of ["http://127.0.0.1:8787", "http://localhost:8787", "http://192.168.1.20:8787", "http://pc:8787",
+      "http://100.101.1.2:8787", "https://core.example.com"]) assert.equal(urlAllowed(ok), true, ok);
+    for (const bad of ["http://core.example.com", "http://8.8.8.8:8787", "ftp://127.0.0.1", "not a url"]) assert.equal(urlAllowed(bad), false, bad);
+    const client = await connect({ PIBLO_URL: "http://core.example.com:8787", PIBLO_TOKEN: TOKEN });
+    try {
+      const r = await call(client, "piblo_request_approval", { action: "x" });
+      assert.equal(r.decision, "rejected");
+      assert.equal(r.error, "insecure_url");
     } finally { await client.close(); }
   });
 
