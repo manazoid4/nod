@@ -184,6 +184,19 @@ def test_status_tracks_client_and_agents_are_profiled(tmp_path):
     assert any(r["kind"] == "simulator" for r in BuddyStore(tmp_path / "buddy.sqlite3").connections())
 
 
+def test_phone_connection_does_not_impersonate_piblo_device(tmp_path):
+    c = boot(tmp_path)
+    c.get("/buddy/events", headers={**H, "X-Piblo-Client": "android/0.1.0"})
+    only_phone = c.get("/buddy/status", headers=H).json()
+    assert only_phone["connected"] is False
+    assert only_phone["client"] is None
+    c.get("/buddy/events", headers={**H, "X-Piblo-Client": "simulator/1"})
+    assert c.get("/buddy/status", headers=H).json()["simulated"] is True
+    c.get("/buddy/events", headers={**H, "X-Piblo-Client": "firmware/1"})
+    real = c.get("/buddy/status", headers=H).json()
+    assert (real["connected"], real["simulated"], real["client"]) == (True, False, "firmware/1")
+
+
 def test_prefs_export_reset_need_token_and_export_has_no_secrets(tmp_path):
     c = boot(tmp_path)
     for method, path in (("get", "/buddy/export"), ("post", "/buddy/reset"), ("get", "/buddy/prefs"), ("get", "/buddy/history")):
