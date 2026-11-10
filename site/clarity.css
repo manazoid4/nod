@@ -45,7 +45,7 @@
 
 .own-grid { grid-template-columns: repeat(4, 1fr); }
 .edition-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); margin-top: var(--space-6); }
-.edition-founder { background: linear-gradient(135deg, #dcdcd6, #f6f6f2 45%, #c9c9c2); }
+.edition-pro { background: linear-gradient(135deg, #cdeedb, #f5fbf7 45%, #b9e6cd); }
 .films-section { padding-block: var(--space-6) 0; }
 .film-solo { max-width: 720px; margin: 0 auto; }
 .faq-section .faq { margin-top: var(--space-5); }
