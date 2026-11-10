@@ -183,3 +183,15 @@ test("script.js: ref is validated and stored safely, share box shows only the us
   assert.equal(shareBox.querySelector("#share-link").value, "https://piblo.co.uk/?ref=zz99yy88");
   assert.ok(events.some(e => e[0] === "event" && e[1].name === "waitlist_signup"));
 });
+
+test("homepage shows separate Standard and Pro concepts without unverified price promises", () => {
+  const html=contents["/"];
+  assert.match(html, /id="models"/);
+  assert.match(html, /Piblo Standard/);
+  assert.match(html, /Piblo Pro/);
+  assert.match(html, /Concept illustrations|Design concepts/);
+  assert.match(html, /Hardware|hardware/);
+  assert.doesNotMatch(html, /Piblo Original|Founder's Edition|Founder’s Edition/);
+  assert.ok(existsSync(join(root,"lineup.css")));
+  assert.ok(existsSync(join(root,"media/piblo-lineup-concept.svg")));
+});
