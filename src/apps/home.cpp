@@ -44,7 +44,11 @@ public:
     const char* id() const override { return "home"; }
     const char* title() const override { return "Piblo"; }
     const char* hints() const override {
-        return Cfg.easyMode ? "UP/DOWN choose ENTER open" : _hints;
+        if (Cfg.easyMode) {
+            const char* link = linkSentence(true);
+            return link ? link : "UP/DOWN choose  ENTER open";
+        }
+        return _hints;
     }
 
     void onEnter() override {
@@ -157,21 +161,14 @@ public:
     }
 
 private:
+    // Same pill list as More (no header row, no footer text over the list); offline shows in the hint bar.
     void renderEasy(M5Canvas& g) {
-        g.fillScreen(BG);
-        const char* link = linkSentence(true);
-        ui::header(g, "Piblo", link ? "OFFLINE" : "Easy Mode");
-        const int rows = std::min(ROWS_VISIBLE - 1, EASY_COUNT);
-        for (int i = 0; i < rows; ++i) {
+        g.fillRect(0, BODY_Y, SCREEN_W, BODY_H, nod::theme::BG);
+        for (int i = 0; i < MORE_ROWS && _easyCursor.first + i < EASY_COUNT; ++i) {
             const int idx = _easyCursor.first + i;
-            if (idx >= EASY_COUNT) break;
-            ui::listRow(g, i + 1, idx == _easyCursor.sel, EASY_ITEMS[idx].label);
+            ui::pillRow(g, BODY_Y + 1 + i * MORE_PITCH, MORE_PITCH - 2, idx == _easyCursor.sel, EASY_ITEMS[idx].label, "");
         }
-        ui::scrollBar(g, EASY_COUNT, _easyCursor.first, ROWS_VISIBLE - 1);
-        g.setFont(&fonts::Font0);
-        g.setTextDatum(top_left);
-        g.setTextColor(DIM, BG);
-        g.drawString(link ? link : "Type, or send text from your phone", PAD, BODY_Y + BODY_H - 12);
+        ui::scrollBar(g, EASY_COUNT, _easyCursor.first, MORE_ROWS);
     }
 
     // More: plain-English names for the registry's home surfaces (the old grid showed CAPS).

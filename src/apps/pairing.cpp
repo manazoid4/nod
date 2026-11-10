@@ -215,6 +215,7 @@ public:
     const char* title() const override { return _pc ? "CONNECT TO COMPUTER" : "PAIRING + PHONE"; }
     const char* hints() const override {
         if (!_pc) return "ENTER pair device   ESC back";
+        if (gLink.phase == nod::pair::Phase::Approved) return "ESC back";
         return canRetry() ? "ENTER try again   ESC back" : "ESC cancel";
     }
 
