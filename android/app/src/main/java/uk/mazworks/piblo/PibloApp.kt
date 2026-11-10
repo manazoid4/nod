@@ -128,11 +128,13 @@ class PibloApp : Application() {
     }
 
     /** Phone keyboard mode: send literal text to the focused Piblo field and wait for the device ack.
-     *  Returns the ack status (inserted / no_field / too_long) or a short failure reason. */
-    suspend fun sendText(text: String, mode: String): String {
+     *  Returns the ack status (inserted / no_field / too_long / unsupported) or a short failure reason.
+     *  Pass the same [id] to retry a "pending" send: Core dedupes it, so the device never types it twice. */
+    suspend fun sendText(text: String, mode: String, id: String = java.util.UUID.randomUUID().toString()): String {
         val t = transport ?: return "no_computer"
-        val id = java.util.UUID.randomUUID().toString()
-        try { t.postText(id, text, mode) } catch (e: CoreHttpException) { return if (e.status == 429) "busy" else "send_failed" } catch (_: Exception) { return "send_failed" }
+        try { t.postText(id, text, mode) } catch (e: CoreHttpException) {
+            return when { e.status == 429 -> "busy"; e.detail == "unsupported_characters" -> "unsupported"; else -> "send_failed" }
+        } catch (_: Exception) { return "send_failed" }
         repeat(15) {  // poll ~3 s: the device acks when it inserts the text (or says no field / too long)
             delay(200)
             val s = try { t.textStatus(id) } catch (_: Exception) { null }

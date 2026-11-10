@@ -248,6 +248,11 @@ int main() {
       // controls never become separators; non-ASCII bytes dropped
       sanitize(std::string("a\tb\xC3\xA9" "c"), clean, dropped);
       CHECK(clean == "abc" && dropped == 3);
+      // ...but a message with non-ASCII is rejected whole, never silently trimmed
+      dst = "keep"; cur = 4;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "caf\xC3\xA9", true) == Status::Unsupported);
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Replace, "\xF0\x9F\x98\x80", true) == Status::Unsupported);
+      CHECK(dst == "keep" && cur == 4);
       // no field focused -> NoField and untouched
       dst = "keep"; cur = 2;
       CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "hello", false) == Status::NoField);

@@ -24,7 +24,12 @@ Body:
 
 - `id` must be a UUID string. Repeating an id returns the original record
   and does not create a second event.
-- `text` is 1..500 characters. Any printable text is stored verbatim,
+- `text` is 1..500 characters after Core folds phone-keyboard smart
+  punctuation to ASCII (curly quotes, en/em dash, ellipsis, no-break
+  space). Anything else outside ASCII (accents, emoji, other scripts) is
+  rejected with `400 unsupported_characters`: the device font is ASCII
+  only, so nothing is silently dropped. Multilingual text is NOT supported.
+  Otherwise printable text is stored verbatim,
   including `Y`, `approve`, or control-looking words: it is data, never a
   key, shortcut or command.
 - `mode` is `insert` | `replace` | `send` (see firmware semantics below).
@@ -36,7 +41,7 @@ Answers:
 - `200` with the record: `{"ok": true, "id", "text", "mode", "status":
   "pending", "client", "created_at"}`.
 - `400` on validation failure (bad JSON, bad id, text out of range, bad
-  mode). Note: this is 400, not Pydantic's 422, by design.
+  mode; `unsupported_characters` for non-ASCII text). Note: this is 400, not Pydantic's 422, by design.
 - `429` when 20 phone messages are still pending (un-acked) — the pending
   table is bound to 20. A repeated id still returns the original record
   once the table is full.
@@ -60,7 +65,7 @@ expires (below) and is never inserted late.
 
 ### Device -> Core: `POST /buddy/text/{id}/ack`
 
-Body: `{"status": "inserted" | "no_field" | "too_long"}`.
+Body: `{"status": "inserted" | "no_field" | "too_long" | "unsupported"}`.
 
 - `200` with the record (status now set). First ack wins; a repeated ack
   returns the record unchanged.
@@ -69,7 +74,7 @@ Body: `{"status": "inserted" | "no_field" | "too_long"}`.
 ### Phone reads the result: `GET /buddy/text/{id}`
 
 Returns the record above with the ack applied (`pending`, `inserted`,
-`no_field`, `too_long`), or `404` when the id is unknown or expired.
+`no_field`, `too_long`, `unsupported`), or `404` when the id is unknown or expired.
 
 ## Expiry (2 minutes)
 
@@ -93,13 +98,15 @@ can read its result.
   ENTER press.
 - A message that does not fit the field limit is rejected whole (ack
   `too_long`), never partially inserted.
+- A message holding any non-ASCII byte is rejected whole (ack
+  `unsupported`), never inserted with letters missing.
 - Text is always literal printable characters (0x20..0x7E). Control bytes
   (newline, ESC, …) are dropped and never become keys, shortcuts or
   separators. It must never approve anything, and the approval overlay
   itself is untouched (Y/ENTER approve, N/ESC reject, timeout = rejected).
 - A repeated client id is never inserted twice (the device keeps an 8-id
   dedupe ring; the Core already dedupes too).
-- Acks are fire-and-forget through the host worker (cap 4 queued). If
+- Acks queue on the device (cap 24) and retry every 1.5 s until Core confirms. If
   the link is down the ack flushes when it returns; otherwise the record
   stays `pending` until the 2-minute expiry.
 

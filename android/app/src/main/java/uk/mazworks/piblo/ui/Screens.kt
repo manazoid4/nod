@@ -267,17 +267,22 @@ private fun PhoneKeyboardSection(a: PibloApp, online: Boolean) {
     var mode by remember { mutableStateOf("insert") }
     var sending by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<String?>(null) }
+    // A "pending" send may still land on Piblo; resending the same text reuses its id so it is typed once.
+    var pendingSend by remember { mutableStateOf<Triple<String, String, String>?>(null) }
 
     fun send() {
         val t = text.trim()
         if (t.isEmpty() || sending) return
         sending = true; result = null
+        val id = pendingSend?.takeIf { it.first == t && it.second == mode }?.third ?: java.util.UUID.randomUUID().toString()
         scope.launch {
-            val status = withContext(Dispatchers.IO) { a.sendText(t, mode) }
+            val status = withContext(Dispatchers.IO) { a.sendText(t, mode, id) }
+            pendingSend = if (status == "pending") Triple(t, mode, id) else null
             result = when (status) {
                 "inserted" -> "Text sent to Piblo."
                 "no_field" -> "No text field is focused on Piblo. Open a note or message there first."
                 "too_long" -> "That text is too long for the field on Piblo."
+                "unsupported" -> "Piblo can only show English letters, numbers and basic symbols. Remove emoji, accents or other alphabets and try again."
                 "no_computer" -> "Connect your computer first (Connections tab)."
                 "busy" -> "Piblo is busy. Try again in a moment."
                 "send_failed" -> "Couldn't reach your computer."
@@ -293,7 +298,7 @@ private fun PhoneKeyboardSection(a: PibloApp, online: Boolean) {
         Text("Use your phone's keyboard to type into whatever field is focused on Piblo. The text is sent as plain characters — it can never run a shortcut or approve anything.")
         OutlinedTextField(text, { text = it.take(500) }, Modifier.fillMaxWidth().testTag("phone_text"), label = { Text("Message") }, minLines = 2)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("insert" to "Type into field", "replace" to "Replace field", "send" to "Type and submit").forEach { (m, label) ->
+            listOf("insert" to "Type into field", "replace" to "Replace field", "send" to "Type, then press Enter on Piblo").forEach { (m, label) ->
                 AssistChip({ mode = m }, { Text(label) }, Modifier.testTag("mode_$m"))
                 if (mode == m) Text("✓", color = MaterialTheme.colorScheme.primary)
             }

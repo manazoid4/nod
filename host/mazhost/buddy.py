@@ -36,7 +36,16 @@ EVENTS_BUDGET = 4800   # bytes of event JSON per poll; the device reads at most 
 MAX_TEXT_PENDING = 20  # phone-keyboard queue bound (docs/protocol/PHONE-KEYBOARD.md)
 TEXT_TTL_S = 120       # queued phone text older than 2 minutes is dropped
 TEXT_MODES = ("insert", "replace", "send")
-TEXT_ACK_STATUSES = ("inserted", "no_field", "too_long")
+TEXT_ACK_STATUSES = ("inserted", "no_field", "too_long", "unsupported")
+# Phone keyboards autocorrect to typographic punctuation; the device font is ASCII only.
+_PHONE_FOLD = str.maketrans({0x2018: "'", 0x2019: "'", 0x201A: "'", 0x201C: '"', 0x201D: '"',
+                             0x201E: '"', 0x2013: "-", 0x2014: "-", 0x2026: "...", 0x00A0: " "})
+
+
+def fold_phone_text(text: str) -> str | None:
+    """Smart punctuation -> ASCII. None when anything non-ASCII remains (accents, emoji, other scripts)."""
+    folded = text.translate(_PHONE_FOLD)
+    return folded if folded.isascii() else None
 AlertKind = Literal["reminder", "meeting", "deadline", "sla", "computer", "task_done", "approval", "info"]
 Priority = Literal["low", "normal", "high", "urgent"]
 AlertAction = Literal["ack", "snooze", "approve", "reject"]
@@ -345,6 +354,8 @@ class Buddy:
                    "client": (client or "")[:64], "_created": now}
             self._texts[client_id] = rec
             self._event_id += 1
+            # Cursor only: phone text itself is ephemeral (2 min TTL) and is not stored.
+            self._db("record_event_id", self._event_id)
             self._events.append({"id": self._event_id, "kind": "text_input",
                                  "text": text, "source": rec["client"] or "phone",
                                  "ts": now,
@@ -665,7 +676,14 @@ def install_buddy_routes(api: FastAPI, buddy: Buddy | None = None) -> Buddy:
             uuid.UUID(client_id)
         except ValueError:
             raise HTTPException(400, "invalid_id")
-        if not isinstance(text, str) or not (1 <= len(text) <= 500) or mode not in TEXT_MODES:
+        if not isinstance(text, str) or mode not in TEXT_MODES:
+            raise HTTPException(400, "invalid_text")
+        # Reject rather than let the device drop letters and still report "inserted".
+        folded = fold_phone_text(text)
+        if folded is None:
+            raise HTTPException(400, "unsupported_characters")
+        text = folded
+        if not (1 <= len(text) <= 500):
             raise HTTPException(400, "invalid_text")
         try:
             return buddy.post_text(client_id, text, mode, x_piblo_client or "")

@@ -74,6 +74,8 @@ struct TextField {
             flash(mode == phone_text::Mode::Replace ? "replaced" : "phone text in");
         } else if (s == phone_text::Status::TooLong) {
             flash("too long");
+        } else if (s == phone_text::Status::Unsupported) {
+            flash("unsupported chars");
         }
         return s;
     }

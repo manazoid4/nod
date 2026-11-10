@@ -143,7 +143,30 @@ def test_text_is_literal_never_a_command():
 def test_full_text_roundtrips_untruncated():
     c = api()
     cid = uid()
-    big = "é" * 500
+    big = "x" * 500  # non-ASCII is rejected: see test_unsupported_characters_rejected_not_silently_dropped
     assert c.post("/buddy/text", json={"id": cid, "text": big, "mode": "insert"}, headers=H).status_code == 200
     ev = c.get("/buddy/events", headers=H).json()["events"][-1]
     assert ev["text"] == big and ev["text_input"]["text"] == big
+
+
+def test_smart_punctuation_folds_to_ascii():
+    c = api()
+    cid = uid()
+    r = c.post("/buddy/text", json={"id": cid, "text": "it’s “fine” — ok…", "mode": "insert"}, headers=H)
+    assert r.status_code == 200 and r.json()["text"] == "it's \"fine\" - ok..."
+    assert c.get("/buddy/events", headers=H).json()["events"][-1]["text_input"]["text"] == "it's \"fine\" - ok..."
+
+
+def test_unsupported_characters_rejected_not_silently_dropped():
+    c = api()
+    for text in ("café", "hi \U0001F600", "你好", "مرحبا"):
+        r = c.post("/buddy/text", json={"id": uid(), "text": text, "mode": "insert"}, headers=H)
+        assert r.status_code == 400 and r.json()["detail"] == "unsupported_characters", text
+    assert c.get("/buddy/events", headers=H).json()["events"] == []
+
+
+def test_device_can_ack_unsupported():
+    c = api()
+    cid = uid()
+    c.post("/buddy/text", json={"id": cid, "text": "hello", "mode": "insert"}, headers=H)
+    assert c.post(f"/buddy/text/{cid}/ack", json={"status": "unsupported"}, headers=H).json()["status"] == "unsupported"

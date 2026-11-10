@@ -248,3 +248,17 @@ def test_event_cursor_survives_when_all_notifications_are_pruned(tmp_path):
     after = restarted.post("/buddy/event", json={"kind": "done", "text": "after"}, headers=H).json()
     assert after["id"] > first
     assert [e["text"] for e in restarted.get(f"/buddy/events?since={first}", headers=H).json()["events"]] == ["after"]
+
+
+def test_event_cursor_counts_phone_text_across_restart(tmp_path):
+    # A text_input event must advance the persisted cursor, or the first event
+    # after a Core restart reuses its id and a device polling since=that id misses it.
+    import uuid
+    c = boot(tmp_path)
+    c.post("/buddy/event", json={"kind": "done", "text": "before"}, headers=H)
+    c.post("/buddy/text", json={"id": str(uuid.uuid4()), "text": "typed", "mode": "insert"}, headers=H)
+    last = c.get("/buddy/events", headers=H).json()["last"]
+    restarted = boot(tmp_path)
+    after = restarted.post("/buddy/event", json={"kind": "done", "text": "after"}, headers=H).json()
+    assert after["id"] > last
+    assert [e["text"] for e in restarted.get(f"/buddy/events?since={last}", headers=H).json()["events"]] == ["after"]
