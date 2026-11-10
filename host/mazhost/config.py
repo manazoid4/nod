@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     repo_dir: str = ""  # git checkout Core updates; default: the checkout containing mazhost
     bind: str = "0.0.0.0"
     port: int = 8787
+    discovery_port: int = 8788  # MAZ_DISCOVERY_PORT: UDP LAN discovery for Piblo pairing; 0 = off
     remote_url: str = ""  # MAZ_REMOTE_URL; empty = auto-detect the Tailscale Funnel URL
     remote_detect: bool = True  # MAZ_REMOTE_DETECT=0 disables the background tailscale probe
     whisper_model: str = "base.en"
