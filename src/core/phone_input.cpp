@@ -4,6 +4,7 @@
 
 #include <Arduino.h>
 
+#include <algorithm>
 #include <ctime>
 #include <string>
 #include <utility>
@@ -22,16 +23,30 @@ namespace maz {
 namespace phone {
 namespace {
 
-constexpr size_t kAckCap = 4;
+// Core accepts at most 20 pending phone-text messages. Leave spare space for
+// acknowledgements already sent but not confirmed when the network drops.
+constexpr size_t kAckCap = 24;
+constexpr uint32_t kAckTtlMs = 120000;
 constexpr time_t kClockValidFrom = 1704067200;  // 2024-01-01: wall clock usable
 
+struct PendingAck {
+    std::string id;
+    std::string status;
+    uint32_t queuedAt;
+};
 phone_text::SeenIds gSeen;  // a repeated client id is never inserted twice
-std::vector<std::pair<std::string, std::string>> gAcks;  // pending (id, status)
+std::vector<PendingAck> gAcks;
+uint32_t gNextAckAttempt = 0;
 
 void enqueueAck(const std::string& id, const char* status) {
     if (id.empty()) return;
-    if (gAcks.size() >= kAckCap) gAcks.erase(gAcks.begin());  // oldest ack lost on flood
-    gAcks.emplace_back(id, status);
+    if (gAcks.size() >= kAckCap) {
+        // This can only occur after prolonged network trouble / repeated floods.
+        // A removed record will expire on Core; never report it as acknowledged.
+        gAcks.erase(gAcks.begin());
+        notify::post(Note::Warn, "Phone text", "ACK backlog full");
+    }
+    gAcks.push_back({id, status, millis()});
 }
 
 }  // namespace
@@ -73,12 +88,30 @@ void update() {
     if (host_worker::state() == host_worker::State::Done &&
         host_worker::jobKind() == host_worker::JobKind::TextAck) {
         host_worker::TextAckResult r;
-        host_worker::takeTextAckResult(r);  // fire-and-forget: the phone polls GET
+        if (host_worker::takeTextAckResult(r)) {
+            if (r.ok) {
+                // Remove only the exact acknowledgement confirmed by Core.
+                const auto it = std::find_if(gAcks.begin(), gAcks.end(),
+                                             [&](const PendingAck& a) { return a.id == r.id; });
+                if (it != gAcks.end()) gAcks.erase(it);
+                gNextAckAttempt = 0;
+            } else {
+                gNextAckAttempt = millis() + 1500;  // retry transient failures
+            }
+        }
     }
+    // Core discards text after two minutes; do not retain stale ACKs forever
+    // if the host was unavailable or the record has expired.
+    const uint32_t now = millis();
+    gAcks.erase(std::remove_if(gAcks.begin(), gAcks.end(),
+                              [now](const PendingAck& a) {
+                                  return static_cast<uint32_t>(now - a.queuedAt) > kAckTtlMs;
+                              }), gAcks.end());
     if (gAcks.empty() || host_worker::state() != host_worker::State::Idle) return;
-    if (!host::configured()) return;  // queued acks flush when the link is back
+    if (!host::configured() || static_cast<int32_t>(now - gNextAckAttempt) < 0) return;
     const auto& front = gAcks.front();
-    if (host_worker::submitTextAck(front.first, front.second)) gAcks.erase(gAcks.begin());
+    // Keep it queued until the worker confirms success; submit alone is not delivery.
+    host_worker::submitTextAck(front.id, front.status);
 }
 
 }  // namespace phone
