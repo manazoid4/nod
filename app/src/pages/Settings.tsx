@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { AppSettings, CoreEnvView, EnvKey } from '../../shared/types';
 import { PageHead, Setting, Switch } from '../components/ui';
 import { useAct, useStore } from '../lib/store';
+import { useTheme } from '../App';
 
 function KeyField({ label, envKey, isSet, onSaved }: { label: string; envKey: EnvKey; isSet: boolean; onSaved(msg: string): void }) {
   const [v, setV] = useState('');
@@ -32,6 +33,7 @@ export function Settings() {
     loadEnv();
   }, []);
 
+  const { theme, setTheme } = useTheme();
   const patch = async (p: Partial<AppSettings>) => setApp(await window.piblo.settings.set(p));
   const saved = (msg: string) => {
     toast(msg);
@@ -99,8 +101,21 @@ export function Settings() {
       </section>
 
       <section className="card" aria-labelledby="app-h">
-        <h2 id="app-h">This app</h2>
-        <Setting title="Keep running in the tray" sub="Closing the window hides it. Quit from the tray icon.">
+              <h2 id="app-h">This app</h2>
+              <Setting title="Theme" sub="Light, dark, or follow your system setting.">
+                <div className="seg" role="group" aria-label="Theme">
+                  {(['light', 'dark', 'system'] as const).map((v) => (
+                    <button
+                      key={v}
+                      aria-pressed={theme === v}
+                      onClick={() => void setTheme(v as 'light' | 'dark' | 'system')}
+                    >
+                      {v === 'light' ? 'Light' : v === 'dark' ? 'Dark' : 'System'}
+                    </button>
+                  ))}
+                </div>
+              </Setting>
+              <Setting title="Keep running in the tray" sub="Closing the window hides it. Quit from the tray icon.">
           <Switch label="Keep running in the tray" checked={app?.closeToTray ?? true} onChange={(v) => void patch({ closeToTray: v })} />
         </Setting>
         <Setting title="Start with Windows" sub="Open quietly in the tray when you sign in.">

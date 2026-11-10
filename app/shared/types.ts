@@ -28,10 +28,13 @@ export type ApiResult<T = unknown> =
   | { ok: true; status: number; data: T }
   | { ok: false; status: number; code: ApiErrorCode; message: string };
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 export interface AppSettings {
   closeToTray: boolean;
   startWithWindows: boolean;
   onboardingDone: boolean;
+  theme: ThemeMode;
 }
 
 export interface CoreEnvView {
@@ -93,8 +96,10 @@ export interface PibloBridge {
   onPairingPending(cb: (requests: PairRequest[]) => void): () => void;
   /** Fires when a tray notification about a pairing request is clicked. */
   onPairingOpen(cb: () => void): () => void;
-  /** Window shown/hidden/minimised, so Live View can stop polling when nobody can see it. */
-  onWindowVisible(cb: (visible: boolean) => void): () => void;
+    /** Fires when the theme setting changes (from tray or settings page). */
+    onSettingsThemeChanged(cb: (theme: ThemeMode) => void): () => void;
+    /** Window shown/hidden/minimised, so Live View can stop polling when nobody can see it. */
+    onWindowVisible(cb: (visible: boolean) => void): () => void;
   /** USB fallback: send this PC's address and key to Piblo over the cable. */
   device: { pair(): Promise<{ ok: boolean; message: string }> };
 }

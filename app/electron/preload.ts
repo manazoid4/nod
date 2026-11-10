@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { CoreState, PairRequest, PibloBridge } from '../shared/types';
+import type { CoreState, PairRequest, PibloBridge, ThemeMode } from '../shared/types';
 
 const invoke = <T>(channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args) as Promise<T>;
 
@@ -38,10 +38,15 @@ const bridge: PibloBridge = {
     return () => ipcRenderer.removeListener('pairing:open', handler);
   },
   onWindowVisible(cb) {
-    const handler = (_e: unknown, visible: boolean) => cb(visible);
-    ipcRenderer.on('window:visible', handler);
-    return () => ipcRenderer.removeListener('window:visible', handler);
-  },
-};
+      const handler = (_e: unknown, visible: boolean) => cb(visible);
+      ipcRenderer.on('window:visible', handler);
+      return () => ipcRenderer.removeListener('window:visible', handler);
+    },
+    onSettingsThemeChanged(cb) {
+      const handler = (_e: unknown, theme: ThemeMode) => cb(theme);
+      ipcRenderer.on('settings:theme-changed', handler);
+      return () => ipcRenderer.removeListener('settings:theme-changed', handler);
+    },
+  };
 
-contextBridge.exposeInMainWorld('piblo', bridge);
+  contextBridge.exposeInMainWorld('piblo', bridge);

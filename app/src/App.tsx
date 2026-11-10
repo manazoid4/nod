@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import iconUrl from './assets/piblo-icon.svg';
 import { PairingList } from './components/PairingCard';
 import { CoreGate } from './components/CoreGate';
@@ -12,6 +12,60 @@ import { Memory } from './pages/Memory';
 import { Onboarding } from './pages/Onboarding';
 import { Settings } from './pages/Settings';
 import { StoreProvider, usePoll, useStore } from './lib/store';
+
+type ThemeMode = 'light' | 'dark' | 'system';
+
+interface ThemeContextValue {
+  theme: ThemeMode;
+  setTheme: (t: ThemeMode) => Promise<void>;
+}
+
+const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setThemeState] = useState<ThemeMode>('system');
+
+  useEffect(() => {
+    void window.piblo.settings.get().then((s: { theme?: ThemeMode }) => {
+      const t = s.theme ?? 'system';
+      setThemeState(t);
+      applyThemeToDom(t);
+    });
+
+    const off = window.piblo.onSettingsThemeChanged?.((t: ThemeMode) => {
+      setThemeState(t);
+      applyThemeToDom(t);
+    });
+    return () => off?.();
+  }, []);
+
+  const setTheme = async (t: ThemeMode) => {
+    setThemeState(t);
+    applyThemeToDom(t);
+    await window.piblo.settings.set({ theme: t });
+  };
+
+  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+}
+
+function applyThemeToDom(t: ThemeMode) {
+  const root = document.documentElement;
+  if (t === 'dark') {
+    root.setAttribute('data-theme', 'dark');
+  } else if (t === 'light') {
+    root.setAttribute('data-theme', 'light');
+  } else {
+    root.removeAttribute('data-theme');
+  }
+}
+
+function useTheme() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
+  return ctx;
+}
+
+export { useTheme };
 
 type Section = 'home' | 'live' | 'ask' | 'memory' | 'actions' | 'settings';
 const NAV: { id: Section; label: string; icon: string }[] = [
@@ -138,7 +192,9 @@ function Shell() {
 export function App() {
   return (
     <StoreProvider>
-      <Shell />
+      <ThemeProvider>
+        <Shell />
+      </ThemeProvider>
     </StoreProvider>
   );
 }

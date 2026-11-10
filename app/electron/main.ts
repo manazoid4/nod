@@ -2,7 +2,7 @@ import { app, BrowserWindow, Menu, Notification, Tray, ipcMain, nativeImage, nat
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AppSettings, EnvKey, PairRequest } from '../shared/types';
+import type { AppSettings, EnvKey, PairRequest, ThemeMode } from '../shared/types';
 import { CARD, PAIR } from '../shared/types';
 import { createApiClient } from './api-client';
 import { discoverPort, discoverToken, locateCore, type FsLike } from './core-locator';
@@ -30,10 +30,11 @@ const colors = {
 
 // ---- settings (tiny JSON in userData) ----
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
-const defaults: AppSettings = { closeToTray: true, startWithWindows: false, onboardingDone: false };
+const defaults: AppSettings = { closeToTray: true, startWithWindows: false, onboardingDone: false, theme: 'system' };
 function loadSettings(): AppSettings {
   try {
-    return { ...defaults, ...JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) };
+    const loaded = JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) as Partial<AppSettings>;
+    return { ...defaults, ...loaded, theme: loaded.theme ?? 'system' };
   } catch {
     return { ...defaults };
   }
@@ -83,6 +84,25 @@ let quitting = false;
 function theme() {
   return nativeTheme.shouldUseDarkColors ? colors.dark : colors.light;
 }
+
+function applyTheme(mode: ThemeMode) {
+  if (mode === 'system') {
+    nativeTheme.themeSource = 'system';
+  } else {
+    nativeTheme.themeSource = mode;
+  }
+  if (win) {
+    const t = theme();
+    win.setTitleBarOverlay({ color: t.bg, symbolColor: t.fg, height: 44 });
+  }
+}
+
+nativeTheme.on('updated', () => {
+  if (win && settings.theme === 'system') {
+    const t = theme();
+    win.setTitleBarOverlay({ color: t.bg, symbolColor: t.fg, height: 44 });
+  }
+});
 
 function createWindow(): BrowserWindow {
   const t = theme();
@@ -152,10 +172,27 @@ function createTray() {
     Menu.buildFromTemplate([
       { label: 'Open Piblo', click: showWindow },
       { type: 'separator' },
+      {
+        label: 'Theme',
+        submenu: [
+          { label: 'Light', type: 'radio', checked: settings.theme === 'light', click: () => applyThemeChange('light') },
+          { label: 'Dark', type: 'radio', checked: settings.theme === 'dark', click: () => applyThemeChange('dark') },
+          { label: 'System', type: 'radio', checked: settings.theme === 'system', click: () => applyThemeChange('system') },
+        ],
+      },
+      { type: 'separator' },
       { label: 'Quit', click: () => { quitting = true; app.quit(); } },
     ]),
   );
   tray.on('click', showWindow);
+}
+
+function applyThemeChange(mode: ThemeMode) {
+  settings = { ...settings, theme: mode };
+  fs.mkdirSync(path.dirname(settingsFile()), { recursive: true });
+  fs.writeFileSync(settingsFile(), JSON.stringify(settings));
+  applyTheme(mode);
+  win?.webContents.send('settings:theme-changed', mode);
 }
 
 function applyLoginItem() {
@@ -198,14 +235,21 @@ function setupIpc() {
   ipcMain.handle('device:pair', () => pairDevice());
   ipcMain.handle('settings:get', () => settings);
   ipcMain.handle('settings:set', (_e, patch: Partial<AppSettings>) => {
-    const next = { ...settings };
-    for (const k of Object.keys(defaults) as (keyof AppSettings)[]) if (typeof patch[k] === 'boolean') next[k] = patch[k] as boolean;
-    settings = next;
-    fs.mkdirSync(path.dirname(settingsFile()), { recursive: true });
-    fs.writeFileSync(settingsFile(), JSON.stringify(settings));
-    applyLoginItem();
-    return settings;
-  });
+        const next = { ...settings };
+        const themeVal = patch.theme;
+        if (typeof themeVal === 'string') {
+          next.theme = themeVal as ThemeMode;
+        }
+        if (typeof patch.closeToTray === 'boolean') next.closeToTray = patch.closeToTray;
+        if (typeof patch.startWithWindows === 'boolean') next.startWithWindows = patch.startWithWindows;
+        if (typeof patch.onboardingDone === 'boolean') next.onboardingDone = patch.onboardingDone;
+        settings = next;
+        fs.mkdirSync(path.dirname(settingsFile()), { recursive: true });
+        fs.writeFileSync(settingsFile(), JSON.stringify(settings));
+        applyLoginItem();
+        applyTheme(settings.theme);
+        return settings;
+      });
   ipcMain.handle('env:get', () => viewEnv(locate().envFile ? realFs.read(locate().envFile!) : null));
   ipcMain.handle('env:set', (_e, key: EnvKey, value: string) => {
     const loc = locate();
@@ -325,18 +369,17 @@ if (!app.requestSingleInstanceLock()) {
   app.on('second-instance', showWindow);
   app.setAppUserModelId('uk.piblo.app');
   void app.whenReady().then(() => {
-    settings = loadSettings();
-    Menu.setApplicationMenu(null);
-    setupIpc();
-    sidecar.on('state', (s) => win?.webContents.send('core:state-changed', s));
-    nativeTheme.themeSource = 'light'; // brand is cream-based; no dark theme yet
-    nativeTheme.on('updated', () => win?.setTitleBarOverlay({ color: theme().bg, symbolColor: theme().fg, height: 44 }));
-    win = createWindow();
-    createTray();
-    applyLoginItem();
-    void sidecar.ensure();
-    setInterval(() => void pollPairing(), 5000);
-  });
+      settings = loadSettings();
+      Menu.setApplicationMenu(null);
+      setupIpc();
+      sidecar.on('state', (s) => win?.webContents.send('core:state-changed', s));
+      applyTheme(settings.theme);
+      win = createWindow();
+      createTray();
+      applyLoginItem();
+      void sidecar.ensure();
+      setInterval(() => void pollPairing(), 5000);
+    });
   app.on('before-quit', () => {
     quitting = true;
     sidecar.stop();
