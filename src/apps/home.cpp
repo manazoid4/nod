@@ -113,10 +113,8 @@ public:
             if (dir) { _focus = nod::moveTalkFocus(_focus, dir); sfx::select(); invalidate(); return true; }
         } else {
             if (e.code == KEY_ENTER) { open(_sel); return true; }
-            if (e.code == KEY_RIGHT) { move(+1); return true; }
-            if (e.code == KEY_LEFT)  { move(-1); return true; }
-            if (e.code == KEY_DOWN)  { move(+TABLE_COLS); return true; }
-            if (e.code == KEY_UP)    { move(-TABLE_COLS); return true; }
+            if (e.code == KEY_DOWN)  { move(+1); return true; }
+            if (e.code == KEY_UP)    { move(-1); return true; }
         }
 
         size_t n = 0;
@@ -155,15 +153,7 @@ public:
     void render(M5Canvas& g) override {
         if (Cfg.easyMode) { renderEasy(g); return; }
         if (!_grid) { renderTalk(g); return; }
-        std::array<lvui::Cell, TABLE_PAGE> cells{};
-        for (size_t i = 0; i < _primary.size() && i < cells.size(); ++i) {
-            cells[i].title = _primary[i]->cellTitle();
-            cells[i].badge = _primary[i]->shortcut ? static_cast<char>('A' + (_primary[i]->shortcut - KEY_A)) : ' ';
-        }
-        lvui::Status st;
-        st.version = "v" NOD_FW_VERSION;
-        statusFor(st);
-        lvui::renderHome(g, cells.data(), _primary.size(), _sel, st);
+        renderMore(g);
     }
 
 private:
@@ -182,6 +172,27 @@ private:
         g.setTextDatum(top_left);
         g.setTextColor(DIM, BG);
         g.drawString(link ? link : "Type, or send text from your phone", PAD, BODY_Y + BODY_H - 12);
+    }
+
+    // More: plain-English names for the registry's home surfaces (the old grid showed CAPS).
+    static const char* moreLabel(const Descriptor* d) {
+        if (!strcmp(d->id, "talk")) return "Call";
+        if (!strcmp(d->id, "desk")) return "Device & PC";
+        return d->title;
+    }
+
+    // Same pill look as the Talk circle's buttons; one row per surface, scrolls past 5.
+    void renderMore(M5Canvas& g) {
+        g.fillRect(0, BODY_Y, SCREEN_W, BODY_H, nod::theme::BG);
+        const int n = static_cast<int>(_primary.size());
+        if (_sel < _first) _first = _sel;
+        if (_sel >= _first + MORE_ROWS) _first = _sel - MORE_ROWS + 1;
+        for (int i = 0; i < MORE_ROWS && _first + i < n; ++i) {
+            const Descriptor* d = _primary[_first + i];
+            char key[2] = {d->shortcut ? static_cast<char>('A' + (d->shortcut - KEY_A)) : '\0', '\0'};
+            ui::pillRow(g, BODY_Y + 1 + i * MORE_PITCH, MORE_PITCH - 2, _first + i == _sel, moreLabel(d), key);
+        }
+        ui::scrollBar(g, n, _first, MORE_ROWS);
     }
 
     void activate(nod::TalkFocus f) {
@@ -278,7 +289,7 @@ private:
         size_t n = 0;
         const Descriptor* t = apps::table(n);
         for (size_t i = 0; i < n; ++i)
-            if (t[i].onHome && strcmp(t[i].id, "home") && _primary.size() < TABLE_PAGE) _primary.push_back(&t[i]);
+            if (t[i].onHome && strcmp(t[i].id, "home")) _primary.push_back(&t[i]);
         if (_sel >= static_cast<int>(_primary.size())) _sel = 0;
     }
 
@@ -290,9 +301,9 @@ private:
                                                                 : "ENTER live  hold SPACE save";
             return;
         }
-        _hints = (linkSentence(true) && !Sys.wifiConnected) ? "SPACE dump  ENTER open  W wifi"
-               : host::updateReady()                        ? "SPACE dump  ENTER open  U update"
-                                                            : "SPACE dump  ENTER open  1-4 quick";
+        _hints = (linkSentence(true) && !Sys.wifiConnected) ? "ENTER open  ESC back  W wifi"
+               : host::updateReady()                        ? "ENTER open  ESC back  U update"
+                                                            : "ENTER open  ESC back";
     }
 
     void move(int delta) {
@@ -308,8 +319,10 @@ private:
 
     std::vector<const Descriptor*> _primary;
     int _sel = 0;
+    int _first = 0;
+    static constexpr int MORE_ROWS = 5, MORE_PITCH = 21;
     bool _spaceArmed = false;
-    bool _grid = false;  // false = Talk circle, true = More (the six-surface grid)
+    bool _grid = false;  // false = Talk circle, true = More (pill list of every surface)
     nod::TalkFocus _focus = nod::FOCUS_TALK;
     ListCursor _easyCursor;
     uint32_t _lastAnim = 0;
