@@ -28,15 +28,29 @@ using namespace theme;
 
 namespace {
 
+// Easy Mode home: plain words, UP/DOWN + ENTER, no Fn. Each row opens a real
+// screen; nothing here pretends to work. "Messages" is the results inbox and
+// "Shortcuts" is the saved snippets list (see docs/KEYS.md).
+struct EasyItem { const char* label; const char* target; };
+constexpr EasyItem EASY_ITEMS[] = {
+    {"Notes", "notes"},       {"Reminders", "reminders"}, {"Messages", "inbox"},
+    {"Tasks", "tasks"},       {"Shortcuts", "snippets"},  {"Settings", "settings"},
+    {"Help", "help"},
+};
+constexpr int EASY_COUNT = sizeof(EASY_ITEMS) / sizeof(EASY_ITEMS[0]);
+
 class HomeApp : public App {
 public:
     const char* id() const override { return "home"; }
     const char* title() const override { return "Piblo"; }
-    const char* hints() const override { return _hints; }
+    const char* hints() const override {
+        return Cfg.easyMode ? "UP/DOWN choose ENTER open" : _hints;
+    }
 
     void onEnter() override {
         buildPrimary();
         _spaceArmed = false;
+        _easyCursor.clamp(EASY_COUNT);
         lvui::setActive(true);
         rebuildHints();
         invalidate();
@@ -47,6 +61,31 @@ public:
     bool onKey(const KeyEvent& e) override {
         if (!e.down) {
             if (e.code == KEY_SPACE) _spaceArmed = false;
+            return false;
+        }
+
+        // Easy Mode: one list, plain old keys. The shell's dispatch already
+        // routes every key to the approval overlay first, so nothing here can
+        // approve; ESC at Home is a no-op (depth 1 pops to itself).
+        if (Cfg.easyMode) {
+            if (e.code == KEY_UP || e.code == KEY_DOWN) {
+                _easyCursor.onKey(e, EASY_COUNT);
+                sfx::select();
+                invalidate();
+                return true;
+            }
+            if (e.code == KEY_ENTER) {
+                sfx::confirm();
+                shell::pushById(EASY_ITEMS[_easyCursor.sel].target);
+                return true;
+            }
+            if (e.code >= KEY_1 && e.code <= KEY_4 && !(e.mods & MOD_FN)) {
+                field::runQuick(static_cast<int>(e.code - KEY_1) + 1);
+                invalidate();
+                return true;
+            }
+            if (e.code == KEY_U && host::updateReady()) { shell::confirmFwUpdate(); return true; }
+            if (e.code == KEY_SPACE) { _spaceArmed = true; return true; }
             return false;
         }
 
@@ -105,6 +144,8 @@ public:
     }
 
     std::string contextSnapshot() const override {
+        if (Cfg.easyMode)
+            return std::string("Home selected ") + EASY_ITEMS[_easyCursor.sel].label + "; NOW: " + field::nowText();
         if (!_grid) return std::string("Home: Talk circle; NOW: ") + field::nowText();
         if (_primary.empty() || _sel < 0 || _sel >= static_cast<int>(_primary.size()))
             return field::nowText();
@@ -112,6 +153,7 @@ public:
     }
 
     void render(M5Canvas& g) override {
+        if (Cfg.easyMode) { renderEasy(g); return; }
         if (!_grid) { renderTalk(g); return; }
         std::array<lvui::Cell, TABLE_PAGE> cells{};
         for (size_t i = 0; i < _primary.size() && i < cells.size(); ++i) {
@@ -125,6 +167,23 @@ public:
     }
 
 private:
+    void renderEasy(M5Canvas& g) {
+        g.fillScreen(BG);
+        const char* link = linkSentence(true);
+        ui::header(g, "Piblo", link ? "OFFLINE" : "Easy Mode");
+        const int rows = std::min(ROWS_VISIBLE - 1, EASY_COUNT);
+        for (int i = 0; i < rows; ++i) {
+            const int idx = _easyCursor.first + i;
+            if (idx >= EASY_COUNT) break;
+            ui::listRow(g, i + 1, idx == _easyCursor.sel, EASY_ITEMS[idx].label);
+        }
+        ui::scrollBar(g, EASY_COUNT, _easyCursor.first, ROWS_VISIBLE - 1);
+        g.setFont(&fonts::Font0);
+        g.setTextDatum(top_left);
+        g.setTextColor(DIM, BG);
+        g.drawString(link ? link : "Type, or send text from your phone", PAD, BODY_Y + BODY_H - 12);
+    }
+
     void activate(nod::TalkFocus f) {
         sfx::confirm();
         switch (f) {
@@ -252,6 +311,7 @@ private:
     bool _spaceArmed = false;
     bool _grid = false;  // false = Talk circle, true = More (the six-surface grid)
     nod::TalkFocus _focus = nod::FOCUS_TALK;
+    ListCursor _easyCursor;
     uint32_t _lastAnim = 0;
     const char* _hints = "";
 };

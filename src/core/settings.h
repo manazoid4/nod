@@ -69,6 +69,9 @@ struct Settings {
     bool        ttsEnabled = true;
     uint8_t     nudgePollMinutes = 5;
     bool        firstRunComplete = false;
+    // Easy Mode: beginner home, plain words, no Fn needed. On by default so a
+    // first-time user gets it; the classic home is one toggle away.
+    bool        easyMode = true;
 
     // Four quick keys are stable action IDs from a fixed list; they are never
     // shell commands. CALL remains quick slot 1 by default.

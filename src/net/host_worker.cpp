@@ -20,7 +20,7 @@ std::atomic<bool> gRetainPcResult{true};
 TaskHandle_t gTask = nullptr;
 
 std::string gSession, gPath, gSpeechPath, gAction, gContext, gRecordId, gText, gProject, gTemplateId, gDisplayId;
-std::string gWorkTrackId, gWorkEventTypeId;
+std::string gWorkTrackId, gWorkEventTypeId, gAckStatus;
 WorkflowKind gWorkflowKind = WorkflowKind::Plan;
 TeachKind gTeachKind = TeachKind::Status;
 
@@ -32,6 +32,7 @@ host::BeamMessage gBeamPullResult;
 host::CoreInfo gCoreInfoResult;
 host::BuddyPoll gBuddyPollResult;
 BuddyDecideResult gBuddyDecideResult;
+TextAckResult gTextAckResult;
 std::string gBuddyId, gBuddyDecision;
 host::SystemStatus gSystemResult;
 host::TodayStatus gTodayResult;
@@ -44,7 +45,7 @@ std::atomic<uint32_t> gStackHighWater{0};
 void resetToIdle() {
     gSession.clear(); gPath.clear(); gSpeechPath.clear(); gAction.clear(); gContext.clear();
     gRecordId.clear(); gText.clear(); gProject.clear(); gTemplateId.clear(); gDisplayId.clear();
-    gWorkTrackId.clear(); gWorkEventTypeId.clear();
+    gWorkTrackId.clear(); gWorkEventTypeId.clear(); gAckStatus.clear(); gBuddyId.clear(); gBuddyDecision.clear();
     gKind.store(JobKind::None, std::memory_order_release);
     gState.store(State::Idle, std::memory_order_release);
 }
@@ -165,6 +166,11 @@ void worker(void*) {
             gBuddyDecideResult.id = gBuddyId;
             gBuddyDecideResult.decision = gBuddyDecision;
             gBuddyDecideResult.ok = host::buddyDecide(gBuddyId, gBuddyDecision, gBuddyDecideResult.applied);
+        } else if (kind == JobKind::TextAck) {
+            gTextAckResult = TextAckResult{};
+            gTextAckResult.id = gBuddyId;
+            gTextAckResult.status = gAckStatus;
+            gTextAckResult.ok = host::textAck(gBuddyId, gAckStatus);
         } else if (kind == JobKind::SystemStatus) {
             gSystemResult = host::systemStatus();
         } else if (kind == JobKind::Today) {
@@ -255,6 +261,10 @@ bool submitBuddyDecide(const std::string& id, const std::string& decision) {
     if (id.empty() || !canSubmit() || !ensureWorker()) return false;
     gBuddyId = id; gBuddyDecision = decision; clearResults(); publish(JobKind::BuddyDecide); return true;
 }
+bool submitTextAck(const std::string& id, const std::string& status) {
+    if (id.empty() || status.empty() || !canSubmit() || !ensureWorker()) return false;
+    gBuddyId = id; gAckStatus = status; clearResults(); publish(JobKind::TextAck); return true;
+}
 bool submitSystemStatus() { if (!canSubmit() || !ensureWorker()) return false; clearResults(); publish(JobKind::SystemStatus); return true; }
 bool submitToday() { if (!canSubmit() || !ensureWorker()) return false; clearResults(); publish(JobKind::Today); return true; }
 bool submitWorkSummary() { if (!canSubmit() || !ensureWorker()) return false; clearResults(); publish(JobKind::WorkSummary); return true; }
@@ -298,6 +308,7 @@ bool takeBeamPullResult(host::BeamMessage& result) { if (state()!=State::Done||j
 bool takeCoreInfoResult(host::CoreInfo& result) { if (state()!=State::Done||jobKind()!=JobKind::CoreInfo)return false; result=std::move(gCoreInfoResult); resetToIdle(); return true; }
 bool takeBuddyPollResult(host::BuddyPoll& result) { if (state()!=State::Done||jobKind()!=JobKind::BuddyPoll)return false; result=std::move(gBuddyPollResult); resetToIdle(); return true; }
 bool takeBuddyDecideResult(BuddyDecideResult& result) { if (state()!=State::Done||jobKind()!=JobKind::BuddyDecide)return false; result=std::move(gBuddyDecideResult); resetToIdle(); return true; }
+bool takeTextAckResult(TextAckResult& result) { if (state()!=State::Done||jobKind()!=JobKind::TextAck)return false; result=std::move(gTextAckResult); resetToIdle(); return true; }
 bool takeSystemStatusResult(host::SystemStatus& result) { if (state()!=State::Done||jobKind()!=JobKind::SystemStatus)return false; result=std::move(gSystemResult); resetToIdle(); return true; }
 bool takeTodayResult(host::TodayStatus& result) { if (state()!=State::Done||jobKind()!=JobKind::Today)return false; result=std::move(gTodayResult); resetToIdle(); return true; }
 bool takeWorkSummaryResult(host::WorkSummary& result) { if (state()!=State::Done||jobKind()!=JobKind::WorkSummary)return false; result=std::move(gWorkResult); resetToIdle(); return true; }

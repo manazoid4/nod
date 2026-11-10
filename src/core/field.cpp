@@ -15,6 +15,7 @@
 #include "alerts.h"
 #include "launcher.h"
 #include "notify.h"
+#include "phone_input.h"
 #include "quiet.h"
 #include "settings.h"
 #include "shell.h"
@@ -169,6 +170,7 @@ void finishBeamPull(const host::BeamMessage& msg) {
         std::string detail = e.source.empty() ? e.text : e.source + ": " + e.text;
         if (detail.size() > 160) detail.resize(160);
         if (e.kind == "alert") { alerts::onEvent(e); continue; }  // generic alerts: Buddy overlay + priority table
+        if (e.kind == "text_input") { phone::onTextInput(e); continue; }  // phone keyboard: literal insert only
         // Quiet mode decides the sound only; the toast is always posted.
         using quiet::Ev;
         const Ev ev = e.kind == "done" ? Ev::Done : e.kind == "usage" ? Ev::Usage
