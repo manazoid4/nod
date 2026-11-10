@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Piblo" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/piblo_cream</item>
+    </style>
+    <color name="piblo_cream">#FFF6E9</color>
+    <color name="piblo_navy">#0B1B3A</color>
+    <color name="piblo_yellow">#FFD23F</color>
+</resources>
