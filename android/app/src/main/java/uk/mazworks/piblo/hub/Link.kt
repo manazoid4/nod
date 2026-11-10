@@ -17,6 +17,8 @@ interface Transport {
     fun postAlert(json: String): String
     fun postText(id: String, text: String, mode: String): String
     fun textStatus(id: String): String
+    fun screenPng(): ByteArray
+    fun pressKeys(keys: String)
 }
 
 class CoreTransport(private val c: CoreClient) : Transport {
@@ -27,6 +29,8 @@ class CoreTransport(private val c: CoreClient) : Transport {
     override fun postAlert(json: String) = c.postAlert(json)
     override fun postText(id: String, text: String, mode: String) = c.postText(id, text, mode)
     override fun textStatus(id: String) = c.textStatus(id)
+    override fun screenPng() = c.screenPng()
+    override fun pressKeys(keys: String) = c.pressKeys(keys)
 }
 
 /** Clearly a stub: the current firmware has no BLE GATT service. See android/README.md for the proposed framing. */
@@ -39,6 +43,8 @@ object BleTransportStub : Transport {
     override fun postAlert(json: String): String = na()
     override fun postText(id: String, text: String, mode: String): String = na()
     override fun textStatus(id: String): String = na()
+    override fun screenPng(): ByteArray = na()
+    override fun pressKeys(keys: String) = na()
 }
 
 class Backoff(private val minMs: Long = 2_000, private val maxMs: Long = 60_000) {

@@ -14,6 +14,7 @@ import uk.mazworks.piblo.proto.Proto
 import uk.mazworks.piblo.proto.ProtoException
 import uk.mazworks.piblo.proto.TEXT_MAX
 import uk.mazworks.piblo.proto.TEXT_MODES
+import uk.mazworks.piblo.proto.KEY_MAX
 
 /** Fixtures are real responses from Core (host/mazhost) captured by android/tools/gen-fixtures.sh. */
 fun fixture(name: String): String =
@@ -110,6 +111,13 @@ class ProtoTest {
         assertEquals(TEXT_MAX, j.getString("text").length)   // capped at 500, never rejected
         assertEquals("insert", j.getString("mode"))
         assertEquals(setOf("insert", "replace", "send"), TEXT_MODES)
+    }
+
+    @Test fun keysJsonTrimsCapsAndEscapes() {
+        assertEquals("enter", JSONObject(Proto.keysJson("  enter  ")).getString("keys"))
+        assertEquals(KEY_MAX, JSONObject(Proto.keysJson("x".repeat(600))).getString("keys").length)
+        // quotes and backslashes must round-trip through JSON escaping, not break the body
+        assertEquals("""a"b\c""", JSONObject(Proto.keysJson("""a"b\c""")).getString("keys"))
     }
 
     @Test fun parseTextStatusAndId() {

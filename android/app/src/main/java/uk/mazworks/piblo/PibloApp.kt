@@ -42,7 +42,7 @@ class PibloApp : Application() {
     val db by lazy { PibloDb.get(this) }
     val settings by lazy { SettingsRepo(this) }
     @Volatile private var visible = 0
-    @Volatile private var transport: Transport? = null
+    @Volatile var transport: Transport? = null
     private var linkJob: Job? = null
     private var lastForward = 0L
     private var lastForwardKey = ""
