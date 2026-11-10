@@ -18,7 +18,7 @@ describe('token discovery', () => {
   });
   it('finds the token in the install dir .env without any manual copy', () => {
     const env = { LOCALAPPDATA: 'C:\\Users\\u\\AppData\\Local' };
-    const dir = 'C:\\Users\\u\\AppData\\Local\\MAZ Core';
+    const dir = 'C:\\Users\\u\\AppData\\Local\\Piblo\\Core';
     const fs = mkFs({ [`${dir}\\.env`]: 'MAZ_TOKEN=tok-1\nMAZ_PORT=8800' });
     const loc = locateCore({ env, resourcesPath: 'R', devHostDir: 'D', fs });
     expect(loc.installDir).toBe(dir);
@@ -45,7 +45,7 @@ describe('locateCore', () => {
     expect(loc.envFile).toBeNull();
   });
   it('prefers the installed copy and pythonw', () => {
-    const d = sep('L/MAZ Core');
+    const d = sep('L/Piblo/Core');
     const fs = mkFs({ [`${d}\\mazhost\\__main__.py`]: '', [`${d}\\.venv\\Scripts\\pythonw.exe`]: '', [`${d}\\.venv\\Scripts\\python.exe`]: '', [`${d}\\.env`]: 'MAZ_TOKEN=t' });
     const loc = locateCore({ env: { LOCALAPPDATA: 'L' }, resourcesPath: 'R', devHostDir: 'D', fs });
     expect(loc.sourceDir).toBe(d);

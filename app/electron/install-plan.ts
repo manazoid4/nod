@@ -3,12 +3,12 @@
 export type InstallPlan = { kind: 'reuse-task'; task: string } | { kind: 'run-installer' };
 
 /** Names of scheduled tasks that already keep Core alive (the real MAZPC uses `nod-core`; older installs use "MAZ Core ..."). */
-const CORE_TASK = /^(nod-core|maz[ -]core)(\b.*)?$/i;
+const CORE_TASK = /^(piblo[ -]core|nod-core|maz[ -]core)(\b.*)?$/i;
 
 export function findCoreTask(taskNames: readonly string[]): string | null {
   const names = taskNames.map((n) => n.trim()).filter(Boolean);
   // Prefer the canonical name when several match.
-  return names.find((n) => n.toLowerCase() === 'nod-core') ?? names.find((n) => CORE_TASK.test(n)) ?? null;
+  return names.find((n) => n.toLowerCase() === 'piblo core') ?? names.find((n) => n.toLowerCase() === 'nod-core') ?? names.find((n) => CORE_TASK.test(n)) ?? null;
 }
 
 export function planInstall(taskNames: readonly string[]): InstallPlan {

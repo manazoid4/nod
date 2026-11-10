@@ -5,6 +5,9 @@ describe('install plan', () => {
   it('reuses the nod-core scheduled task and skips the Startup-folder installer', () => {
     expect(planInstall(['OneDrive Standalone Update', 'nod-core'])).toEqual({ kind: 'reuse-task', task: 'nod-core' });
   });
+  it('prefers the Piblo Core task', () => {
+    expect(findCoreTask(['MAZ Core', 'Piblo Core', 'nod-core'])).toBe('Piblo Core');
+  });
   it('recognises older "MAZ Core" tasks', () => {
     expect(findCoreTask(['MAZ Core'])).toBe('MAZ Core');
     expect(findCoreTask(['MAZ Core Autostart'])).toBe('MAZ Core Autostart');

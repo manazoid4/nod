@@ -515,7 +515,8 @@ textarea.input {
 }
 .screen {
   width: 100%;
-  max-width: 720px;
+  max-width: 960px;
+  height: auto; /* the img height="135" attribute would otherwise squash it to a strip */
   aspect-ratio: 240 / 135;
   image-rendering: pixelated;
   border-radius: var(--r-sm);

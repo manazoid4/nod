@@ -51,7 +51,8 @@ export interface CoreLocation {
 }
 
 export function locateCore({ env, resourcesPath, devHostDir, fs }: LocateInput): CoreLocation {
-  const installDir = env.NOD_CORE_DIR || path.join(env.LOCALAPPDATA || '', 'MAZ Core');
+  // Piblo Core lives in %LOCALAPPDATA%\Piblo\Core (run by the "Piblo Core" logon task). Never the MazRouter "MAZ Core" folder.
+  const installDir = env.PIBLO_CORE_DIR || env.NOD_CORE_DIR || path.join(env.LOCALAPPDATA || '', 'Piblo', 'Core');
   const bundled = [path.join(resourcesPath, 'core'), devHostDir].find((d) => d && fs.exists(path.join(d, 'mazhost', '__main__.py'))) ?? null;
   const sourceDir = fs.exists(path.join(installDir, 'mazhost', '__main__.py')) ? installDir : bundled;
   const python =
