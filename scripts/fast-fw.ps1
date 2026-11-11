@@ -3,10 +3,10 @@
 # Uses its own worktree so Core's checkout is never touched. stage_fw.py still refuses any bin
 # that is not origin/main HEAD, so this is as safe as the CI path, just ~10x quicker when warm.
 $ErrorActionPreference = 'Stop'
-$repo = 'C:\Users\manaz\nod'
-$wt   = 'C:\Users\manaz\piblo-fw'
+$repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$wt   = Join-Path $env:USERPROFILE 'piblo-fw'
 $pio  = (Get-Command pio -ErrorAction SilentlyContinue).Source
-if (-not $pio) { $pio = 'C:\Users\manaz\AppData\Local\hermes\hermes-agent\venv\Scripts\pio.exe' }
+if (-not $pio) { throw 'pio not found on PATH: install PlatformIO or add pio to PATH' }
 $py   = Join-Path $repo 'host\.venv\Scripts\python.exe'
 
 $t = Get-Date

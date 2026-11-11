@@ -1,9 +1,9 @@
 @echo off
 rem One-time bootstrap for Core auto-update. Run on the PC: BOOTSTRAP-AUTOUPDATE.cmd [deploy-worktree-path]
-rem Default worktree: C:\Users\manaz\maz-pocket-deploy
+rem Default worktree: %USERPROFILE%\piblo-deploy
 setlocal
 set "WT=%~1"
-if "%WT%"=="" set "WT=C:\Users\manaz\maz-pocket-deploy"
+if "%WT%"=="" set "WT=%USERPROFILE%\piblo-deploy"
 set "INSTALL=%LOCALAPPDATA%\MAZ Core"
 set "PY=%INSTALL%\.venv\Scripts\python.exe"
 if not exist "%WT%\.git" ( echo Not a git checkout: %WT% & exit /b 1 )

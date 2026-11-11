@@ -1,6 +1,6 @@
 // Generates the three HyperFrames projects (product, everyday, launch) from one scene list each.
 // Usage: node media/films/build.mjs   then   bash media/films/render.sh
-import { mkdirSync, writeFileSync, cpSync, readdirSync } from "node:fs";
+import { mkdirSync, writeFileSync, cpSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -82,7 +82,9 @@ for (const [name, f] of Object.entries(films)) {
   const dir = join(here, name), assets = join(dir, "assets");
   mkdirSync(assets, { recursive: true });
   cpSync(join(here, "shared"), assets, { recursive: true, filter: s => !s.endsWith(".sh") });
-  cpSync(join(here, "..", "source", "shotA-hallway.mp4"), join(assets, "shotA-hallway.mp4"));
+  const shot = join(here, "..", "source", "shotA-hallway.mp4"); // raw source clip is kept privately
+  if (existsSync(shot)) cpSync(shot, join(assets, "shotA-hallway.mp4"));
+  else console.warn("shotA-hallway.mp4 not in this repo: film renders without it");
   writeFileSync(join(dir, "index.html"), page(name, f));
   console.log("wrote", name, readdirSync(assets).length, "assets");
 }

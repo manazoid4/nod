@@ -33,7 +33,7 @@ namespace apps {
 // the phone router only inserts into that field and goes stale after
 // kPhoneTargetMs, so a hidden field (list mode, popped screen) correctly
 // answers "no field". Word suggestions are deliberately skipped: the flash
-// budget for them is not there (see docs/EASY-MODE-HANDOVER.md).
+// budget for them is not there.
 struct TextField {
     std::string text;
     size_t      limit = 120;
