@@ -59,6 +59,7 @@ Wire these into live voice, reusing the modules above:
 6. **Send it to Piblo**: Android share target -> captions first, local Whisper, small free/local model summary (target a few hundred tokens), filed into `library.py`; resurfaces saves when relevant.
 7. **First three minutes** onboarding and **Buddy forms** (Seed, Monk, Tinkerer, Explorer, Night Owl, Sunny; each = pixel art + one rule).
 8. **MCP connections** for Gmail, Calendar, Notion, GitHub, Hermes (use existing MCP servers).
+9. **Teach Demo, refined** ("show me once"): the recording side already exists (device CAPTURE -> TEACH DEMO; `teach_capture.py`: screen + mic via ffmpeg, M marks, transcription, scene frames). Add the missing half: turn a recording into a reusable skill/agent (steps written in plain words from transcript + marks + frames), read it back for the user to confirm, then run it next time under the safety levels (computer actions always "ask on Piblo" until the user loosens it). Recordings stay local; offer pause and delete; never keep passwords visible in saved frames. Feeds the learning loop.
 
 If the four weeks cannot fit everything, finish in this order and stop cleanly; never leave half-wired features.
 

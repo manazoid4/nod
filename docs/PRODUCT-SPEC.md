@@ -28,6 +28,7 @@ Piblo is a small, calm device you talk to like a person. It remembers what you t
 | Talk like a person | Natural, interruptible conversation. Wake word "Hey Piblo" plus a mic button. Just start talking to interrupt. |
 | Remembers you | "Like I said yesterday..." Memory across days, linked notes you can browse (Obsidian-style). |
 | Does things | Ask Piblo to build an agent ("check my email at 8 and tell me what matters"). Agents can be spawned mid-conversation and run off-device. |
+| Show me once (Teach Demo) | Do a task on your computer while explaining it; Piblo turns the recording into a reusable helper, reads it back for you to confirm, then does it for you next time (with your approval). Recordings stay on your own devices. |
 | Speaks first when it matters | Launch scope: time and travel (commute delays, leave now, meeting in 10, deadlines). |
 | Neutral | Works with any AI and any agent harness. Open-weight models by default, any provider (e.g. OpenRouter) optional. No lock-in. |
 | Yours | Memory is local-first on your own devices with optional end-to-end encrypted sync; can also live in Notion, a home server and more. |
