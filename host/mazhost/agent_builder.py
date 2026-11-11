@@ -24,17 +24,25 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from .config import Settings
+from .buddy import Buddy
 from .skill_vault import SkillVault, _slug
 
 LEVELS = ("just_do_it", "ask_on_piblo", "never")
 _SEVERITY = {level: i for i, level in enumerate(LEVELS)}
 
 _NEVER_VERBS = re.compile(
-    r"\b(pay|pays|paid|payment|payments?|bills?|invoices?|purchases?|buy|buys|buying"
-    r"|transfers?|deletes?|deleting|deletion|destroy|wipe)\b", re.I)
+    r"\b(pay|pays|paid|paying|payment|payments?|bills?|invoices?|purchases?|buy|buys|buying|bought"
+    r"|order|orders|ordered|ordering|transfers?|delete|deletes|deleted|deleting|deletion|erase|erases|erased|erasing|destroy|wipe)\b", re.I)
 _ASK_VERBS = re.compile(
-    r"\b(sends?|sending|books?|booking|posts?|posting|messages?|messaging"
-    r"|shares?|sharing|publish|reply|replies|respond|dm|texts?|texting)\b", re.I)
+    r"\b(sends?|sending|sent|books?|booking|posts?|posting|messages?|messaging"
+    r"|shares?|sharing|publish|reply|replies|respond|dm|texts?|texting"
+    r"|cancel|cancels|cancelled|cancelling|remove|removes|removed|removing"
+    r"|reserve|reserves|reserved|reserving|forward|forwards|forwarded|forwarding"
+    r"|call|calls|called|calling|tweet|tweets|tweeted|tweeting|unsubscribe|unsubscribes)\b", re.I)
+_SAFE_VERBS = re.compile(
+    r"\b(read|reads|reading|summari[sz]e|summari[sz]es|remind|reminds|reminding|check|checks|checking|tell|tells|telling)\b", re.I)
+_VERB_FORM = re.compile(r"\b[a-z]{3,}(?:ing|ed|ize|ise|ate|ify|fy)\b", re.I)
+_UNSAFE_LEADING_VERB = re.compile(r"^(?:email|e-mail)\s+", re.I)
 
 _AT_TIME = re.compile(r"\bat\s+(\d{1,2})(?::(\d{2}))?\s*([ap])?m?\b", re.I)
 _INTERVAL = re.compile(r"\bevery\s+(\d{1,3})\s*h(?:ou)?rs?\b", re.I)
@@ -45,20 +53,29 @@ _FILLER = re.compile(
 
 _SAFETY = {
     "just_do_it": "Read, summarise and remind only. Sending, booking, posting, paying or deleting is out of scope for this agent.",
-    "ask_on_piblo": "Sending, booking or posting needs the owner's key press on Piblo first (the existing buddy.request approval path).",
+    "ask_on_piblo": "Sending, booking or posting waits for your yes on Piblo.",
     "never": "Payments and deletions stay locked unless the owner unlocks them on Piblo.",
 }
 _SCHEDULE_WORDS = {"daily": "every day", "weekdays": "on weekdays", "interval": "every few hours"}
 
 
 def _level_for(text: str) -> str:
-    """Strictest level the verbs demand. Nothing that sends, books, posts, pays
-    or deletes may ever default to just_do_it."""
+    """Allow automatic runs only for clauses made entirely of safe verbs."""
     if _NEVER_VERBS.search(text):
         return "never"
-    if _ASK_VERBS.search(text):
+    if _ASK_VERBS.search(text) or _UNSAFE_LEADING_VERB.search(_job_for(text)):
         return "ask_on_piblo"
-    return "just_do_it"
+    job = _job_for(text)
+    clauses = re.split(
+        r"\b(?:and then|then|and|to|while|when|as|without|during|before|after|until|but|or|if|unless|whenever|by|about)\b|[,;]",
+        job, flags=re.I,
+    )
+    if clauses and all(_SAFE_VERBS.match(clause.strip()) for clause in clauses) and all(
+        _SAFE_VERBS.fullmatch(match.group())
+        for match in _VERB_FORM.finditer(job)
+    ):
+        return "just_do_it"
+    return "ask_on_piblo"
 
 
 def _strictest(a: str, b: str) -> str:
@@ -115,12 +132,14 @@ class AgentBuilder:
         data_dir: str | Path,
         llm: Any = None,
         clock: Callable[[], float] = time.time,
+        buddy: Buddy | None = None,
     ) -> None:
         self.vault = vault
         self.store_file = Path(data_dir).expanduser() / "agents.json"
         self.store_file.parent.mkdir(parents=True, exist_ok=True)
         self.llm = llm
         self.clock = clock
+        self.buddy = buddy
         self._agents: dict[str, dict[str, Any]] = self._load()
 
     def _load(self) -> dict[str, dict[str, Any]]:
@@ -227,10 +246,25 @@ class AgentBuilder:
             raise KeyError(agent_id)
         return agent
 
+    def _approve(self, agent: dict[str, Any], summary: str) -> bool:
+        if self.buddy is None:
+            return False
+        request = self.buddy.request("Run agent", summary, agent=agent["id"])
+        if request.get("decision") == "allow":
+            return True
+        if request.get("decision"):
+            return False
+        return self.buddy.state(request["id"], wait=60).get("decision") == "allow"
+
     def set_level(self, agent_id: str, level: str) -> dict[str, Any]:
         if level not in LEVELS:
             raise ValueError("unknown_level")
         agent = self._get(agent_id)
+        required = _level_for(agent["job"])
+        if _SEVERITY[level] < _SEVERITY[required] and not self._approve(
+            agent, f"Allow lowering {agent['name']} from {agent['level']} to {level}?"
+        ):
+            raise ValueError("level_requires_approval")
         agent["level"] = level
         self._save()
         return dict(agent)
@@ -270,6 +304,13 @@ class AgentBuilder:
                 continue
             agent["last_run_at"] = now
             self._save()
+            level = agent["level"]
+            if level == "never":
+                continue
+            if level == "ask_on_piblo" and not self._approve(
+                agent, f"Run {agent['name']}: {agent['job']}"
+            ):
+                continue
             runner(dict(agent))
             ran.append(agent["id"])
         return ran

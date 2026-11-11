@@ -122,7 +122,6 @@ class SpeaksFirst:
                 if now >= leave_at:
                     self._post(f"sf:leave:{title}:{int(start)}", AlertIn(
                         source="speaks_first", kind="meeting", title=f"Leave now for {title}"[:60],
-                        body=f"Travel is about {travel} min; you wanted a {self.buffer_minutes} min buffer.",
                         priority="urgent", actions=["ack"],
                     ), urgent=True, posted=posted, held=held)
             if now >= start - warn * 60:

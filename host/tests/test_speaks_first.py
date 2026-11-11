@@ -44,6 +44,8 @@ def test_leave_now_fires_at_the_right_minute(tmp_path):
     clock.t = at(DAY, "09:35")
     assert sf.check([event], now=clock.t)["posted"] == ["Leave now for Dentist"]
     assert "Leave now for Dentist" in titles(buddy)
+    alert = buddy.alerts()["alerts"][0]
+    assert "20 min" not in alert["title"] and "20 min" not in alert.get("body", "")
 
 
 def test_no_duplicate_nudges(tmp_path):

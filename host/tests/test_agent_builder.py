@@ -27,7 +27,7 @@ def at(day: str, hhmm: str) -> float:
     return datetime.fromisoformat(f"{day}T{hhmm}:00").timestamp()
 
 
-def builder(tmp_path, clock=None, llm=None):
+def builder(tmp_path, clock=None, llm=None, buddy=None):
     cfg = Settings(
         _env_file=None, token=TOKEN,
         skill_vault_dir=str(tmp_path / "skills"),
@@ -35,7 +35,7 @@ def builder(tmp_path, clock=None, llm=None):
         teach_dir=str(tmp_path / "teach"),
     )
     return AgentBuilder(cfg, SkillVault(cfg, llm or object()), tmp_path / "data",
-                        llm=llm, clock=clock or Clock(at("2026-11-11", "09:00")))
+                        llm=llm, clock=clock or Clock(at("2026-11-11", "09:00")), buddy=buddy)
 
 
 def test_email_example_builds_daily_0800_just_do_it(tmp_path):
@@ -60,6 +60,19 @@ def test_email_example_builds_daily_0800_just_do_it(tmp_path):
     ("Post my standup notes at 17:30", "ask_on_piblo"),
     ("Pay my bills", "never"),
     ("Delete my old photos every 6 hours", "never"),
+    ("email my boss at 8", "ask_on_piblo"),
+    ("check my email at 8 and tell me what matters", "just_do_it"),
+    ("check my email at 8 and forward the urgent one", "ask_on_piblo"),
+    ("check email while organising files", "ask_on_piblo"),
+    ("read my calendar while coordinating the team", "ask_on_piblo"),
+    ("check email by organising files", "ask_on_piblo"),
+    ("read the calendar about coordinating the team", "ask_on_piblo"),
+    ("Order lunch every weekday", "never"),
+    ("Erase the old backups", "never"),
+    ("paying rent", "never"),
+    ("bought groceries", "never"),
+    ("deleted my backups", "never"),
+    ("erased my notes", "never"),
 ])
 def test_level_defaults_from_verbs(tmp_path, text, level):
     assert builder(tmp_path).build_agent(text)["level"] == level
@@ -104,7 +117,7 @@ def test_due_agents_with_fake_clock(tmp_path):
     daily = b.build_agent("check my email at 8 and tell me what matters")
     later = b.build_agent("tidy my desk at 9")
     hourly = b.build_agent("check the weather every 2 hours")
-    weekday = b.build_agent("review my calendar at 8 on weekdays")
+    weekday = b.build_agent("check my calendar at 8 on weekdays")
     assert b.due_agents(clock.t) == []  # nothing due yet
 
     clock.t = at("2026-11-11", "08:00")
@@ -123,6 +136,61 @@ def test_due_agents_with_fake_clock(tmp_path):
 
     clock.t = at("2026-11-14", "09:00")  # Saturday: weekdays agent rests
     assert {a["id"] for a in b.due_agents(clock.t)} == {daily["id"], later["id"], hourly["id"]}
+
+
+def test_runner_requires_approval_and_never_agents_do_not_run(tmp_path):
+    class DenyBuddy:
+        def request(self, *args, **kwargs):
+            return {"id": "pending"}
+
+        def state(self, request_id, wait=0):
+            return {"decision": "deny"}
+
+    clock = Clock(at("2026-11-11", "08:00"))
+    b = builder(tmp_path, clock=clock, buddy=DenyBuddy())
+    safe = b.build_agent("check email at 8")
+    approval = b.build_agent("email my boss at 8")
+    locked = b.build_agent("delete old backups at 8")
+    ran = []
+
+    assert b.run_due(ran.append, clock.t) == [safe["id"]]
+    assert [agent["id"] for agent in ran] == [safe["id"]]
+    assert approval["id"] not in [agent["id"] for agent in ran]
+    assert locked["id"] not in [agent["id"] for agent in ran]
+
+    class AllowBuddy:
+        def request(self, *args, **kwargs):
+            return {"id": "approved", "decision": "allow"}
+
+    allowed = builder(tmp_path / "allowed", clock=clock, buddy=AllowBuddy())
+    action = allowed.build_agent("email my boss at 8")
+    ran.clear()
+    assert allowed.run_due(ran.append, clock.t) == [action["id"]]
+    assert ran[0]["id"] == action["id"]
+
+
+def test_lowering_level_requires_approved_piblo_request(tmp_path):
+    class BuddyDecision:
+        def __init__(self, decision):
+            self.decision = decision
+            self.requested = []
+
+        def request(self, *args, **kwargs):
+            self.requested.append((args, kwargs))
+            return {"id": "request", "decision": self.decision}
+
+    denied = BuddyDecision("deny")
+    b = builder(tmp_path / "denied", buddy=denied)
+    agent = b.build_agent("email my boss at 8")
+    with pytest.raises(ValueError, match="level_requires_approval"):
+        b.set_level(agent["id"], "just_do_it")
+    assert b.list()[0]["level"] == "ask_on_piblo"
+    assert denied.requested
+
+    allowed = BuddyDecision("allow")
+    b = builder(tmp_path / "allowed", buddy=allowed)
+    agent = b.build_agent("email my boss at 8")
+    assert b.set_level(agent["id"], "just_do_it")["level"] == "just_do_it"
 
 
 def test_routes_behind_bearer_token(tmp_path, monkeypatch):
