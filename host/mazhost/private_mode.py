@@ -1,13 +1,13 @@
-"""Private mode: one choke point for every outbound request Core makes.
+"""Private mode: Piblo Core makes no internet requests while it is on.
 
-When private mode is on, Core makes zero outbound internet connections: only
+When private mode is on, Core permits requests only to
 loopback, RFC1918/private-LAN, link-local, IPv6 loopback/ULA, ``localhost`` and
 ``.local`` (mDNS) hosts are allowed. Every httpx client Core creates goes through
 ``client()``/``async_client()`` here, so a request can only reach a socket after
 ``guard()`` has passed it. Raw ``httpx.get``/``httpx.post``/… must go through
 ``get()``/``post()`` too, and the static test in ``test_private_mode.py`` fails
 the build if any other module under ``host/mazhost/`` constructs a client or
-calls httpx directly.
+calls httpx directly. See PRIVATE-MODE.md for the resolver and runtime limits.
 """
 
 from __future__ import annotations
@@ -117,6 +117,8 @@ def is_local_url(url: str) -> bool:
     if not host:
         return False
     if host == "localhost" or host.endswith(".local"):
+        # .local trusts the host resolver/mDNS: a misconfigured or hostile resolver
+        # can return a public IP. This is a request guard, not an OS firewall.
         return True
     try:
         ip = ipaddress.ip_address(host.split("%")[0])
@@ -132,6 +134,12 @@ def guard(url: str) -> None:
     if enabled() and not is_local_url(url):
         host = (urlsplit(url if "://" in url else "//" + url).hostname) or url
         raise PrivateModeError(f"private mode: outbound request blocked: {host}")
+
+
+def guard_subprocess(name: str, *, local: bool = False) -> None:
+    """Unknown code/CLIs cannot be constrained by Core's HTTP transport guard."""
+    if enabled() and not local:
+        raise PrivateModeError(f"PRIVATE_MODE: subprocess blocked: {name}")
 
 
 # --- guarded transports and clients --------------------------------------

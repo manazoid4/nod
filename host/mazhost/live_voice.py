@@ -354,6 +354,9 @@ class LiveBridge:
 
     # ---- model side ------------------------------------------------------
     async def _connect(self) -> None:
+        private_mode.guard(self.url)
+        self.cloud = self.cfg.live_brain == "cloud" and not private_mode.enabled()
+        self.brain = LiveBrain(self.cfg) if self.cloud else None
         self.up = await connect(self.url, max_size=None, open_timeout=5)
         json.loads(await self.up.recv())  # session.created
         await self.up.send(json.dumps({"type": "session.update", "session": {

@@ -422,6 +422,16 @@ class MazCore:
         return None
 
     def _run(self, command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
+        # Builds/tests may download dependencies or execute project-defined code.
+        private_mode.guard_subprocess("project command", local=command in (
+            ["git", "branch", "--show-current"], ["git", "status", "--porcelain"],
+            ["git", "status", "--short", "--branch"], ["git", "log", "-1", "--pretty=%h %s"],
+            ["git", "log", "-5", "--pretty=%h %ad %s", "--date=short"],
+            ["git", "rev-parse", "--is-inside-work-tree"],
+        ))
+        if private_mode.enabled():
+            # Even status can invoke an arbitrary repository fsmonitor hook.
+            command = ["git", "--no-pager", "-c", "core.fsmonitor=false", *command[1:]]
         try:
             completed = subprocess.run(
                 command,

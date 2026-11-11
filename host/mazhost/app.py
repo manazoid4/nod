@@ -216,6 +216,10 @@ def create_app(
     install_validation_exception_handler(api)
     api.add_middleware(RemoteGuardMiddleware)
 
+    @api.exception_handler(private_mode.PrivateModeError)
+    async def private_error_handler(_request: Request, error: private_mode.PrivateModeError):
+        return JSONResponse(status_code=403, content={"ok": False, "error": "PRIVATE_MODE", "detail": str(error)})
+
     @api.exception_handler(RouteError)
     async def route_error_handler(_request: Request, error: RouteError) -> JSONResponse:
         return JSONResponse(status_code=error.http_status, content=error.payload())
@@ -506,6 +510,14 @@ def create_app(
 
     @api.post("/privacy")
     def privacy_set(body: PrivacyRequest):
+        if not body.private_mode and private_mode.enabled():
+            approval = buddy.request(
+                "Turn off private mode", "Allow Piblo Core to use internet services?",
+                category="other", recipient="Piblo Core internet", sensitive=True,
+            )
+            decision = buddy.state(approval["id"], wait=60)
+            if decision.get("decision") != "allow":
+                raise HTTPException(403, "PRIVATE_MODE: approval denied or expired")
         private_mode.save(cfg, body.private_mode)
         return privacy()
 

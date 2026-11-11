@@ -59,6 +59,7 @@ class Needs:
         hit = self._pr_cache.get(repo)
         if hit and time.monotonic() - hit[0] < PR_CACHE_S:
             return hit[1]
+        private_mode.guard_subprocess("GitHub PR list")
         out = subprocess.run(
             ["gh", "pr", "list", "--repo", repo, "--state", "open", "--limit", "100",
              "--json", "number,title,createdAt,url"],

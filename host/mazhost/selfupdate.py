@@ -248,7 +248,14 @@ class SelfUpdater:
     def _git(self, args: list[str], check: bool = True, timeout: int = 120) -> str:
         if not self.repo:
             return ""
-        p = subprocess.run(["git", *args], cwd=self.repo, capture_output=True, text=True, timeout=timeout)
+        # Only these exact status queries are local; hooks/builds/fetch are not.
+        private_mode.guard_subprocess("self-update git", local=args in (
+            ["rev-parse", "HEAD"], ["status", "--porcelain", "--untracked-files=no"],
+        ))
+        command = ["git", *args]
+        if private_mode.enabled():
+            command = ["git", "--no-pager", "-c", "core.fsmonitor=false", *args]
+        p = subprocess.run(command, cwd=self.repo, capture_output=True, text=True, timeout=timeout)
         if check and p.returncode != 0:
             raise RuntimeError(f"git {args[0]} failed: {p.stderr.strip()[:200]}")
         return p.stdout.strip() if p.returncode == 0 else ""
@@ -260,6 +267,7 @@ class SelfUpdater:
             return set()
 
     def _update_code(self, m: dict) -> str:
+        private_mode.guard_subprocess("self-update")
         target = str(m["git_sha"]).strip().lower()
         if not self.repo:
             return "code_no_checkout"
@@ -310,6 +318,7 @@ class SelfUpdater:
         return str(exe)
 
     def _run_pip(self) -> bool:
+        private_mode.guard_subprocess("self-update pip")
         log.info("selfupdate: pip install -r host/requirements.txt")
         p = subprocess.run([self._python(), "-m", "pip", "install", "-r", str(self.repo / "host" / "requirements.txt")],
                            cwd=self.repo, capture_output=True, text=True, timeout=1500)
@@ -319,6 +328,7 @@ class SelfUpdater:
         return p.returncode == 0
 
     def _spawn_restart(self, new_sha: str, prev_sha: str) -> None:
+        private_mode.guard_subprocess("self-update restart")
         if os.name != "nt":
             log.info("selfupdate: restart required (non-Windows); new code %s on disk", new_sha[:10])
             return

@@ -58,6 +58,7 @@ class BridgeWorker:
         if not gh:
             return ""
         try:
+            private_mode.guard_subprocess("GitHub CLI")
             result = subprocess.run(
                 [gh, "auth", "token"], capture_output=True, text=True, timeout=5,
                 shell=False, encoding="utf-8", errors="replace"
@@ -89,7 +90,7 @@ class BridgeWorker:
             try:
                 self.poll_once()
                 self._last_error = ""
-            except (CoreError, httpx.HTTPError, ValueError, TypeError) as error:
+            except (CoreError, private_mode.PrivateModeError, httpx.HTTPError, ValueError, TypeError) as error:
                 self._last_error = str(error)[:300]
             self._stop.wait(self.settings.bridge_poll_seconds)
 
