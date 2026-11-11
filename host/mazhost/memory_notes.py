@@ -101,7 +101,10 @@ class MemoryNotes:
             for other_path in self._paths():
                 if other_path == path:
                     continue
-                other = self._read(other_path)
+                try:
+                    other = self._read(other_path)
+                except UnicodeError:
+                    continue
                 if set(note["tags"]) & set(other["tags"]):
                     note["links"].append(other_path.stem)
                     if path.stem not in other["links"]:
@@ -119,7 +122,10 @@ class MemoryNotes:
             hits = []
             for path in reversed(self._paths()):
                 if start.isoformat() <= path.stem <= end.isoformat():
-                    note = self._read(path)
+                    try:
+                        note = self._read(path)
+                    except UnicodeError:
+                        continue
                     if not topics or topics.intersection(note["tags"]):
                         hits.append(note)
             return sorted(hits, key=lambda note: (len(topics.intersection(note["tags"])), note["date"]), reverse=True)
@@ -140,7 +146,7 @@ def build_memory_router(notes: MemoryNotes) -> APIRouter:
             return {"date": path.stem, "note": path.name}
         except ValueError as error:
             raise HTTPException(422, str(error)) from error
-        except OSError as error:
+        except (OSError, UnicodeError) as error:
             raise HTTPException(503, "Could not save memory") from error
 
     @router.get("/memory/recall")

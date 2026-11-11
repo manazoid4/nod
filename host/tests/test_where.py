@@ -61,14 +61,16 @@ def test_mixed_history_sorts_times_and_skips_hidden_documents(tmp_path, monkeypa
     assert "Finished reminder" not in str(items)
 
 
-def test_phone_uses_existing_buddy_text_queue(tmp_path):
+def test_phone_uses_alert_events_consumed_by_android_companion(tmp_path):
     c, _, buddy, _ = setup(tmp_path)
     item = c.post("/park", json={"text": "Check the sketch"}).json()
     r = c.post(f"/where/{item['id']}/phone")
     assert r.status_code == 200
-    queued = buddy.get_text(r.json()["id"])
-    assert queued["text"] == "Check the sketch" and queued["status"] == "pending"
-    assert any(e["kind"] == "text_input" for e in buddy.events()["events"])
+    assert r.json()["routed"] == "alert"
+    event = buddy.events()["events"][-1]
+    assert event["kind"] == "alert"
+    assert event["alert"]["title"] == "Check the sketch"
+    assert not any(e["kind"] == "text_input" for e in buddy.events()["events"])
     assert c.post("/where/missing/phone").status_code == 404
 
 

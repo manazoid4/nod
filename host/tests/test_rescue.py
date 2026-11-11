@@ -15,6 +15,8 @@ def client_for(data_dir):
     api = FastAPI()
     security = Security(Settings(token="rescue-test-placeholder", _env_file=None))
     install_rescue_routes(api, security.authorize, data_dir)
+    from mazhost.validation import install_validation_exception_handler
+    install_validation_exception_handler(api)
     return TestClient(api, headers={"Authorization": "Bearer rescue-test-placeholder"})
 
 
@@ -92,3 +94,14 @@ def test_corrupt_store_reports_error_without_overwriting(tmp_path):
     assert response.status_code == 503
     assert response.json() == {"detail": "rescue_data_invalid"}
     assert (tmp_path / "rescue.json").read_text(encoding="utf-8") == "not json"
+
+
+def test_lone_surrogate_returns_422_without_echoing_input(tmp_path):
+    import json
+
+    payload = json.dumps({"notes": "\ud800"})
+    response = client_for(tmp_path).put("/rescue", content=payload, headers={"content-type": "application/json"})
+
+    assert response.status_code == 422
+    assert "\\ud800" not in response.text.lower()
+    assert not (tmp_path / "rescue.json").exists()

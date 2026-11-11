@@ -144,3 +144,40 @@ def test_recall_ranks_keyword_matches_before_recency(tmp_path):
     store_at(tmp_path, date(2026, 11, 11)).remember("Dentist checkup")
     notes = store_at(tmp_path, date(2026, 11, 11))
     assert [hit["date"] for hit in notes.recall("dentist appointment")] == ["2026-11-10", "2026-11-11"]
+
+
+def test_live_brain_selects_matching_entries_before_context_cap(tmp_path):
+    notes = store_at(tmp_path, date(2026, 11, 11))
+    notes.dir.mkdir(parents=True, exist_ok=True)
+    path = notes.dir / "2026-11-11.md"
+    path.write_text("---\ndate: 2026-11-11\ntags: []\n---\n\n- " + "unrelated " * 700 +
+                    "\n- Dentist appointment is at noon\n", encoding="utf-8")
+    brain = LiveBrain(Settings(_env_file=None, data_dir=str(tmp_path), live_memory_github=""))
+    brain.memory_notes = notes
+
+    prompt = asyncio.run(brain.system_prompt("dentist appointment"))
+
+    assert "Dentist appointment is at noon" in prompt
+    assert len(prompt.split("Relevant saved daily notes", 1)[1]) < 6000
+
+
+def test_non_utf8_daily_note_is_skipped_without_breaking_voice_memory(tmp_path):
+    notes = store_at(tmp_path, date(2026, 11, 11))
+    bad = notes.dir / "2026-11-10.md"
+    notes.dir.mkdir(parents=True, exist_ok=True)
+    bad.write_bytes(b"\xff\xfe bad note")
+    brain = LiveBrain(Settings(_env_file=None, data_dir=str(tmp_path), live_memory_github=""))
+    brain.memory_notes = notes
+
+    reply = asyncio.run(brain.command("remember that dentist appointment is at noon"))
+    prompt = asyncio.run(brain.system_prompt("dentist"))
+
+    assert reply == "Got it, I'll remember that."
+    assert "dentist appointment is at noon" in prompt.lower()
+    assert "2026-11-10" not in prompt
+    assert bad.read_bytes() == b"\xff\xfe bad note"
+
+    current = notes.dir / "2026-11-11.md"
+    current.write_bytes(b"\xff\xfe current bad note")
+    assert asyncio.run(brain.command("remember another idea")) == "Sorry, I couldn't save that."
+    assert current.read_bytes() == b"\xff\xfe current bad note"

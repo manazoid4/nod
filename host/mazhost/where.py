@@ -7,14 +7,13 @@ import os
 from pathlib import Path
 import re
 import time
-import uuid
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from . import dumps, library
 from .braindump import structure_braindump
-from .buddy import Buddy, fold_phone_text
+from .buddy import AlertIn, Buddy, fold_phone_text
 from .config import Settings
 from .dump_routes import inbox_dir
 from .focus import Focus
@@ -125,10 +124,10 @@ def build_where_router(cfg: Settings, buddy: Buddy, focus: Focus) -> APIRouter:
         if item["kind"] == "document":
             text = item["source"].removeprefix("project:")
         text = fold_phone_text(text)
-        if text is None or not 1 <= len(text) <= 500:
+        if text is None or not 1 <= len(text) <= 260:
             raise HTTPException(422, "item_not_supported_by_phone_text")
         try:
-            return buddy.post_text(str(uuid.uuid4()), text, "insert", "Piblo Where")
+            return buddy.post_alert(AlertIn(source="piblo-where", title=text[:60], body=text[60:]))
         except OverflowError as error:
             raise HTTPException(429, str(error)) from error
 
