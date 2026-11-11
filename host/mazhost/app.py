@@ -47,6 +47,8 @@ from .errors import ErrorCode, RouteError
 from .focus import Focus, install_focus_routes
 from .where import build_where_router
 from .memory_notes import MemoryNotes, build_memory_router
+from .learning import Learning
+from .speaks_first import SpeaksFirst
 from .rescue import install_rescue_routes
 from .executor import ElevatedExecutor
 from .jobs import CoreJobs
@@ -99,6 +101,18 @@ class TextTurn(BaseModel):
     session_id: str
     route: Route = "local"
     context: str = Field(default="", max_length=1_200)
+
+
+class SpeaksFirstCheck(BaseModel):
+    events: list[dict] = Field(default_factory=list, max_length=100)
+    deadlines: list[dict] = Field(default_factory=list, max_length=100)
+    now: float | None = None
+
+
+class LearningEvent(BaseModel):
+    feature: str = Field(min_length=1, max_length=100)
+    kind: Literal["shown", "acted", "skipped", "corrected"]
+    text: str = Field(default="", max_length=1000)
 
 
 class DeviceAction(BaseModel):
@@ -1018,6 +1032,28 @@ def create_app(
         cfg.buddy_db or resolve_data_dir(cfg) / "buddy.sqlite3")
     buddy = install_buddy_routes(api, Buddy(store=buddy_store, focus=focus, device_keys=device_keys))
     install_companion_routes(api, buddy, cfg.port)
+
+    learning = Learning(resolve_data_dir(cfg), model_router)
+    speaks_first = SpeaksFirst(buddy, focus, learning=learning)
+
+    @api.get("/learning")
+    def learning_summary():
+        return {"summary": learning.weekly_summary()}
+
+    @api.post("/learning/event")
+    def learning_event(body: LearningEvent):
+        return learning.record(body.feature, body.kind, body.text)
+
+    @api.post("/learning/{feature}/rewrite")
+    def learning_rewrite(feature: str):
+        return learning.rewrite_note(feature)
+
+    @api.post("/speaks-first/check")
+    def speaks_first_check(body: SpeaksFirstCheck):
+        try:
+            return speaks_first.check(body.events, body.deadlines, body.now)
+        except (KeyError, TypeError, ValueError, OverflowError) as error:
+            raise HTTPException(400, "invalid_event_or_deadline") from error
 
     api.include_router(build_dump_router(cfg, model_router))
     api.include_router(webui_router)

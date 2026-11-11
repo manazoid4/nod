@@ -437,7 +437,11 @@ def test_no_local_engine_is_a_clear_error():
 # -------------------------------------------------------------- privacy routes
 
 
-def test_privacy_endpoint_flips_and_reports(tmp_path):
+def test_privacy_endpoint_flips_and_reports(tmp_path, monkeypatch):
+    import hashlib
+    import hmac
+    key = "privacy-test-device-key"
+    monkeypatch.setenv("MAZ_ASK_DEVICE_KEY", key)
     cfg = _settings(tmp_path, private_mode=False)
     private_mode.init(cfg)
     app = create_app(cfg, stt=_FakeStt(), pc=_FakePC())
@@ -471,7 +475,10 @@ def test_privacy_endpoint_flips_and_reports(tmp_path):
                 time.sleep(0.01)
             assert private_mode.enabled() is True
             assert pending[0]["category"] == "other"
-            decision = c.post("/buddy/decide", headers=h, json={"id": pending[0]["id"], "decision": "allow"})
+            item = pending[0]
+            message = f"{item['id']}:{item['digest']}:allow:{item['nonce']}".encode()
+            proof = hmac.new(key.encode(), message, hashlib.sha256).hexdigest()
+            decision = c.post("/buddy/decide", headers=h, json={"id": item["id"], "decision": "allow", "proof": proof})
             assert decision.status_code == 200
             assert back.result(timeout=5).json()["private_mode"] is False
 
