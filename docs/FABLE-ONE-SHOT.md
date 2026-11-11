@@ -61,7 +61,19 @@ Wire these into live voice, reusing the modules above:
 8. **MCP connections** for Gmail, Calendar, Notion, GitHub, Hermes (use existing MCP servers).
 9. **Teach Demo, refined** ("show me once"): the recording side already exists (device CAPTURE -> TEACH DEMO; `teach_capture.py`: screen + mic via ffmpeg, M marks, transcription, scene frames). Add the missing half: turn a recording into a reusable skill/agent (steps written in plain words from transcript + marks + frames), read it back for the user to confirm, then run it next time under the safety levels (computer actions always "ask on Piblo" until the user loosens it). Recordings stay local; offer pause and delete; never keep passwords visible in saved frames. Feeds the learning loop.
 
+10. **Polish existing features (do not rebuild)**: Brain Dump becomes "Out of your head" (hold, speak, saved and linked); Focus sprint powers Buddy's Monk form; the needs-you queue (`needs.py`, three tiers) becomes the "Ask on Piblo" approvals screen; dictation and phone approvals: check they still work, then polish.
+11. **Voice typing that beats Wispr Flow, completely free**: hold a Piblo key, speak, release, and the text lands in whatever app has focus on the paired computer (and phone, via the Android app). Copy the approach of Handy (`cjpais/Handy`, MIT): Silero VAD, local Parakeet V3 (CPU) or Whisper (GPU), paste into the focused field with clipboard restore, a personal dictionary, optional cleanup by a small local model ("make this an email"). Reuse existing dictation and phone-text code. Beat Flow on: free, offline and private, a physical button you can press from across the room, learns your words (learning loop), works on phone and computer. Bonus: the same Silero VAD fixes keyboard taps being heard as speech in live voice. If useful, the device can also act as a USB keyboard (the board has native USB); check before relying on it.
+12. **Piblo Rescue**: when your phone dies, Piblo still shows selected offline info: key contacts, travel details, saved notes and emergency instructions, stored on the device and synced when connected. Works without a subscription. Ideas to review: HID-Fi (HID automation; check its licence) and FunModularKeyboard (AGPL: ideas only, do not copy code).
+
 If the four weeks cannot fit everything, finish in this order and stop cleanly; never leave half-wired features.
+
+### Phase 3b: website wording audit (Sonnet drafts, you finish)
+Maz likes the site's design, colours and logo: **keep them**. The wording is nowhere near done and most features are missing. Audit `site/` (homepage, timeline, roadmap) against `docs/PRODUCT-SPEC.md`:
+- Lead with solutions in plain words, not "AI". Tagline stays: "Say it once. Piblo handles the rest."
+- Add the real features clearly: talks like a person, remembers, little helpers (agent builder), speaks first (time and travel), catch me up, send it to Piblo, show me once (Teach Demo), voice typing, out of your head, focus, Buddy forms, Piblo Rescue, connects to your stuff, works with any AI, your memory stays yours.
+- Mark what works today vs what's coming (honest labels); no prices, chip names or dates; hardware stays "proven open hardware".
+- Not too much text, not too vague: someone from an Instagram post should understand Piblo in 10 seconds on a phone, then join the launch list or the Discord.
+- Run the site tests and `mw-site-gate`, check 390 px and 1440 px in a real browser, then merge.
 
 ### Phase 4: the Fable pass
 Review every merged change end to end, as a user would. Fix rough edges, unify wording and sounds (soft warm chimes, soft clicks), make sure every feature feels like one product. Rerun all tests and the 10-turn voice script.
