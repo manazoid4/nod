@@ -459,3 +459,21 @@ def stats(root) -> dict:
     """Counts per kind, collection and project."""
     with closing(_fresh(Path(root))) as conn:
         return _stats(conn)
+
+
+def recent(root, limit: int = 10) -> list[dict]:
+    """Recent saves from the same Markdown source used by the search index."""
+    root = Path(root)
+    rows = []
+    for sub in _DIRS.values():
+        for path in (root / sub).glob("*.md"):
+            try:
+                meta, body = dumps._parse(path.read_text(encoding="utf-8"))
+                if meta.get("id") != path.stem:
+                    continue
+                rows.append({**meta, "title": _split(body)["Caption"][:280] or meta.get("url") or path.stem,
+                             "when": meta.get("ingested") or meta.get("saved") or
+                             datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat()})
+            except (OSError, UnicodeError):
+                continue
+    return sorted(rows, key=lambda row: row["when"], reverse=True)[:limit]

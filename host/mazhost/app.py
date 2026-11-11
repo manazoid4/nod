@@ -39,6 +39,9 @@ from .discovery import DiscoveryResponder
 from . import fw
 from .errors import ErrorCode, RouteError
 from .focus import Focus, install_focus_routes
+from .where import build_where_router
+from .memory_notes import MemoryNotes, build_memory_router
+from .rescue import install_rescue_routes
 from .executor import ElevatedExecutor
 from .jobs import CoreJobs
 from .live_voice import install_live_voice
@@ -203,7 +206,7 @@ def create_app(
         CORSMiddleware,
         allow_origins=cfg.web_origin_list,
         allow_credentials=False,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-MAZ-Token", "X-MAZ-Context"],
         expose_headers=["X-MAZ-Width", "X-MAZ-Height", "X-MAZ-Format"],
     )
@@ -970,6 +973,9 @@ def create_app(
     api.include_router(build_library_router(cfg, model_router))
     api.include_router(build_needs_router(cfg, buddy))
     install_focus_routes(api, focus)
+    api.include_router(build_where_router(cfg, buddy, focus))
+    api.include_router(build_memory_router(MemoryNotes(resolve_data_dir(cfg))))
+    install_rescue_routes(api, security.authorize, resolve_data_dir(cfg))
     install_live_voice(api, cfg, security, turn_timings)
     # ------------------------------------------------------------ SUBTITLES
     install_subtitle_routes(api, subtitle_jobs)
