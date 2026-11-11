@@ -28,6 +28,9 @@ Piblo is a small, calm device you talk to like a person. It remembers what you t
 | Talk like a person | Natural, interruptible conversation. Wake word "Hey Piblo" plus a mic button. Just start talking to interrupt. |
 | Remembers you | "Like I said yesterday..." Memory across days, linked notes you can browse (Obsidian-style). |
 | Does things | Ask Piblo to build an agent ("check my email at 8 and tell me what matters"). Agents can be spawned mid-conversation and run off-device. |
+| Replay | Show Piblo a routine once ("when I finish work: message my partner, open my journey home, phone on silent") and save it as one key press. Share routines with others. |
+| Filter | Piblo gets your phone notifications but only shows what matters; quick preset replies. Leave your phone in your bag. |
+| Where was I? | Ask and Piblo finds your last document, task, link or reminder, and can send it to your phone. |
 | Voice typing | Hold a key, speak, release: your words appear in whatever app you're using on your computer or phone. Free, offline, private, learns your words. |
 | Out of your head | Hold, speak a thought, let go: saved and linked to everything else (Brain Dump). |
 | Focus | Timed focus sessions that hold back nudges (powers Buddy's Monk form). |
@@ -95,7 +98,7 @@ Touchscreen (second screen / clip-on tag), camera, e-ink desk display, Ethernet.
 - Small goal so it funds fast; a numbered, genuinely limited first batch ("Batch 01").
 - Tiers: Batch 01 early bird, Standard, Standard + add-on, Founder (special colour, name or company in the credits, optional call).
 - Batch 01 backers get extra perks; only promise extras that will definitely ship.
-- Stretch goals mix free software upgrades for everyone with paid add-on unlocks, plus backer-count goals and backer votes. Draft order: personalise (voted voices and personalities, Batch 01 Buddy form), touchscreen add-on, connects to everything (MCP, at 300 backers), camera add-on + travel mode, template gallery, Mac and Linux apps + Buddy form creator (1,000 backers), e-ink display add-on, retro key mat for all, secret Pro reveal, iPhone app, Founders' Pro upgrade.
+- Stretch goals mix free software upgrades for everyone with paid add-on unlocks, plus backer-count goals and backer votes. Draft order: personalise (voted voices and personalities, Batch 01 Buddy form), touchscreen add-on, connects to everything (MCP, at 300 backers), camera add-on + travel mode, template gallery, Mac and Linux apps + Buddy form creator (1,000 backers), Piblo Together (two Piblos send short messages and signals directly, nearby, without internet; needs secure pairing and range tests; not for emergencies), e-ink display add-on, retro key mat for all, secret Pro reveal, iPhone app, Founders' Pro upgrade.
 - Launch only when the launch list hits its target. Channels: YouTube, Instagram, Discord, built in public.
 
 ## Optional paid extras (never required)
