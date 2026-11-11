@@ -93,7 +93,7 @@ class Settings(BaseSettings):
     # nemotron-3.5-lightning:free ~0.6 s first token; deepseek-v4.1-flash (cheap paid) ~0.7 s; gemma :free was 429ing.
     live_cloud_backups: list[str] = ["nvidia/nemotron-3.5-lightning:free", "deepseek/deepseek-v4.1-flash"]
     live_ollama_model: str = "qwen36-heretic:latest"
-    live_memory_github: str = "manazoid4/unified-memory-database:piblo/MEMORY.md"  # needs github_token; skipped if unset
+    live_memory_github: str = ""  # owner/repo:path; empty = off; needs github_token
     live_memory_file: str = ""  # "remember ..." notes; empty = <data_dir>/piblo-memory.md
     max_upload_mb: int = Field(default=12, ge=1, le=64)
     max_audio_seconds: int = Field(default=900, ge=1, le=3600)
@@ -131,7 +131,7 @@ class Settings(BaseSettings):
     # Optional GitHub command bridge. This remains narrow and should not be used
     # as the authority channel for arbitrary PC execution.
     bridge_enabled: bool = False
-    bridge_repo: str = "manazoid4/maz-pocket"
+    bridge_repo: str = ""
     github_token: str = ""
     bridge_poll_seconds: int = Field(default=15, ge=5, le=300)
 

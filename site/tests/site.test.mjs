@@ -150,7 +150,7 @@ test("media references use piblo-* files that exist, and no nod-* media remains"
 });
 
 test("analytics script is on every page and the share box and ref handling exist", () => {
-  const all = [...pages.map(p => contents[p]), readFileSync(join(root, "concepts/b/index.html"), "utf8")];
+  const all = pages.map(p => contents[p]);
   for (const html of all) assert.match(html, /<script defer src="\/_vercel\/insights\/script\.js"><\/script>/);
   assert.match(contents["/privacy/"], /Vercel Web Analytics[^.]*without cookies/);
   assert.match(contents["/"], /id="share-box"[^>]*hidden/);

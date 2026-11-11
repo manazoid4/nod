@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-DEFAULT_NOW = r"C:\Users\manaz\Desktop\Maz Works Knowledge Vault\NOW.md"
+DEFAULT_NOW = str(Path.home() / "Desktop" / "Maz Works Knowledge Vault" / "NOW.md")
 DEFAULT_LOG = "~/.maz-pocket/focus.jsonl"
 UNCHECKED = re.compile(r"^\s*[-*]\s*\[ \]\s*(.+?)\s*$")
 
