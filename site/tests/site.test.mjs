@@ -58,7 +58,7 @@ test("roadmap is a short honest page — no 21-package slop, no filter UI", () =
 
 test("homepage is a clean Kickstarter teaser — no fake claims, real waitlist", () => {
   const html = contents["/"];
-  assert.match(html, /Concept film/i);
+  assert.match(html, /Concept render/i);
   assert.match(html, /action="\/api\/waitlist"/);
   assert.match(html, /heading to Kickstarter/i);
   assert.doesNotMatch(html, /everything is for sale|preorder/i);
@@ -97,7 +97,7 @@ test("Vercel defensive headers and sitemap exclude private-readiness indexing", 
 test("concept A palette: labelled as concept, CSP-safe, real waitlist, tokens in sync, AA contrast", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
   const css = readFileSync(join(root, "styles.css"), "utf8");
-  assert.match(html, /Concept film/i);
+  assert.match(html, /Concept render/i);
   assert.match(html, /action="\/api\/waitlist"/);
   assert.doesNotMatch(html, /\son[a-z]+\s*=|style=|<style|<script(?![^>]*(?:\ssrc=|\s+type="application\/ld\+json"))/i);
   assert.equal(readFileSync(join(root, "tokens.css"), "utf8"), readFileSync(join(root, "..", "design", "tokens-a.css"), "utf8"));
@@ -111,15 +111,15 @@ test("films: muted, playsinline, no autoplay, labelled as concept, small enough 
   const { statSync } = await import("node:fs");
   const html = contents["/"];
   const videos = html.match(/<video\b[^>]*>/g) || [];
-  assert.ok(videos.length >= 1); // one concept film by design (Nov 2026 clarity pass)
+  assert.ok(videos.length === 0 || videos.length >= 1); // Nov 2026 redesign: homepage has no film; any video must still follow these rules
   for (const tag of videos) {
     assert.match(tag, /\smuted\b/, "no video may play with sound by default");
     assert.match(tag, /\splaysinline\b/);
     assert.match(tag, /poster="\/media\/[^"]+\.jpg"/);
     assert.match(tag, /preload="(none|metadata)"/);
   }
-  assert.match(html, /Concept film/);
-  assert.match(html, /screen is simulated/);
+  assert.match(html, /Concept render/);
+  assert.match(html, /simulated concepts/);
   for (const src of html.match(/\/media\/[\w.-]+\.(mp4|webp|jpg)/g)) assert.ok(statSync(join(root, src)).size < 3_000_000, src + " is over 3 MB");
 });
 test("Piblo rebrand: piblo.co.uk canonical/og:url and no visible Nod brand text", () => {
@@ -142,7 +142,7 @@ test("media references use piblo-* files that exist, and no nod-* media remains"
   const { readdirSync } = await import("node:fs");
   const html = contents["/"];
   const refs = html.match(/\/media\/[\w.-]+\.(mp4|webp|jpg)/g) || [];
-  assert.ok(refs.length >= 4); // og image x2, film + poster (one concept film by design)
+  assert.ok(refs.length >= 2); // og image + twitter image
   for (const ref of refs) { assert.match(ref, /\/media\/piblo-/); assert.ok(existsSync(join(root, ref)), ref); }
   assert.deepEqual(readdirSync(join(root, "media")).filter(f => /nod/i.test(f)), []);
   assert.match(html, /name="piblo_hp_field"/);
