@@ -41,6 +41,20 @@ Rules for helpers: at most 3 running at once; each gets its own git worktree and
 - Keyboard taps are detected as speech (energy-only VAD).
 - Model: LFM3-Omni-2B on MazPC via llama-server; reach it from the laptop with the SSH tunnel in `docs/VOICE-SETUP.md`.
 
+## Top priorities (Maz, 11 Nov): do these first, everything else after
+
+1. **Ask on Piblo, hardware-wallet style.** Like confirming a Bitcoin transaction on a Ledger/Trezor: Piblo is the trust anchor. Any agent's consequential action (email, calendar, purchase, delete, deploy) is shown **on Piblo's own screen** in plain words (who, what, amount, where), and only a physical press on Piblo confirms it; the computer alone cannot approve. Deny, voice edit ("yes but change the subject"), Pause-all, Undo where reversible, batch non-urgent requests during Focus. Reuse `buddy.py`, `needs.py`, `authority.py` and the firmware approval screens. Agent-agnostic (Claude Code, Codex, Hermes, MCP). Beat Anthropic's Claude Desktop Buddy (ideas only; its licence is unclear).
+2. **Voice typing** (item 11 below).
+3. **Where was I? / Park it** (item 13 below, plus instant "Park: ..." capture via `braindump.py`).
+4. **Private voice and memory on the host PC, provably.** For Standard, all voice and memory run on the paired computer, not the device (saves device compute) and not on any server. Prove it: a "Private mode" where Core makes **zero outbound internet connections** (enforced in code, covered by a test that fails on any non-local request), no data retention outside the user's own folders, an on-screen privacy indicator, and a plain-words "How your data stays yours" page for the site. Cloud AI stays optional and clearly labelled when used. Never claim more than the code enforces.
+
+Pro-only versions (on-device voice/memory, Replay with KVM) are saved for later; do not build them now.
+
+## Also: two setup jobs
+
+- **Private repo.** Create a new **private** GitHub repo `manazoid4/piblo-private` for anything that must not be public: prices and margins, budget, supplier quotes, Kickstarter internals, business plans. Move nothing secret into the public repo; link to the private repo from your report only.
+- **Full project scan.** Scan all of Maz's GitHub repos (`gh repo list manazoid4 --limit 300`, then README, recent PRs and branches of the relevant ones; use free models for the scan). Many projects are unfinished but contain finished work (e.g. Recall/Feed Vault, maz-pocket, nod, agent-nudge, mazos-ui, hermes job hunter, khutba-io). Find features that already exist elsewhere and could become Piblo features cheaply. Output a short ranked list in `piblo-private` (feature, where the code is, licence, effort to port), and port only items that fit the top priorities.
+
 ## The work, in order
 
 ### Phase 1: test harness first (Sonnet + free models)
