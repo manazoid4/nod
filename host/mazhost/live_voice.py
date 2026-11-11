@@ -21,6 +21,7 @@ from websockets.asyncio.client import connect
 
 from .config import Settings
 from .live_brain import LiveBrain, is_noise, split_sentences, first_clause
+from . import private_mode
 
 log = logging.getLogger("mazhost.live")
 
@@ -159,8 +160,9 @@ class LiveBridge:
         self._guard: asyncio.TimerHandle | None = None
         self._need_reset = False
         self._t: dict = {}
-        # cloud brain: LFM3 only hears (ASR over HTTP) and speaks (TTS on the realtime socket)
-        self.cloud = cfg.live_brain == "cloud"
+        # cloud brain: LFM3 only hears (ASR over HTTP) and speaks (TTS on the realtime socket).
+        # Private mode forces the local LFM3 speech-to-speech path (no cloud model).
+        self.cloud = cfg.live_brain == "cloud" and not private_mode.enabled()
         self.brain = LiveBrain(cfg) if self.cloud else None
         self._turn: list[bytes] = []
         self._cloud: asyncio.Task | None = None
@@ -352,6 +354,9 @@ class LiveBridge:
 
     # ---- model side ------------------------------------------------------
     async def _connect(self) -> None:
+        private_mode.guard(self.url)
+        self.cloud = self.cfg.live_brain == "cloud" and not private_mode.enabled()
+        self.brain = LiveBrain(self.cfg) if self.cloud else None
         self.up = await connect(self.url, max_size=None, open_timeout=5)
         json.loads(await self.up.recv())  # session.created
         await self.up.send(json.dumps({"type": "session.update", "session": {

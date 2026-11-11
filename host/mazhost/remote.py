@@ -8,6 +8,7 @@ import re
 import subprocess
 import threading
 from typing import Callable
+from . import private_mode
 
 log = logging.getLogger("uvicorn.error.remote")
 
@@ -25,6 +26,7 @@ def _candidates() -> list[str]:
 
 
 def _run_json(exe: str, args: list[str], timeout: float = 5.0) -> dict | None:
+    private_mode.guard_subprocess("Tailscale discovery")
     try:
         out = subprocess.run([exe, *args], capture_output=True, text=True, timeout=timeout)
     except (OSError, subprocess.SubprocessError, ValueError):

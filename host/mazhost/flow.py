@@ -8,6 +8,8 @@ from pathlib import Path
 
 import httpx
 
+from . import private_mode
+
 log = logging.getLogger("mazhost.flow")
 
 DEFAULT_WORDS = ["Piblo", "nod", "Maz Works", "Cardputer", "Claude", "MAZos", "FlowLens", "Groq", "Fish"]
@@ -66,7 +68,7 @@ class Flow:
         self.s = settings
         self.speech = speech
         self.models = models
-        self.client = client or httpx.Client(timeout=20)
+        self.client = client or private_mode.client(timeout=20)
         self.dir = Path(settings.flow_dir).expanduser()
         self.dir.mkdir(parents=True, exist_ok=True)
         self.words = load_dictionary(self.dir / "dictionary.txt")
