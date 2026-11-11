@@ -17,7 +17,10 @@ You are the voice engineer for **Piblo**, a small calm device you talk to like a
 7. Tests: `host/tests/test_live_voice.py`, `test_fastvoice.py`, `test_device_live.py`, `test_voices.py`.
 8. Open PR #75 (speaker clarity: M5Unified 0.2.20 + live jitter fix). It needs a listen test on the device.
 
-Write down, in `docs/VOICE-SETUP.md`, the exact model file, llama-server build and start command currently used, so anyone can reproduce the setup. If you cannot find them on this PC, ask Maz.
+Read `docs/VOICE-SETUP.md`: the model (LFM3-Omni-2B on MazPC), the exact server command, the SSH tunnel to use it from the laptop, and the **known issues found on 11 Nov**. Fix those first:
+1. It answered "what's on today?" with its model name (cloud brain had no key; the omni fallback had no Piblo persona).
+2. Keyboard taps are detected as speech (energy-only VAD next to the keys).
+3. The installed Core differs from the repo; test what is actually installed or reinstall from main first.
 
 ## Target (from Maz)
 
@@ -54,6 +57,22 @@ Out of scope tonight: emotion matching, new hardware, buying anything, redesigni
 3. **One change at a time.** After each change, rerun the same 10-turn test. Keep a change only if it measurably improves the target and does not break the others.
 4. **Memory and check-back.** Confirm cross-session memory works in live voice; add the short check-back for uncertain action requests.
 5. **Regression tests.** Add unit tests for any new logic (turn detection decisions, barge-in state, check-back trigger). Run `python -m pytest host/tests -q` and keep it green.
+
+## Automated tests (build these first, so every change is measured without Maz talking)
+
+Record or synthesise 16 kHz mono WAV fixtures into `host/tests/fixtures/voice/`:
+- clean speech, mumbled speech, speech with TV or music behind it, a quiet voice;
+- **keyboard typing on the device with no speech** (record from the real Cardputer mic);
+- speech with a 2-second pause mid-sentence; a change-of-mind sentence;
+- Piblo's own reply audio played back (echo) with and without the user talking over it.
+
+Then add:
+1. **Turn-detection tests** (offline, fast): feed each fixture through the detector. Assert: typing-only produces **zero** turns; the mid-sentence pause does **not** end the turn; clean speech ends within the target silence; speech over echo is detected (barge-in).
+2. **Persona and answer tests** (needs the model server): send the "what's on today?" and "who are you?" fixtures through the live pipeline. Assert the reply says Piblo and never names the underlying model; assert "what's on today?" answers about the day or says it needs the calendar.
+3. **Latency test** (needs the model server): stream each fixture over the `/voice/live` WebSocket exactly as the device does (see `docs/LIVE-VOICE-PROTOCOL.md`) and record end-of-speech to first-audio time. Fail if the median is above 1.2 s.
+4. **Accuracy test**: transcripts of the fixtures vs expected text (word error rate). Track it; do not let it get worse.
+
+Write results to `docs/evidence/voice-<date>/` on every run, so before/after numbers are automatic.
 
 ## Test script (read aloud, 10 turns)
 
