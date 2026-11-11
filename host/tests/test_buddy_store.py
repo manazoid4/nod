@@ -1,6 +1,8 @@
 """Persistent Buddy store: write-through, restart safety, idempotency, corruption, retention, tasks."""
 from __future__ import annotations
 
+import pytest
+
 import sqlite3
 import time
 
@@ -10,6 +12,12 @@ from mazhost import buddy as buddy_mod
 from mazhost.app import create_app
 from mazhost.buddy_store import BuddyStore, ROW_CAPS, SCHEMA_VERSION
 from mazhost.config import Settings
+
+
+@pytest.fixture(autouse=True)
+def legacy_unsigned_device(monkeypatch):
+    # These existing tests exercise the current unsigned simulator/firmware path.
+    monkeypatch.setenv("MAZ_ASK_LEGACY_DEVICE_DECIDE", "1")
 
 TOKEN = "test-token-that-is-not-default"
 H = {"Authorization": f"Bearer {TOKEN}"}
