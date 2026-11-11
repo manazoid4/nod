@@ -1,12 +1,18 @@
-# Fable one-shot: finish Piblo as far as honestly possible, toward a world-class Kickstarter
+# Fable one-shot: build Piblo's launch machine (product proof, community, private command centre)
 
 Paste everything below the line into a single Fable session. Fable runs it start to finish.
 
 ---
 
-## Session goal (read this first)
+## Mission
 
-Get Piblo as close to launch-ready as one session honestly can, and leave Maz with **3 platform-specific infographics** (X, Instagram, LinkedIn). Voice, Ask on Piblo, voice typing, Where was I? and provable privacy are the product proof the campaign stands on. You cannot launch, post, spend, flash firmware or invent proof; anything needing hardware, outsiders, suppliers or lawyers goes on Maz's action list instead of being faked.
+Make Piblo the pocket AI device people are already waiting to back: a real, working, open product and a real, warm community, so the Kickstarter funds in minutes, the way Kode Dot (kode.diy) did (a goal of EUR 4,387 funded in 5 minutes, about US$2.7M in the end, with 180+ visual assets, a small number of very relevant creators and a stretch-goal ladder the community reordered) and Flipper Zero did (US$1M on day one, then a Discord of 100K+). Set the bar high. Do not think small.
+
+**Beat Anthropic's Fable 5.2 voice-hub video (9 Nov, 697K views).** That video shows a one-paragraph prompt becoming an early prototype board. Piblo's answer is what it cannot show: a **real device in a real hand doing three real things uncut** (approve an agent action with a physical press, voice typing into any app, "Where was I?"), **open source, no subscription, your data provably stays yours**, and **a community that helped shape it**. Everything you produce should make that contrast obvious.
+
+You cannot launch, post, spend, flash firmware or invent proof. Everything outward-facing is a draft or a built-and-ready asset for Maz to approve. Ambition never overrides honesty: no fake counts, scarcity, testimonials, dates or demos. Where a launch gate needs hardware, outsiders, suppliers or lawyers, list it as a Maz action.
+
+**Honest maths to plan around (do not fudge it):** Kickstarter says 1-5% of an email list typically pledges; Kode Dot funded in minutes because a tiny goal met a warm list; CardputerZero had 5,000+ followers plus US$1 reservations before it raised US$1.9M. "Funded instantly" therefore needs two things: a goal Maz chooses small enough to be hit by the warm list, **but never below what it truly costs to deliver a first batch** (Kode Dot was criticised for a goal so small it looked unserious), and a list big enough to hit it. Model both (private repo, `finance/`), recommend a launch gate (list size, Discord size, proof assets done) and a goal, and mark both `[MAZ]`.
 
 **Deliverables (the session is judged on these):**
 
@@ -17,11 +23,14 @@ Get Piblo as close to launch-ready as one session honestly can, and leave Maz wi
 | C | Park it / Where was I? | Tests pass; survives restart |
 | D | Private mode + "How your data stays yours" page | Leak test fails on any non-local request; page text matches what the code enforces |
 | E | Voice before/after numbers | Evidence in `docs/evidence/voice-<date>/` |
-| F | `piblo-private` repo + ranked project-scan list | List has feature, code location, licence, port effort |
-| G | Site wording audit | Tests green, 390 px and 1440 px checked |
-| H | Kickstarter pack (Phase 4) | Campaign page draft, FAQ, honest risks, 14-day pre-launch calendar |
-| I | 3 infographics + captions (Phase 4) | Rendered PNGs viewed and checked |
-| J | `MAZ-ACTIONS.md` | One page: what only Maz can do next, ordered by launch impact |
+| F | `piblo-private`: the command centre (see below) | A new agent or Maz can open the repo cold and know the goal, the milestones, this week's tasks and the marketing plan within 5 minutes |
+| G | Project scan: finished work in other repos that becomes Piblo features | Ranked list: feature, code location, licence, port effort |
+| H | Site wording audit | Tests green, 390 px and 1440 px checked |
+| I | Community engine (Phase 4): Discord blueprint, free-value drops, weekly content system | First 2 weeks fully drafted, weeks 3-8 outlined, all copy-paste ready |
+| J | Kickstarter pack (Phase 4): page draft, rewards, community-voted stretch ladder, FAQ, honest risks | Every claim tagged verified / in testing / concept; prices `[MAZ]` |
+| K | Flagship film plan + first assets (Phase 4) | Script, shot list, thumbnail and 3 platform infographics rendered and checked |
+| L | Free Piblo for PC beta pack (Phase 4) | Host-side features packaged so waitlist members can really use them before launch; release itself waits for Maz's OK |
+| M | `MAZ-ACTIONS.md` | One page: what only Maz can do next, ordered by launch impact |
 
 ## Run mode: one shot, unattended
 
@@ -38,7 +47,7 @@ Why this matters: Maz has a separate usage limit just for Fable and wants this w
 - **When you have enough information to act, act.** Do not re-derive settled facts, re-litigate Maz's decisions, or narrate options you will not pursue. Give a recommendation, not a survey.
 - **Do the simplest thing that works well.** No extra features, refactors, abstractions, fallbacks for cases that cannot happen, or designs for hypothetical futures. Build on what exists.
 - **Protect the Fable limit.** Fable's own tokens go to planning, briefs, review, the verifier decisions and the final pass. Bulk building, scanning and drafting go to Opus, Sonnet and free-model helpers. Keep long-lived helpers (they keep their context and cost less than fresh ones) and talk to them asynchronously; do not block on the slowest one.
-- **The builder never grades itself.** For every deliverable A to J, a separate fresh-context verifier (Opus or Sonnet) checks the real output against the "done means" column: the running tests, the actual rendered PNGs, the actual page at 390 px and 1440 px. It tries to prove the work fails. You decide on its report.
+- **The builder never grades itself.** For every deliverable A to M, a separate fresh-context verifier (Opus or Sonnet) checks the real output against the "done means" column: the running tests, the actual rendered PNGs, the actual page at 390 px and 1440 px. It tries to prove the work fails. You decide on its report.
 - **Ground every claim in evidence.** Before reporting progress, audit each claim against a tool result from this session. Report only work you can point to; say plainly what is not yet verified.
 - **Log surprises, keep going.** Keep `docs/evidence/implementation-notes.md`. When reality forces you off the plan, pick the conservative option, write it under "Deviations" with the reason, and continue. Record one short lesson per item (what was corrected or confirmed, and why it mattered) so a later run starts smarter.
 - **Do not end on a promise.** Before ending a turn, check your last paragraph: if it is a plan, a question you could answer yourself or a promise ("I'll..."), do that work now with tool calls.
@@ -50,7 +59,7 @@ Why this matters: Maz has a separate usage limit just for Fable and wants this w
 - Put detail in files; chat replies stay short.
 - Write a 10-line checkpoint to `docs/evidence/CHECKPOINT.md` after each phase so a cut-off session resumes without repeating work.
 - Max 2 fix rounds on any single item, then log it and move on. No extra polish loops, no new strategy documents.
-- If the Fable limit hits mid-run, the checkpoint must be good enough for any model or a later Fable session to resume cleanly. Finish in the order of the deliverables table (A to J). Never leave a feature half-wired.
+- If the Fable limit hits mid-run, the checkpoint must be good enough for any model or a later Fable session to resume cleanly. If the limit looks tight, protect this order: A-E (product proof), F (private repo), K (film plan and 3 infographics), I and J (community and Kickstarter), L, M, then G and H. Never leave a feature half-wired.
 - Run at high effort, not max.
 
 You are **Fable, the lead** for Piblo (repo `manazoid4/piblo`, Windows laptop, owner Maz). You run this as **one execution**. Your job is to orchestrate, review and polish. **You do not write the bulk code yourself.** That keeps Maz's usage low.
@@ -104,12 +113,46 @@ Clarifications that avoid wasted work:
 - Ask on Piblo: firmware stays untouched without Maz's OK. Build and test the host side and the protocol contract with a simulated key press; the device screens already exist. Protocol changes in `docs/protocol/` go through the orchestrator (see `AGENTS.md`), so propose them, do not silently edit.
 - Never write "no servers" or "zero retention" on the site beyond what the code and tests enforce (the waitlist, for example, does use a mail provider).
 
-## Also: two setup jobs
+## Private repo: the command centre (`manazoid4/piblo-private`)
 
-- **Private repo.** Create a new **private** GitHub repo `manazoid4/piblo-private` for anything that must not be public: prices and margins, budget, supplier quotes, Kickstarter internals, business plans. Move nothing secret into the public repo; link to the private repo from your report only.
-- **Full project scan.** Scan all of Maz's GitHub repos (`gh repo list manazoid4 --limit 300`, then README, recent PRs and branches of the relevant ones; use free models for the scan). Many projects are unfinished but contain finished work (e.g. Recall/Feed Vault, maz-pocket, nod, agent-nudge, mazos-ui, hermes job hunter, khutba-io). Find features that already exist elsewhere and could become Piblo features cheaply. Output a short ranked list in `piblo-private` (feature, where the code is, licence, effort to port), and port only items that fit the top priorities.
+Create it **private**. It is where Maz and every agent (Claude, Codex, OpenCode, Hermes, others) go to know what Piblo is, where it stands and what to do next. Nothing secret goes into the public repo. Make it excellent:
+
+```
+README.md        one page: what Piblo is, the mission, the 3 launch gates, links to everything
+AGENTS.md        rules for any agent: read order, public-copy rules, what needs Maz, how to claim and finish a task, how to hand over
+NOW.md           this week only: top 5 tasks, owner, status, blockers (rewritten every week)
+ROADMAP.md       milestones M0-M9 with exit criteria (see below)
+decisions/       one short file per decision (what, why, date, who); ADR style
+launch/          gates, goal and list-size model, Kickstarter page draft, rewards, stretch ladder, FAQ, risks
+marketing/       strategy, weekly content calendar, templates, assets index, 8-week plan, per-platform playbooks
+community/       Discord blueprint, roles, rules, events, free-value library, moderation, backer-voting process
+product/         spec mirror, feature list with status (works / in testing / concept), scan results
+finance/         unit economics, goal model, supplier quotes, budget (private numbers live here)
+suppliers/       RFQ drafts, quotes, M5Stack outreach, compliance notes
+evidence/        links to proof: test runs, device clips, numbers
+handoffs/        dated hand-over notes, newest first
+```
+
+Also set up on GitHub: **milestones** M0-M9 with due dates, **issues** for every concrete task labelled by lane (`product`, `marketing`, `community`, `hardware`, `legal-finance`, `maz-only`), a **Project board** (Backlog, This week, Doing, Verify, Done), issue and PR templates, and a weekly "Piblo week" issue that lists the content that must ship. Every issue states: goal, done-means, who can do it (agent or Maz), and links.
+
+**Milestones (adjust only with reasons, record in `decisions/`):**
+- M0 Foundations: private repo live, truth table, public-copy rules, Discord blueprint approved.
+- M1 Proof: Ask on Piblo, voice typing, Where was I?, Private mode working on the real device and PC, uncut clips filmed.
+- M2 Community seed: Discord open, free PC beta released to the first members, weekly content running.
+- M3 Flagship film and site: film published, site wording done, waitlist double opt-in proven.
+- M4 Build in public: first outsider setup tests, supplier quotes in, case printed and fit-tested.
+- M5 Community co-design: backers vote on Buddy forms, voices and the stretch ladder.
+- M6 Compliance and economics locked: goal and prices set by Maz from real quotes.
+- M7 Pre-launch page live and list at target.
+- M8 Launch and day-one plan rehearsed.
+- M9 Campaign weeks and fulfilment plan.
+
+**Project scan (deliverable G).** Scan all of Maz's GitHub repos (`gh repo list manazoid4 --limit 300`, then READMEs, recent PRs and branches of the relevant ones; use free models for the scan). Many projects are unfinished but contain finished work (e.g. Recall/Feed Vault, maz-pocket, nod, agent-nudge, mazos-ui, hermes job hunter, khutba-io, receptionist work). Find features that already exist elsewhere and could become Piblo features cheaply. Output a ranked list in `piblo-private/product/` (feature, where the code is, licence, effort to port), and port only items that fit the top priorities.
 
 ## The work, in order
+
+### Phase 0: stand up the command centre (30 minutes of effort, do it first)
+Create `piblo-private` with `README.md`, `AGENTS.md`, `NOW.md`, `ROADMAP.md` (M0-M9), the GitHub milestones and labels, and the Project board. From here on, every task you run is an issue, and `NOW.md` plus `docs/evidence/CHECKPOINT.md` are updated after each phase. Fill the rest of the repo in Phase 4.
 
 ### Phase 1: test harness first (Sonnet + free models)
 Build the automated voice tests from `docs/VOICE-SPRINT-BRIEF.md` ("Automated tests"): WAV fixtures including **typing with no speech**, turn-detection tests, persona tests, latency over the real `/voice/live` WebSocket, word-accuracy tracking, results to `docs/evidence/voice-<date>/`. Run a **baseline** before any change.
@@ -145,11 +188,21 @@ Maz likes the site's design, colours and logo: **keep them**. The wording is now
 - Not too much text, not too vague: someone from an Instagram post should understand Piblo in 10 seconds on a phone, then join the launch list or the Discord.
 - Run the site tests and `mw-site-gate`, check 390 px and 1440 px in a real browser, then merge.
 
-### Phase 4: Kickstarter pack and 3 infographics (Sonnet drafts, you judge)
-Rules: product is Piblo; "UK" only for location; **no prices, chip names, RAM figures or dates in public copy or graphics** (prices in the campaign draft are `[MAZ]` placeholders); label every illustration "concept" until a real photo exists; claim only what the code and tests prove ("in testing" stays "in testing"); no fake scarcity, backer counts or testimonials. Lead with the solution, not "AI". Do not lead with "approve Claude's actions plus a pet": Anthropic's Desktop Buddy already does that. Lead with: remembers you, reminds you, voice typing, any AI, no subscription, your data stays yours.
+### Phase 4: community and launch engine (Sonnet drafts, you set the bar and judge)
 
-- **Campaign pack** in `piblo-private` (it holds prices): page draft, Standard vs Pro, rewards and stretch goals from the spec, risks and challenges (honest), FAQ answering the complaints in `docs/kickstarter/HERMES-HANDOVER-COMPETITORS-2026-11-09.md`, 60-90 s video script and shot list matching `docs/launch/real-footage-shotlist.md`, 14-day pre-launch calendar.
-- **Infographics**: three different pieces, not three resizes. Build as HTML in `media/marketing/` with the existing `brand.css` and `render.mjs`, export PNG at 2x, one idea each, about 40 words max, readable at phone size, CTA is piblo.co.uk only.
+Rules for all public-facing output: product is Piblo; "UK" only for location; **no prices, chip names, RAM figures or dates in public copy or graphics** (they live in `piblo-private`); label every illustration "concept" until a real photo exists; claim only what the code and tests prove ("in testing" stays "in testing"); no fake scarcity, backer counts or testimonials. Lead with the solution, not "AI". Do not lead with "approve Claude's actions plus a pet": Anthropic's Desktop Buddy already does that. Lead with: remembers you, reminds you, voice typing, any AI, no subscription, your data stays yours, and a physical key that keeps you in charge.
+
+**Quality bar:** a stranger who sees one Piblo asset can say what it does in 10 seconds, and it looks like it came from a funded studio (Apple polish, Teenage Engineering character, Flipper community warmth). Reject anything generic.
+
+**1. Community blueprint (Flipper Zero and Kode Dot, adapted to Piblo)** in `community/`: Discord channel map (start-here, announcements, build-log, show-your-piblo, voice-typing-help, ideas-and-votes, agents-and-skills, buddy-forms, dev-corner, off-topic), roles (Founder, Early Backer, Builder, Helper), onboarding flow (welcome message, 3 questions, first free gift), moderation and self-promo rules, weekly rhythm, and GitHub Discussions for weighted feature requests (Flipper's fix for noise: top-voted, concrete requests reviewed weekly). Plan an open **catalogue** later for community Buddy forms, skills and agent templates, so the community builds the moat.
+
+**2. Free value engine.** Every week the community gets something genuinely useful, free, whether or not they back Piblo: a skill or agent template pack, an Obsidian starter vault for memory, a voice-typing setup guide, an ADHD focus routine, a "leave on time" travel checklist, a build log with real numbers, a behind-the-scenes clip, and a live build-along or AMA. Write the first 8 as a library in `community/free-value/` with a publishing order.
+
+**3. Weekly content system** in `marketing/`. Every week, minimum: **2 short videos** (one real device clip, one explainer), **3 images or infographics** (one per platform angle), **1 build-log post with real numbers**, **1 free-value drop**, **1 live or Discord event**, **1 community poll** that feeds a real decision (names, Buddy forms, stretch order), and **1 summary email** to the waitlist. Draft weeks 1-2 completely (copy, alt text, shot lists, posting times for X, Instagram, LinkedIn, YouTube, Discord, Reddit communities that allow it) and outline weeks 3-8. Add a creator plan: 10 highly relevant small creators (ADHD productivity, maker, open-source AI, Flipper and Cardputer communities) with a respectful, value-first approach; do not contact anyone, draft only.
+
+**4. Flagship film plan.** One 60-90 s film (plus 15 s and 30 s cuts) built on three uncut real-device moments: approve with a press, voice typing, "Where was I?". Script, shot list matching `docs/launch/real-footage-shotlist.md`, thumbnail options, captions. Concept shots stay labelled. Tell Maz exactly which clips to film first and how.
+
+**5. Three infographics** (three different pieces, not three resizes). Build as HTML in `media/marketing/` with `brand.css` and `render.mjs`, export PNG at 2x, one idea each, about 40 words max, readable at phone size, CTA is piblo.co.uk only, and make them the first three templates of the weekly system.
 
 | Platform | Size | Angle | CTA |
 |---|---|---|---|
@@ -157,9 +210,13 @@ Rules: product is Piblo; "UK" only for location; **no prices, chip names, RAM fi
 | Instagram | 1080x1350 | The feeling: a day with Piblo in four beats (talk, remember, remind, "leave 10 minutes early"), Buddy-led, warm | Link in bio |
 | LinkedIn | 1200x627 | The credibility: problem, solution, verified proof points only (open source, no subscription, your data stays yours, any AI) | Follow and join the waitlist |
 
-  Write `CAPTIONS.md`: per platform a caption (X up to 280 characters; Instagram with 5-8 relevant tags; LinkedIn three short paragraphs), alt text, and one follow-up comment. **Open and look at each PNG**, check legibility at 25% zoom, no cut-off text, no banned content, concept label present.
-- **`MAZ-ACTIONS.md`**: ordered by launch impact: uncut demo footage, supplier and M5Stack quotes, compliance, accountant, five outsider setup tests, real photos, and the launch gates in `docs/kickstarter/GATES.md`. Update the 8 Nov readiness verdict honestly.
-- Ask Maz at most 5 easy questions, one at a time (2-4 vivid options, recommendation first), and keep working while waiting.
+`CAPTIONS.md`: per platform a caption (X up to 280 characters; Instagram with 5-8 relevant tags; LinkedIn three short paragraphs), alt text and one follow-up comment. **Open and look at each PNG**; check legibility at 25% zoom, no cut-off text, no banned content, concept label present.
+
+**6. Kickstarter pack** in `launch/`: page draft, Standard vs Pro, rewards, a **community-voted stretch ladder** (free software upgrades for everyone, paid add-on unlocks, backer-count goals, backer votes; draft order is in `docs/PRODUCT-SPEC.md`), honest risks and challenges, a FAQ that answers the complaints in `docs/kickstarter/HERMES-HANDOVER-COMPETITORS-2026-11-09.md`, rewards that will definitely ship, and a "what you need" box (Piblo, Windows PC, Wi-Fi, no subscription). Include a day-one plan and a mid-campaign plateau plan.
+
+**7. Free Piblo for PC beta pack.** Package the host-side wins (voice typing, Park it / Where was I?, Private mode) so waitlist members can really use them before launch: installer or clear setup steps, a one-page guide, a feedback form that feeds `ideas-and-votes`. Prepare it fully; releasing it is Maz's call.
+
+**8. `MAZ-ACTIONS.md`**: ordered by launch impact: filming the three clips, joining and opening Discord, approving the beta release, supplier and M5Stack quotes, compliance, accountant, five outsider setup tests, real photos, choosing the goal, and the launch gates in `docs/kickstarter/GATES.md`. Update the 8 Nov readiness verdict honestly.
 
 ### Phase 5: the Fable pass
 Review every merged change end to end, as a user would. Fix rough edges, unify wording and sounds (soft warm chimes, soft clicks), make sure every feature feels like one product. Rerun all tests and the 10-turn voice script.
@@ -170,9 +227,10 @@ Review every merged change end to end, as a user would. Fix rough edges, unify w
 - Each Phase 3 feature has at least one test and a short demo line in the PR.
 - Feature branches, PRs with evidence, merged when green (host changes only; firmware waits for Maz's OK and listen test).
 - `docs/PRODUCT-SPEC.md` and `docs/NEXT-4-WEEKS.md` updated with what is done.
-- Deliverables A to J all present or explicitly logged as blocked with the reason.
+- Deliverables A to M all present or explicitly logged as blocked with the reason.
+- `piblo-private` passes the 5-minute test: a new agent opens only `README.md`, `AGENTS.md` and `NOW.md` and can say what to do next.
 - Handover written to `unified-memory-database` (`projects/piblo/STATUS.md` and `handoffs/LATEST.md`) so another agent resumes cold.
 
 ## Report to Maz (5 short bullets max)
 
-What now works (in plain words), the numbers, PR links, the infographics (file paths), the launch verdict (Red/Amber/Green) with the top 3 blockers, what needs his hands or ears (flash OK, listen test, phone permissions, filming), and the next step.
+What now works (in plain words), the numbers, PR links, the private repo and the first infographics (links and file paths), the launch verdict (Red/Amber/Green) with the top 3 blockers, what needs his hands or ears (flash OK, listen test, phone permissions, filming, Discord, the beta release), and the next step.
