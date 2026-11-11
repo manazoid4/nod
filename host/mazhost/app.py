@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
+from .agent_builder import AgentBuilder, build_agent_router
 from .authority import AuthorityBroker
 from .beam import BeamStore
 from .braindump import structure_braindump
@@ -57,6 +58,7 @@ from .remote import RemoteInfo
 from .security import RemoteGuardMiddleware, Security
 from .selfupdate import SelfUpdater
 from .sessions import SessionStore
+from .skill_vault import SkillVault
 from starlette.concurrency import run_in_threadpool
 from .flow import Flow, paste as paste_text
 from .stt import SpeechToText
@@ -212,7 +214,7 @@ def create_app(
         CORSMiddleware,
         allow_origins=cfg.web_origin_list,
         allow_credentials=False,
-        allow_methods=["GET", "POST", "PUT", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-MAZ-Token", "X-MAZ-Context"],
         expose_headers=["X-MAZ-Width", "X-MAZ-Height", "X-MAZ-Format"],
     )
@@ -1021,6 +1023,8 @@ def create_app(
     api.include_router(build_where_router(cfg, buddy, focus))
     api.include_router(build_memory_router(MemoryNotes(resolve_data_dir(cfg))))
     install_rescue_routes(api, security.authorize, resolve_data_dir(cfg))
+    api.include_router(build_agent_router(
+        AgentBuilder(cfg, SkillVault(cfg, model_router), resolve_data_dir(cfg), llm=model_router, buddy=buddy)))
     install_live_voice(api, cfg, security, turn_timings)
     # ------------------------------------------------------------ SUBTITLES
     install_subtitle_routes(api, subtitle_jobs)
