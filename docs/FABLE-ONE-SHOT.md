@@ -28,11 +28,20 @@ Get Piblo as close to launch-ready as one session honestly can, and leave Maz wi
 Why this matters: Maz has a separate usage limit just for Fable and wants this whole job done in one run. He is not watching. Your first message back is his first look at any of it.
 
 - **Resume first.** If `docs/evidence/CHECKPOINT.md` exists, read it and continue from it instead of starting over. A bare "continue" from Maz means exactly that.
+- **Permissions already granted by Maz (11 Nov): do not ask for these.**
+  - Search anything: use every search and fetch tool available (WebSearch, Parallel, Firecrawl, TinyFish, Exa, GitHub, YouTube pages and transcripts), not just one; cross-check important facts across at least two.
+  - Read all of Maz's GitHub repos and branches; create feature branches and PRs; create the private repo `manazoid4/piblo-private`; merge host-side PRs when tests are green.
+  - Install and use permissively licensed tools; use free-tier models.
+  - Still ask first, every time, for: spending money, flashing firmware, posting or emailing anything publicly, deleting or force-pushing, and anything that sends Maz's data off his machines.
+- **Interview style for pre-flight** (Anthropic's own advice): one question at a time, only where the answer would change what you build.
 - **Pre-flight, then no more stops.** Before any building, ask Maz at most 5 easy questions, one at a time (2-4 vivid options, recommendation first, only things only he knows, e.g. goal feel, founder story, first clip he can film). If he does not answer, use your recommended option and mark it `[MAZ]`. After pre-flight, run to the end. Pause only for something destructive or irreversible, a real scope change, or input only Maz can give (flash OK, spending, posting, listening tests). Then ask and end the turn; do not end on a promise.
 - **When you have enough information to act, act.** Do not re-derive settled facts, re-litigate Maz's decisions, or narrate options you will not pursue. Give a recommendation, not a survey.
 - **Do the simplest thing that works well.** No extra features, refactors, abstractions, fallbacks for cases that cannot happen, or designs for hypothetical futures. Build on what exists.
 - **Protect the Fable limit.** Fable's own tokens go to planning, briefs, review, the verifier decisions and the final pass. Bulk building, scanning and drafting go to Opus, Sonnet and free-model helpers. Keep long-lived helpers (they keep their context and cost less than fresh ones) and talk to them asynchronously; do not block on the slowest one.
 - **The builder never grades itself.** For every deliverable A to J, a separate fresh-context verifier (Opus or Sonnet) checks the real output against the "done means" column: the running tests, the actual rendered PNGs, the actual page at 390 px and 1440 px. It tries to prove the work fails. You decide on its report.
+- **Ground every claim in evidence.** Before reporting progress, audit each claim against a tool result from this session. Report only work you can point to; say plainly what is not yet verified.
+- **Log surprises, keep going.** Keep `docs/evidence/implementation-notes.md`. When reality forces you off the plan, pick the conservative option, write it under "Deviations" with the reason, and continue. Record one short lesson per item (what was corrected or confirmed, and why it mattered) so a later run starts smarter.
+- **Do not end on a promise.** Before ending a turn, check your last paragraph: if it is a plan, a question you could answer yourself or a promise ("I'll..."), do that work now with tool calls.
 - **Your last message is a re-grounding, not a continuation.** Outcome first in one sentence, then the one or two things Maz must do, in plain full sentences with no working shorthand, arrow chains or labels you invented. Do not reproduce your reasoning in the response.
 
 ## Usage guard (Maz's weekly usage was at 96% on 11 Nov)
