@@ -995,17 +995,26 @@ def create_app(
     # already-paired session inviting a new client in); /pair/claim is
     # intentionally reachable with no token, since exchanging a short-lived
     # code for the real credential is the whole point.
-    api.mount("/pair", build_pairing_app(cfg, security))
+    key_file = resolve_data_dir(cfg) / "ask-device-keys.json"
+    device_keys = json.loads(key_file.read_text(encoding="utf-8")) if key_file.exists() else {}
+
+    def save_device_keys():
+        key_file.parent.mkdir(parents=True, exist_ok=True)
+        temp = key_file.with_suffix(".tmp")
+        temp.write_text(json.dumps(device_keys), encoding="utf-8")
+        temp.replace(key_file)
+
+    api.mount("/pair", build_pairing_app(cfg, security, device_keys=device_keys, save_keys=save_device_keys))
     buddy_store = None if cfg.buddy_db == "off" else BuddyStore(
         cfg.buddy_db or resolve_data_dir(cfg) / "buddy.sqlite3")
-    buddy = install_buddy_routes(api, Buddy(store=buddy_store))
+    buddy = install_buddy_routes(api, Buddy(store=buddy_store, focus=focus, device_keys=device_keys))
     install_companion_routes(api, buddy, cfg.port)
 
     api.include_router(build_dump_router(cfg, model_router))
     api.include_router(webui_router)
     api.include_router(build_library_router(cfg, model_router))
     api.include_router(build_needs_router(cfg, buddy))
-    install_focus_routes(api, focus)
+    install_focus_routes(api, focus, buddy.sync_focus)
     install_live_voice(api, cfg, security, turn_timings)
     # ------------------------------------------------------------ SUBTITLES
     install_subtitle_routes(api, subtitle_jobs)

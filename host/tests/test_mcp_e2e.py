@@ -33,6 +33,12 @@ MCP_DIR = REPO / "host" / "mcp"
 BRIDGE = MCP_DIR / "test" / "e2e_bridge.mjs"
 DIST = MCP_DIR / "dist" / "index.js"
 
+
+@pytest.fixture(autouse=True)
+def legacy_unsigned_device(monkeypatch):
+    # These existing tests exercise the current unsigned simulator/firmware path.
+    monkeypatch.setenv("MAZ_ASK_LEGACY_DEVICE_DECIDE", "1")
+
 TOKEN = "e2e-token-not-default"
 H = {"Authorization": f"Bearer {TOKEN}", "X-Piblo-Client": "simulator/1"}
 

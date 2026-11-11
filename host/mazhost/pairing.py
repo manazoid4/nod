@@ -130,14 +130,18 @@ class _DeviceRequest:
     created: float
     expires_at: float
     state: str = "pending"  # pending | approved | denied
+    approval_proof: bool = False
+    approval_key: str = ""
 
 
 class DevicePairingStore:
     """In-memory device pairing requests. The token is never stored here: it is
     read from settings only inside the one poll that follows an approval."""
 
-    def __init__(self) -> None:
+    def __init__(self, device_keys: dict[str, str] | None = None, save_keys=None) -> None:
         self._reqs: dict[str, _DeviceRequest] = {}
+        self.device_keys = device_keys if device_keys is not None else {}
+        self.save_keys = save_keys or (lambda: None)
         self._attempts_by_ip: dict[str, list[float]] = {}
         self._lock = threading.Lock()
 
@@ -145,7 +149,7 @@ class DevicePairingStore:
         for rid in [r.request_id for r in self._reqs.values() if r.state != "pending" and now > r.expires_at]:
             del self._reqs[rid]
 
-    def create(self, device_id: str, name: str, ip: str) -> _DeviceRequest | None:
+    def create(self, device_id: str, name: str, ip: str, approval_proof: bool = False) -> _DeviceRequest | None:
         """None means 429 (per-IP rate limit or too many pending)."""
         with self._lock:
             now = time.monotonic()
@@ -165,11 +169,12 @@ class DevicePairingStore:
                 code=f"{secrets.randbelow(1_000_000):06d}",
                 device_id=device_id, name=name, ip=ip,
                 created=now, expires_at=now + DEVICE_REQUEST_TTL_SECONDS,
+                approval_proof=approval_proof,
             )
             self._reqs[req.request_id] = req
             return req
 
-    def poll(self, request_id: str, ip: str) -> str | None:
+    def poll(self, request_id: str, ip: str) -> tuple[str, _DeviceRequest | None] | None:
         """pending/approved/denied/expired, or None (= 404). Terminal states are returned once, then deleted."""
         with self._lock:
             now = time.monotonic()
@@ -178,11 +183,11 @@ class DevicePairingStore:
                 return None
             if req.state == "pending":
                 if now <= req.expires_at:
-                    return "pending"
+                    return "pending", None
                 del self._reqs[request_id]
-                return "expired"
+                return "expired", None
             del self._reqs[request_id]
-            return req.state if now <= req.expires_at else "expired"
+            return (req.state, req) if now <= req.expires_at else ("expired", None)
 
     def pending(self) -> list[dict]:
         with self._lock:
@@ -203,6 +208,15 @@ class DevicePairingStore:
             req = self._reqs.get(request_id)
             if req is None or req.state != "pending" or now > req.expires_at:
                 return False
+            if approve and req.approval_proof:
+                key = secrets.token_hex(32)
+                self.device_keys[req.device_id] = key
+                try:
+                    self.save_keys()
+                except Exception:
+                    self.device_keys.pop(req.device_id, None)
+                    raise
+                req.approval_key = key
             req.state = "approved" if approve else "denied"
             req.expires_at = now + DEVICE_APPROVED_GRACE_SECONDS
             return True
@@ -213,7 +227,8 @@ class ClaimRequest(BaseModel):
 
 
 def build_pairing_app(
-    settings: Settings, security: Security, store: PairingStore | None = None
+    settings: Settings, security: Security, store: PairingStore | None = None,
+    device_keys: dict[str, str] | None = None, save_keys=None
 ) -> FastAPI:
     pairing_store = store or PairingStore()
     pair_app = FastAPI(title="MAZ Pairing")
@@ -240,7 +255,7 @@ def build_pairing_app(
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid_or_expired_code")
         return {"token": settings.token}
 
-    device_store = DevicePairingStore()
+    device_store = DevicePairingStore(device_keys, save_keys)
 
     def _ip(request: Request) -> str:
         return request.client.host if request.client else "unknown"
@@ -257,18 +272,20 @@ def build_pairing_app(
         if not (isinstance(device_id, str) and _DEVICE_ID_RE.fullmatch(device_id)
                 and isinstance(name, str) and _DEVICE_NAME_RE.fullmatch(name)):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "bad_request")
-        req = device_store.create(device_id, name, _ip(request))
+        req = device_store.create(device_id, name, _ip(request), body.get("approval_proof") is True)
         if req is None:
             raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "too_many_requests")
         return {"request_id": req.request_id, "code": req.code, "expires_in_seconds": DEVICE_REQUEST_TTL_SECONDS}
 
     @pair_app.get("/device/request/{request_id}")
     def device_poll(request_id: str, request: Request) -> dict:
-        state = device_store.poll(request_id, _ip(request))
-        if state is None:
+        result = device_store.poll(request_id, _ip(request))
+        if result is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "not_found")
+        state, req = result
         if state == "approved":
-            return {"status": "approved", "token": settings.token, "port": settings.port}
+            return {"status": "approved", "token": settings.token, "port": settings.port,
+                    **({"device_id": req.device_id, "approval_key": req.approval_key} if req.approval_proof else {})}
         return {"status": state}
 
     @pair_app.get("/device/pending", dependencies=[Depends(security.authorize)])
