@@ -29,3 +29,8 @@ Fit: share link from phone, captions fetched, local summary, searchable transcri
 - **Anthropic's prompting guide**: "audit each progress claim against a tool result" nearly eliminated fabricated status reports; "ask and end the turn" only for destructive, scope-changing or Maz-only input; a final message that is a promise means do the work now.
 - **Agent video pipeline** (digitalsamba/claude-code-video-toolkit): one Discord message produced a 57-second video unattended in 23 minutes for about $0.47. Useful reference for the video pack, not for this session.
 - **YouTube transcript tools**: `youtube-transcript-api` (no key, captions only), `henglyrepo/youtube-transcript` (works from a home IP, blocked from cloud IPs, so run it on the user's PC), `1abhishekpandey/TranscriptAI` (Android app). Check licences before reuse.
+
+## Kode Dot and Flipper Zero: what to copy (11 Nov, from kode.diy, TCF case study, Kickstarter handbook)
+- Kode Dot: EUR 4,387 goal, funded in 5 minutes (5 Nov 2025), 16,144 backers and about US$2.7M including late pledges; a stretch ladder the community reordered; 180+ visual assets reused across social, ads, PR and updates; a few highly relevant creators rather than many; pre-launch was the roadmap; honest dated updates. It was also criticised for a goal so small it looked unserious, so keep the goal truthful.
+- Flipper Zero: funded in 8 minutes, over US$1M on day one, US$4.88M from 37,987 backers; later 100K+ Discord, 270K+ subreddit; in 2026 it fixed feature-request noise with weighted GitHub Discussions votes and a public QA suite.
+- Kickstarter handbook: 1-5% of an email list typically pledges; share the pre-launch page a week or more ahead; plan the mid-campaign plateau; do not spam.
