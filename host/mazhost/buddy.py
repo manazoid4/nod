@@ -506,7 +506,7 @@ class Buddy:
                     if not i["decision"] and monotonic_now < i["deadline"]]
             recent = any(now - i["t"] < WORKING_S for i in self._items.values())
             items = [{"id": i["id"], "tool": i["tool"],
-                      "summary": _nod_summary(i) if "category" in i else i["summary"],
+                      "summary": _nod_summary(i) if "category" in i and i["category"] != "message" else i["summary"],
                       "project": i.get("project", ""), "agent": i.get("agent", ""),
                       "sensitive": bool(i.get("sensitive")), "session_id": i["session_id"],
                       "left": max(0, int(i["deadline"] - monotonic_now)),

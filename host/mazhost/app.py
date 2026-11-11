@@ -22,7 +22,11 @@ from pydantic import BaseModel, Field
 from .authority import AuthorityBroker
 from .beam import BeamStore
 from .braindump import structure_braindump
-from .dump_routes import build_dump_router, save_safely
+from .dump_routes import build_dump_router, inbox_dir, save_safely
+from .catchup import Catchup, build_catchup_router
+from .share_in import build_share_router
+from .buddy_forms import build_buddy_forms_router
+from .onboarding import Onboarding, build_onboarding_router
 from .library_routes import build_library_router
 from .bridge import BridgeWorker
 from .buddy import AlertIn, Buddy, install_buddy_routes
@@ -969,6 +973,12 @@ def create_app(
     api.include_router(webui_router)
     api.include_router(build_library_router(cfg, model_router))
     api.include_router(build_needs_router(cfg, buddy))
+    onboarding = Onboarding(resolve_data_dir(cfg))
+    api.include_router(build_catchup_router(Catchup(
+        resolve_data_dir(cfg), buddy, inbox_dir(cfg) / "library")))
+    api.include_router(build_share_router(cfg, model_router))
+    api.include_router(build_onboarding_router(onboarding))
+    api.include_router(build_buddy_forms_router(onboarding=onboarding))
     install_focus_routes(api, focus)
     install_live_voice(api, cfg, security, turn_timings)
     # ------------------------------------------------------------ SUBTITLES

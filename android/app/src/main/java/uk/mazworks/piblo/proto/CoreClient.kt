@@ -19,6 +19,7 @@ class CoreClient(baseUrl: String, private val token: String, private val clientV
         call("POST", "/buddy/alert/${java.net.URLEncoder.encode(id, "UTF-8")}/$action", if (action == "snooze") """{"minutes":$minutes}""" else "{}")
     }
     fun postAlert(json: String): String = Proto.parsePostedId(call("POST", "/buddy/alert", json))
+    fun share(json: String) { call("POST", "/share", json) }
 
     /** Phone keyboard mode: send literal text to the focused Piblo field. Returns the record id. */
     fun postText(id: String, text: String, mode: String): String = Proto.parseTextId(call("POST", "/buddy/text", Proto.textJson(id, text, mode)))
