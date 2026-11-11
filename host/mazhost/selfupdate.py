@@ -21,6 +21,7 @@ from typing import Any, Callable
 import httpx
 
 from . import fw
+from . import private_mode
 
 log = logging.getLogger("uvicorn.error.selfupdate")
 
@@ -135,8 +136,8 @@ class SelfUpdater:
 
     # ---- loop ---------------------------------------------------------
     def start(self) -> None:
-        if not self.enabled:
-            log.info("selfupdate: disabled (MAZ_AUTOUPDATE=0)")
+        if not self.enabled or private_mode.enabled():
+            log.info("selfupdate: disabled (MAZ_AUTOUPDATE=0 or private mode)")
             return
         self._task = asyncio.get_running_loop().create_task(self._loop())
 
@@ -156,6 +157,10 @@ class SelfUpdater:
 
     # ---- one check ----------------------------------------------------
     def check(self) -> dict:
+        if private_mode.enabled():
+            self.state["result"] = "skipped_private_mode"
+            self.state["error"] = None
+            return self.status()
         if not self._lock.acquire(blocking=False):
             return {**self.status(), "last_result": "already_running"}
         try:
@@ -172,7 +177,7 @@ class SelfUpdater:
             self._lock.release()
 
     def _client(self) -> httpx.Client:
-        return self._http or httpx.Client(timeout=30, follow_redirects=True)
+        return self._http or private_mode.client(timeout=30, follow_redirects=True)
 
     def _headers(self) -> dict:
         h = {"Accept": "application/vnd.github+json", "User-Agent": "nod-core-selfupdate"}

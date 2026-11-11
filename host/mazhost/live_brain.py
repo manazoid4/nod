@@ -24,6 +24,7 @@ import httpx
 
 from .config import Settings
 from .voices import resolve_data_dir
+from . import private_mode
 
 log = logging.getLogger("mazhost.live")
 
@@ -155,7 +156,7 @@ class LiveBrain:
         return Path(self.cfg.live_memory_file).expanduser() if self.cfg.live_memory_file else self.dir / "piblo-memory.md"
 
     def client(self, timeout: float = 15) -> httpx.AsyncClient:
-        return httpx.AsyncClient(transport=self._transport, timeout=httpx.Timeout(timeout, connect=5))
+        return private_mode.async_client(transport=self._transport, timeout=httpx.Timeout(timeout, connect=5))
 
     # ---- ASR -------------------------------------------------------------
     async def transcribe(self, pcm16k: bytes) -> str:
@@ -189,7 +190,7 @@ class LiveBrain:
             self._write_json("openrouter-models.json", {"at": time.time(), "data": [
                 {k: m.get(k) for k in ("id", "context_length", "pricing", "architecture")} for m in data]})
             return data
-        except (httpx.HTTPError, KeyError, ValueError) as error:
+        except (httpx.HTTPError, private_mode.PrivateModeError, KeyError, ValueError) as error:
             log.warning("live: model list fetch failed: %s", error)
             return cache.get("data", [])
 
@@ -262,6 +263,8 @@ class LiveBrain:
         except httpx.HTTPError as error:
             log.info("live: github memory unavailable: %s", error)
             text = hit[1] if hit else ""
+        except private_mode.PrivateModeError:
+            text = hit[1] if hit else ""
         self._gh_cache[spec] = (time.time(), text)
         return text
 
@@ -282,6 +285,8 @@ class LiveBrain:
         orr = ("openrouter", OPENROUTER, cfg.openrouter_api_key, choice["model"], FIRST_TOKEN_S)
         olm = ("ollama", cfg.ollama_url.rstrip("/") + "/v1", "", cfg.live_ollama_model, OLLAMA_FIRST_TOKEN_S)
         lfm = ("lfm", cfg.llamacpp_url.rstrip("/") + "/v1", "", cfg.llamacpp_model, 10.0)
+        if private_mode.enabled():
+            return [lfm] if choice["model"] == "lfm" else [olm, lfm]  # local engines only
         if choice["model"] == "lfm":
             return [lfm]
         if choice["model"] == "ollama":

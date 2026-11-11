@@ -9,6 +9,8 @@ import threading
 import time
 from pathlib import Path
 
+from . import private_mode
+
 TIERS = ("approvals", "prs", "actions")
 PR_CACHE_S = 60
 
@@ -67,6 +69,8 @@ class Needs:
 
     def _prs(self, warnings: list[str]) -> list[dict]:
         from datetime import datetime
+        if private_mode.enabled():
+            return []  # `gh` reaches GitHub: skipped cleanly in private mode
         items = []
         now = time.time()
         for repo in (r.strip() for r in os.environ.get("MAZ_NEEDS_REPOS", "").split(",")):

@@ -22,6 +22,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from .config import Settings
+from . import private_mode
 
 log = logging.getLogger("uvicorn.error")
 
@@ -137,7 +138,7 @@ class VoiceService:
         hit = self._search_cache.get(q)
         if hit and time.monotonic() - hit[0] < SEARCH_TTL_S:
             return hit[1]
-        resp = httpx.get(
+        resp = private_mode.get(
             "https://api.fish.audio/model",
             headers={"Authorization": f"Bearer {key}"},
             params={"title": q, "language": "en", "sort_by": "task_count", "page_size": 15, "page_number": 1},

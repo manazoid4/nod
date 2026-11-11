@@ -17,13 +17,14 @@ import httpx
 
 from .config import Settings
 from .core import CoreError, MazCore
+from . import private_mode
 
 
 class BridgeWorker:
     def __init__(self, settings: Settings, core: MazCore, client: httpx.Client | None = None) -> None:
         self.settings = settings
         self.core = core
-        self.client = client or httpx.Client(timeout=12)
+        self.client = client or private_mode.client(timeout=12)
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._last_error = ""
@@ -93,7 +94,7 @@ class BridgeWorker:
             self._stop.wait(self.settings.bridge_poll_seconds)
 
     def poll_once(self) -> int:
-        if not self.settings.bridge_enabled:
+        if not self.settings.bridge_enabled or private_mode.enabled():
             return 0
         headers = self._headers()
         response = self.client.get(

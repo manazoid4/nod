@@ -9,8 +9,12 @@ import httpx
 from .config import Settings
 from .brain import is_refusal
 from .errors import ErrorCode, RouteError, normalize_upstream_error
+from . import private_mode
 
 Route = Literal["local", "local_fast", "local_smart", "auto", "cloud", "mazlatest", "groq", "groq_alt", "groq_3", "openrouter"]
+
+# Cloud routes that private mode skips: only local engines are tried.
+CLOUD_ROUTES = frozenset({"groq", "groq_alt", "groq_3", "mazlatest", "openrouter", "cloud"})
 
 # Explicit AUTO fallback order. One attempt per stage, no in-stage retries —
 # a stage that fails (auth, model-not-found, timeout, refused connection...)
@@ -45,7 +49,7 @@ MAX_OUTPUT_TOKENS = 160
 class Models:
     def __init__(self, settings: Settings, client: httpx.Client | None = None) -> None:
         self.settings = settings
-        self.client = client or httpx.Client(timeout=90, limits=httpx.Limits(keepalive_expiry=300))
+        self.client = client or private_mode.client(timeout=90, limits=httpx.Limits(keepalive_expiry=300))
         self._last_usage: dict[str, int | float | str] = {}
         self._last_route: dict[str, Any] = {}
 
@@ -492,6 +496,9 @@ class Models:
         return True
 
     def _effective_auto_chain(self) -> tuple[Route, ...]:
+        if private_mode.enabled():
+            # Only local engines; every cloud stage is skipped.
+            return tuple(stage for stage in ("local_fast", "local_smart") if self._local_stage_model(stage))
         if self.settings.brain_order == "local_first":
             chain = LOCAL_FIRST_CHAIN
             if not self._local_smart_is_distinct():
@@ -521,6 +528,8 @@ class Models:
 
     def _auto(self, messages: list[dict[str, str]], started: float) -> tuple[str, str]:
         chain = self._effective_auto_chain()
+        if private_mode.enabled() and not chain:
+            raise RouteError(ErrorCode.PRIVATE_MODE, "auto", retryable=False, requested_route="auto")
         last_error: RouteError | None = None
         refused: tuple[str, tuple[str, str]] | None = None
         attempts: list[dict[str, str | int]] = []
@@ -591,6 +600,8 @@ class Models:
 
     def chat(self, messages: list[dict[str, str]], route: Route) -> tuple[str, str]:
         started = time.perf_counter()
+        if private_mode.enabled() and route in CLOUD_ROUTES:
+            raise RouteError(ErrorCode.PRIVATE_MODE, route, retryable=False, requested_route=route)
         if route == "auto":
             return self._auto(messages, started)
         try:
@@ -624,6 +635,8 @@ class Models:
             raise normalized from error
 
     def _models_probe(self, url: str, key: str) -> dict:
+        if private_mode.enabled() and not private_mode.is_local_url(url):
+            return {"reachable": False, "authenticated": False, "auth_status": "unreachable", "models": []}
         endpoint = f"{url.rstrip('/')}/models"
         try:
             response = self.client.get(endpoint, headers=self._auth_headers(key), timeout=3)

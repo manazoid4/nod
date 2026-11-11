@@ -37,6 +37,7 @@ from .debug_capsule import DebugCapsules
 from .device import DeviceMonitor
 from .discovery import DiscoveryResponder
 from . import fw
+from . import private_mode
 from .errors import ErrorCode, RouteError
 from .focus import Focus, install_focus_routes
 from .executor import ElevatedExecutor
@@ -117,6 +118,10 @@ class SpeakRequest(BaseModel):
     text: str = Field(min_length=1, max_length=1_400)
 
 
+class PrivacyRequest(BaseModel):
+    private_mode: bool
+
+
 class BeamRequest(BaseModel):
     text: str = Field(min_length=1, max_length=2_000)
 
@@ -158,6 +163,7 @@ def create_app(
     subtitles: SubtitleJobs | None = None,
 ) -> FastAPI:
     cfg = settings or Settings()
+    private_mode.init(cfg)
     security = Security(cfg)
     speech = stt or SpeechToText(cfg)
     speech_out = SpeechOut(cfg)
@@ -258,6 +264,8 @@ def create_app(
     @api.on_event("startup")
     def start_bridge() -> None:
         logging.getLogger("uvicorn.error").info("Piblo Core v%s starting", CORE_VERSION)
+        if private_mode.enabled():
+            return  # no GitHub bridge in private mode
         bridge_worker.start()
         threading.Thread(target=getattr(speech, "warm", lambda: None), daemon=True).start()
 
@@ -436,6 +444,7 @@ def create_app(
             "ok": True,
             "name": "nod Core",
             "version": CORE_VERSION,
+            "private_mode": private_mode.enabled(),
             "git_sha": updates.running_sha,
             "update": updates.brief(),
             "fw_latest": (lambda m: m and {"version": m["version"], "sha": m.get("sha", "")})(fw.manifest()),
@@ -484,6 +493,21 @@ def create_app(
     @api.get("/models")
     def models_status():
         return {**model_router.status(), "default_route": cfg.default_route}
+
+    @api.get("/privacy")
+    def privacy():
+        on = private_mode.enabled()
+        return {
+            "private_mode": on,
+            "outbound": "none" if on else "cloud_optional",
+            "cloud_services_in_use": [] if on else private_mode.cloud_services(cfg),
+            "data_dirs": [str(resolve_data_dir(cfg))],
+        }
+
+    @api.post("/privacy")
+    def privacy_set(body: PrivacyRequest):
+        private_mode.save(cfg, body.private_mode)
+        return privacy()
 
     @api.get("/diagnostics")
     def diagnostics():

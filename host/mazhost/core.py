@@ -26,6 +26,7 @@ import httpx
 
 from .config import Settings
 from .security import is_lan_ip
+from . import private_mode
 
 
 PROJECT_MARKERS = (
@@ -60,7 +61,7 @@ class CoreError(RuntimeError):
 class MazCore:
     def __init__(self, settings: Settings, client: httpx.Client | None = None) -> None:
         self.settings = settings
-        self.client = client or httpx.Client(timeout=12)
+        self.client = client or private_mode.client(timeout=12)
         self.device_ip: str | None = None
         self._cache_lock = threading.Lock()
         self._summary_cache: list[dict[str, Any]] = []
@@ -366,6 +367,8 @@ class MazCore:
         }
         if action not in allowed:
             raise CoreError("action_not_allowed")
+        if private_mode.enabled() and action in ("git_fetch", "git_pull_ff"):
+            raise CoreError("blocked_private_mode")
         path = self._find_project(project)
         if action == "git_status":
             result = {"action": action, "project": project, **self._git(path, "status", "--short", "--branch")}

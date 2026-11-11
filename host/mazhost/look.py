@@ -12,6 +12,7 @@ import httpx
 from .config import Settings
 from .stt import SpeechToText
 from .teach_capture import Display, TeachCapture, TeachError
+from . import private_mode
 
 
 class LookError(RuntimeError):
@@ -26,7 +27,7 @@ class LookService:
         # TeachCapture does not load Whisper until transcribe is actually used;
         # reuse its tested monitor enumeration without creating another screen API.
         self.capture = TeachCapture(settings, SpeechToText(settings))
-        self.client = httpx.Client(timeout=60)
+        self.client = private_mode.client(timeout=60)
 
     def _display(self, display_id: str) -> Display:
         rows = [Display(**row) for row in self.capture.displays()]
@@ -70,6 +71,8 @@ class LookService:
             return target.read_bytes()
 
     def look(self, question: str = "What am I looking at?", display_id: str = "primary") -> dict[str, Any]:
+        if private_mode.enabled():
+            raise LookError("cloud_vision_disabled_in_private_mode")
         if not self.settings.cloud_key:
             raise LookError("cloud_key_required_for_vision")
         image = self._screenshot(display_id)
