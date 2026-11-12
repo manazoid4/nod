@@ -400,6 +400,7 @@ export function startMock({ port = 18787, token = 'mock-token-123', deviceOnline
             statusCheckRollup: [
               { name: 'typecheck', state: 'SUCCESS', conclusion: 'SUCCESS' },
               { name: 'vitest', state: 'SUCCESS', conclusion: 'SUCCESS' },
+              { name: 'lint', conclusion: 'FAILURE', detailsUrl: 'https://github.com/manazoid4/piblo/actions' },
             ],
           },
         ],
@@ -411,7 +412,7 @@ export function startMock({ port = 18787, token = 'mock-token-123', deviceOnline
       const draftsWaiting = db.devDrafts.filter((d) => d.status === 'draft').length;
       return json(res, 200, {
         founder_unticked: founderUnticked,
-        failing_pr_checks: 0,
+        failing_pr_checks: 1,
         drafts_awaiting_approval: draftsWaiting,
         usage_warnings: 1,
       });

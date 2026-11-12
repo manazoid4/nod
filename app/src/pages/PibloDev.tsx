@@ -764,7 +764,8 @@ export function DevBuildsView({
           const summary = prCheckSummary(pr);
           const pillCls = summary.state === 'ok' ? 'ok' : summary.state === 'bad' ? 'bad' : summary.state === 'pending' ? 'warn' : '';
           return (
-            <div className="list-item wrap" key={pr.number}>
+            <div className="stack" key={pr.number}>
+              <div className="list-item">
               <span className="tag">#{pr.number}</span>
               <div className="grow">
                 <div className="title">{pr.title}</div>
@@ -779,6 +780,7 @@ export function DevBuildsView({
                   Open PR
                 </button>
               )}
+              </div>
               {(pr.statusCheckRollup ?? []).filter((check) => ['FAILURE', 'TIMED_OUT', 'CANCELLED', 'ACTION_REQUIRED'].includes(check.conclusion ?? '') || ['FAILURE', 'ERROR'].includes(check.state ?? '')).map((check, index) => {
                 const name = check.name || check.context || 'Check';
                 const url = check.detailsUrl || check.targetUrl;
