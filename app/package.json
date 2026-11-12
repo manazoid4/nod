@@ -1,7 +1,7 @@
 {
   "name": "piblo-app",
   "productName": "Piblo",
-  "version": "0.1.0",
+  "version": "0.2.0-beta.1",
   "description": "Piblo for Windows: find your Piblo on Wi-Fi, see its screen, and handle notifications, approvals and settings.",
   "private": true,
   "main": "dist/main/main.js",
