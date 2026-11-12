@@ -197,7 +197,7 @@ async function runUpdate() {
     await connectRomOnly();
     const table = await readPartitionTable();
     target = findMazPartition(parsePartitions(table));
-    log(`Piblo partition: ${target.label} @ 0x${target.offset.toString(16)} / ${target.size.toLocaleString()} bytes`);
+    log(`Piblo partition @ 0x${target.offset.toString(16)} / ${target.size.toLocaleString()} bytes`);
     if (firmware.byteLength > target.size) {
       throw new Error(`v0.03 is ${firmware.byteLength.toLocaleString()} bytes but your existing Piblo slot is only ${target.size.toLocaleString()} bytes. Nothing was erased.`);
     }

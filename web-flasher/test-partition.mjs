@@ -47,17 +47,17 @@ const base = [
 
 {
   const none = base.map((p) => p.label === "MAZ-Pocket" ? { ...p, label: "Other" } : p);
-  assert.throws(() => findMazPartition(parsePartitions(table(none))), /No existing MAZ-Pocket/);
+  assert.throws(() => findMazPartition(parsePartitions(table(none))), /No existing Piblo/);
 }
 
 {
   const duplicate = [...base, { type: 0, subtype: 0x13, offset: 0x320000, size: 0x80000, label: "MAZ-Pocket-2" }];
-  assert.throws(() => findMazPartition(parsePartitions(table(duplicate))), /More than one MAZ-Pocket/);
+  assert.throws(() => findMazPartition(parsePartitions(table(duplicate))), /More than one Piblo/);
 }
 
 {
   const wrongType = base.map((p) => p.label === "MAZ-Pocket" ? { ...p, type: 1 } : p);
-  assert.throws(() => findMazPartition(parsePartitions(table(wrongType))), /No existing MAZ-Pocket/);
+  assert.throws(() => findMazPartition(parsePartitions(table(wrongType))), /No existing Piblo/);
 }
 
 {
