@@ -26,6 +26,10 @@
 .use-6 { grid-column: span 6; background: var(--mint); }
 
 .buddy-lede { max-width: 46ch; font-size: 1.15rem; }
+.forms-title { margin: var(--space-7) 0 0; font-size: 1.4rem; }
+.forms { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+.forms li { background: var(--card); border: var(--stroke); border-radius: var(--radius-m); padding: var(--space-4) var(--space-5); }
+.forms strong { display: block; font: 800 1.1rem/1.2 var(--font-display); }
 .buddy-day { grid-template-columns: repeat(5, 1fr); counter-reset: none; }
 .buddy-day li { position: relative; text-align: center; }
 .buddy-day li + li::before { content: "→"; position: absolute; left: calc(-1 * var(--space-5)); top: 2.2rem; width: var(--space-5); text-align: center; font: 800 1.2rem/1 var(--font-mono); }
@@ -74,6 +78,7 @@
   .use { box-shadow: none; padding: var(--space-4) var(--space-5); }
   .use h3, .steps h3, .own-grid h3 { font-size: 1.15rem; }
   .own-grid { gap: 0; }
+  .forms { grid-template-columns: 1fr 1fr; }
   .own-grid li { background: none; border: 0; border-top: 2px dashed var(--ink-soft); border-radius: 0; box-shadow: none; padding: var(--space-4) 0; }
   .film-solo { max-width: 240px; }
 }
