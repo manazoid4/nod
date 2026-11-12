@@ -122,7 +122,7 @@ def test_pause_all_denies_future_requests(ask):
 @pytest.mark.parametrize('category', ['email', 'calendar', 'purchase', 'delete', 'deploy', 'other'])
 def test_card_contains_the_action_details(ask, category):
     item = request(ask, agent='Helper', category=category, amount='10 credits', recipient='Team')
-    assert item['card'] == ['Who: Helper', 'What: Send email', 'Details: Send draft', 'Amount: 10 credits', 'Where: Team', 'Category: ' + category]
+    assert item['card'] == ['From: Helper', 'To: Team', 'What: Send email', 'Send draft', 'How much: 10 credits'] + ([] if category == 'other' else ['Category: ' + category])
 
 
 def test_pairing_key_proves_decisions_after_restart(tmp_path):
@@ -176,3 +176,19 @@ def test_card_wraps_long_fields_into_short_lines(ask):
     item = request(ask, agent='A very long agent name', recipient='A particularly long recipient address', category='email')
     assert all(len(line) <= 24 for line in item['card'])
     assert 'recipient address' in ' '.join(item['card'])
+
+
+def test_card_omits_empty_fields_and_uses_helper(ask):
+    item = request(ask, summary='', category='other')
+    assert item['card'] == ['From: Helper', 'What: Send email']
+
+
+def test_piblo_environment_overrides_legacy(ask, monkeypatch):
+    monkeypatch.setenv('PIBLO_ASK_DEVICE_KEY', 'new-key')
+    item = request(ask)
+    message = f"{item['id']}:{item['digest']}:allow:{item['nonce']}".encode()
+    proof = hmac.new(b'new-key', message, hashlib.sha256).hexdigest()
+    assert ask.post('/buddy/decide', json={'id': item['id'], 'decision': 'allow', 'proof': proof}).status_code == 200
+    monkeypatch.setenv('MAZ_ASK_UNLOCK_DELETE', '1')
+    monkeypatch.setenv('PIBLO_ASK_UNLOCK_DELETE', '0')
+    assert request(ask, category='delete')['decision'] == 'deny'

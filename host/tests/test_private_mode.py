@@ -605,3 +605,27 @@ def test_bridge_survives_private_mode_switch(tmp_path, monkeypatch):
     monkeypatch.setattr(bridge._stop, "wait", lambda _: bridge._stop.set())
     bridge._loop()
     assert "PRIVATE_MODE" in bridge.status()["last_error"]
+
+
+def test_voice_save_cannot_clear_concurrent_private_mode(tmp_path, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    from mazhost.voices import VoiceService, ADRIAN_ID
+    cfg = _settings(tmp_path, private_mode=False)
+    voice = VoiceService(cfg)
+    read_done, resume = Event(), Event()
+    read = voice._read
+    def delayed_read():
+        data = read()
+        read_done.set()
+        assert resume.wait(5)
+        return data
+    monkeypatch.setattr(voice, '_read', delayed_read)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        saving = pool.submit(voice.select, ADRIAN_ID)
+        assert read_done.wait(5)
+        pool.submit(private_mode.save, cfg, True).result(timeout=5)
+        resume.set()
+        saving.result(timeout=5)
+    private_mode.init(cfg)
+    assert private_mode.enabled()

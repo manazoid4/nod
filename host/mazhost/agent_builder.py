@@ -46,6 +46,9 @@ _UNSAFE_LEADING_VERB = re.compile(r"^(?:email|e-mail)\s+", re.I)
 
 _AT_TIME = re.compile(r"\bat\s+(\d{1,2})(?::(\d{2}))?\s*([ap])?m?\b", re.I)
 _INTERVAL = re.compile(r"\bevery\s+(\d{1,3})\s*h(?:ou)?rs?\b", re.I)
+_DAY_NAMES = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+_DAY = re.compile(r"\b(?:(?:every|on)\s+)?(" + "|".join(_DAY_NAMES) + r")s?\b", re.I)
+_WORK = re.compile(r"\b(work|boss|office|meeting|standup|colleague|team|client)\b", re.I)
 _WEEKDAYS = re.compile(r"\b(week-?days?|every\s+weekday)\b", re.I)
 _FILLER = re.compile(
     r"^\s*(?:please\s+)?(?:make|build|create|set\s*up|get)\s+(?:me\s+)?an?\s+agent\s+(?:that|to|for)\s+",
@@ -56,7 +59,7 @@ _SAFETY = {
     "ask_on_piblo": "Sending, booking or posting waits for your yes on Piblo.",
     "never": "Payments and deletions stay locked unless the owner unlocks them on Piblo.",
 }
-_SCHEDULE_WORDS = {"daily": "every day", "weekdays": "on weekdays", "interval": "every few hours"}
+_SCHEDULE_WORDS = {"daily": "every day", "weekdays": "on weekdays", "interval": "every few hours", "weekly": "weekly"}
 
 
 def _level_for(text: str) -> str:
@@ -91,6 +94,8 @@ def _schedule_for(text: str) -> dict[str, Any]:
     at = _AT_TIME.search(low)
     if at:
         hh, mm = int(at.group(1)), int(at.group(2) or 0)
+        if not at.group(3) and 1 <= hh <= 7 and _WORK.search(low):
+            hh += 12
         if at.group(3) == "p" and hh < 12:
             hh += 12
         if at.group(3) == "a" and hh == 12:
@@ -98,6 +103,9 @@ def _schedule_for(text: str) -> dict[str, Any]:
         if hh > 23:
             raise ValueError("invalid_time")
         mm = min(mm, 59)
+    day = _DAY.search(low)
+    if day:
+        return {"kind": "weekly", "day": day.group(1).lower(), "time": f"{hh:02d}:{mm:02d}"}
     return {"kind": "weekdays" if _WEEKDAYS.search(low) else "daily", "time": f"{hh:02d}:{mm:02d}"}
 
 
@@ -106,6 +114,7 @@ def _job_for(text: str) -> str:
     job = _AT_TIME.sub(" ", job)        # timing lives in the schedule, not the job
     job = _INTERVAL.sub(" ", job)
     job = _WEEKDAYS.sub(" ", job)
+    job = _DAY.sub(" ", job)
     job = " ".join(job.split()).strip(" ,.")
     return job[:200] or "Help with a recurring task"
 
@@ -198,6 +207,8 @@ class AgentBuilder:
                 parsed = None  # the brain is advisory: any failure falls back to rules
         if parsed:
             name, job, schedule, level, provider = parsed
+            if _DAY.search(text) or (_AT_TIME.search(text) and _WORK.search(text)):
+                schedule = _schedule_for(text)
         else:
             job = _job_for(text)
             name = _name_for(job)
@@ -285,6 +296,8 @@ class AgentBuilder:
         hh, mm = (int(part) for part in sched["time"].split(":"))
         due_at = datetime.fromtimestamp(now).replace(hour=hh, minute=mm, second=0, microsecond=0).timestamp()
         if now < due_at or last >= due_at:
+            return False
+        if sched["kind"] == "weekly" and datetime.fromtimestamp(now).weekday() != _DAY_NAMES.index(sched["day"]):
             return False
         if sched["kind"] == "weekdays" and datetime.fromtimestamp(now).weekday() >= 5:
             return False

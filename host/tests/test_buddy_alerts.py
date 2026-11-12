@@ -171,7 +171,7 @@ def test_nod_fields_reach_the_device_summary():
     assert item["id"] == r["id"] and item["amount"] == "£42.00" and item["recipient"] == "Acme Ltd"
     assert item["category"] == "payment" and item["nod"] is True
     # the firmware reads one text field: head / amount / recipient on three lines
-    assert item["summary"] == "THE NOD  PAYMENT" + chr(10) + "£42.00" + chr(10) + "to Acme Ltd"
+    assert item["summary"] == "ASK ON PIBLO  PAYMENT" + chr(10) + "£42.00" + chr(10) + "to Acme Ltd"
 
 
 def test_nod_fields_are_truncated_and_category_normalised(monkeypatch):

@@ -26,6 +26,7 @@ class PrivateModeError(RuntimeError):
 
 
 _lock = threading.Lock()
+_persistence_lock = threading.Lock()
 _enabled = False
 
 
@@ -40,7 +41,7 @@ def set_enabled(value: bool) -> None:
         _enabled = bool(value)
 
 
-# --- persistence (reuses <data_dir>/settings.json, the prefs store voices uses) ---
+# --- persistence ---
 
 def _data_dir(settings) -> Path:
     if settings.data_dir:
@@ -56,7 +57,10 @@ def init(settings) -> bool:
     """Set the runtime state from the persisted pref, falling back to MAZ_PRIVATE_MODE."""
     value = bool(settings.private_mode)
     try:
-        data = json.loads(_prefs_file(settings).read_text("utf-8"))
+        path = _data_dir(settings) / "private-mode.json"
+        if not path.exists():
+            path = _prefs_file(settings)
+        data = json.loads(path.read_text("utf-8"))
         if isinstance(data, dict) and "private_mode" in data:
             value = bool(data["private_mode"])
     except (OSError, ValueError):
@@ -67,19 +71,13 @@ def init(settings) -> bool:
 
 def save(settings, value: bool) -> None:
     """Flip private mode and persist it so it survives a restart (no reboot needed)."""
-    path = _prefs_file(settings)
-    try:
-        data = json.loads(path.read_text("utf-8")) if path.exists() else {}
-        if not isinstance(data, dict):
-            data = {}
-    except (OSError, ValueError):
-        data = {}
-    data["private_mode"] = bool(value)
+    path = _data_dir(settings) / "private-mode.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=2), "utf-8")
-    tmp.replace(path)
-    set_enabled(value)
+    with _persistence_lock:
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"private_mode": bool(value)}, indent=2), "utf-8")
+        tmp.replace(path)
+        set_enabled(value)
 
 
 # --- local-address check -------------------------------------------------

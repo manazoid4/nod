@@ -205,6 +205,10 @@ def test_routes_behind_bearer_token(tmp_path, monkeypatch):
     agent = r.json()
     assert agent["schedule"]["time"] == "08:00" and agent["level"] == "just_do_it"
     assert [a["id"] for a in c.get("/agents", headers=H).json()["agents"]] == [agent["id"]]
+    weekly = c.post("/agents/build", json={"text": "email my boss every friday at 5"}, headers=H)
+    assert weekly.status_code == 200
+    assert weekly.json()["schedule"] == {"kind": "weekly", "day": "friday", "time": "17:00"}
+    c.delete(f"/agents/{weekly.json()['id']}", headers=H)
 
     r = c.post(f"/agents/{agent['id']}/level", json={"level": "ask_on_piblo"}, headers=H)
     assert r.status_code == 200 and r.json()["level"] == "ask_on_piblo"
@@ -215,3 +219,13 @@ def test_routes_behind_bearer_token(tmp_path, monkeypatch):
     assert c.get("/agents", headers=H).json()["agents"] == []
     assert not (tmp_path / "skills" / agent["slug"]).exists()  # its skill folder went with it
     assert c.delete(f"/agents/{agent['id']}", headers=H).status_code == 404
+
+
+def test_weekly_friday_schedule_and_execution(tmp_path):
+    b = builder(tmp_path)
+    agent = b.build_agent('email my boss every friday at 5')
+    assert agent['schedule'] == {'kind': 'weekly', 'day': 'friday', 'time': '17:00'}
+    assert not b._due(agent, at('2026-11-12', '17:01'))
+    assert b._due(agent, at('2026-11-13', '17:01'))
+    assert b.build_agent('check email at 8')['schedule']['time'] == '08:00'
+    assert b.build_agent('email boss on monday at 5am')['schedule'] == {'kind': 'weekly', 'day': 'monday', 'time': '05:00'}

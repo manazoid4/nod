@@ -62,11 +62,15 @@ TaskStatus = Literal["waiting", "running", "done", "failed"]
 CONNECTED_S = 20      # a client that polled this recently counts as connected
 KIND_KEY = {"done": "done", "needs": "needs", "error": "errors", "usage": "usage"}
 
+def _ask_env(name: str, default: str = "") -> str:
+    return os.environ.get("PIBLO_ASK_" + name, os.environ.get("MAZ_ASK_" + name, default))
+
+
 def _nod_summary(i: dict) -> str:
     """Device text for a detailed approval, in the existing `summary` field so the firmware parses nothing new:
     head, amount, recipient on three lines."""
     to = "to " + i["recipient"] if i["recipient"] else ""
-    return f"THE NOD  {i['category'].upper()}\n{i['amount']}\n{to}"
+    return f"ASK ON PIBLO  {i['category'].upper()}\n{i['amount']}\n{to}"
 
 
 def _local_today() -> str:
@@ -451,15 +455,24 @@ class Buddy:
                 agent: str = "", idem: str = "", sensitive: bool = False, urgent: bool = False,
                 undo: str = "") -> dict:
         with self._cv:
+            digest = self._digest({"tool": tool, "summary": summary, "agent": agent or project,
+                                   "amount": amount, "recipient": recipient,
+                                   "category": (category or OTHER) if amount or recipient or category or nod else "",
+                                   "nod": nod, "sensitive": sensitive, "urgent": urgent, "undo": undo,
+                                   "session_id": session_id, "project": project})
             if idem:
                 known = self._idem.get(idem)
                 if known in self._items:
+                    if self._items[known]["digest"] != digest:
+                        raise HTTPException(status_code=409, detail="idempotency key already used for a different request")
                     return {**self._items[known], "duplicate": True}
                 row = self._db("find_approval_by_idem", idem)
                 if row:
+                    if row.get("digest") != digest:
+                        raise HTTPException(status_code=409, detail="idempotency key already used for a different request")
                     return {**self._stored_view(row), "duplicate": True}
             rid = uuid.uuid4().hex[:8]
-            locked = category in ("purchase", "delete") and os.environ.get("MAZ_ASK_UNLOCK_" + category.upper()) != "1"
+            locked = category in ("purchase", "delete") and _ask_env("UNLOCK_" + category.upper()) != "1"
             auto = "deny" if self._halted_locked() or locked else None
             if auto:
                 self._roll()
@@ -473,8 +486,16 @@ class Buddy:
                 self._items[rid].update(amount=amount, recipient=recipient,
                                         category=category or OTHER, nod=nod)
             item = self._items[rid]
-            fields = [f"Who: {item['agent'] or 'Agent'}", f"What: {tool}", f"Details: {summary}",
-                      f"Amount: {amount}", f"Where: {recipient}", f"Category: {category or OTHER}"]
+            fields = [f"From: {item['agent'] or 'Helper'}"]
+            if recipient:
+                fields.append(f"To: {recipient}")
+            fields.append(f"What: {tool}")
+            if summary and summary != tool:
+                fields.append(summary)
+            if amount:
+                fields.append(f"How much: {amount}")
+            if category and category != OTHER:
+                fields.append(f"Category: {category}")
             item["card"] = [line for field in fields for line in textwrap.wrap(field, width=24)]
             item["digest"] = self._digest(item)
             item["nonce"] = secrets.token_hex(32)
@@ -493,7 +514,9 @@ class Buddy:
 
     @staticmethod
     def _digest(item: dict) -> str:
-        fields = {k: item.get(k, "") for k in ("agent", "tool", "summary", "amount", "recipient", "category")}
+        fields = {k: item.get(k, "") for k in ("agent", "tool", "summary", "amount", "recipient", "category",
+                                                "session_id", "project", "undo")}
+        fields.update({k: bool(item.get(k, False)) for k in ("nod", "sensitive", "urgent")})
         return hashlib.sha256(json.dumps(fields, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
 
     def _focus_locked(self) -> None:
@@ -583,7 +606,7 @@ class Buddy:
             if decision == "undo" and item["decision"] == "allow":
                 if time.time() > item.get("undo_until", 0):
                     raise RuntimeError("undo_window_closed")
-                key = self.device_keys.get(device_id) or os.environ.get("MAZ_ASK_DEVICE_KEY", "")
+                key = self.device_keys.get(device_id) or _ask_env("DEVICE_KEY")
                 message = f"{rid}:{item['digest']}:undo:{item['nonce']}".encode()
                 expected = hmac.new(key.encode(), message, hashlib.sha256).hexdigest() if key else ""
                 if not expected or not hmac.compare_digest(expected, proof):
@@ -605,10 +628,10 @@ class Buddy:
             if decision == "allow" and "held_since" in item:
                 raise PermissionError("held_for_focus")
             if decision == "allow" and not self._halted_locked():
-                key = self.device_keys.get(device_id) or os.environ.get("MAZ_ASK_DEVICE_KEY", "")
+                key = self.device_keys.get(device_id) or _ask_env("DEVICE_KEY")
                 message = f"{rid}:{item['digest']}:{decision}:{item['nonce']}".encode()
                 expected = hmac.new(key.encode(), message, hashlib.sha256).hexdigest() if key else ""
-                legacy = os.environ.get("MAZ_ASK_LEGACY_DEVICE_DECIDE") == "1"
+                legacy = _ask_env("LEGACY_DEVICE_DECIDE") == "1"
                 if self._digest(item) != item["digest"] or not (legacy or (expected and hmac.compare_digest(expected, proof))):
                     raise PermissionError("device_proof_required")
             if self._halted_locked() and decision == "allow":

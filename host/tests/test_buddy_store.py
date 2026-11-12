@@ -270,3 +270,16 @@ def test_event_cursor_counts_phone_text_across_restart(tmp_path):
     after = restarted.post("/buddy/event", json={"kind": "done", "text": "after"}, headers=H).json()
     assert after["id"] > last
     assert [e["text"] for e in restarted.get(f"/buddy/events?since={last}", headers=H).json()["events"]] == ["after"]
+
+
+def test_approved_idempotency_key_rejects_changed_action_even_after_restart(tmp_path):
+    c = boot(tmp_path)
+    payload = {'tool': 'Send', 'summary': 'Original', 'idempotency_key': 'bound'}
+    item = c.post('/buddy/request', json=payload, headers=H).json()
+    assert c.post('/buddy/decide', json={'id': item['id'], 'decision': 'allow'}, headers=H).json()['decision'] == 'allow'
+    for client in (c, boot(tmp_path)):
+        assert client.post('/buddy/request', json=payload, headers=H).json()['decision'] == 'allow'
+        changed = client.post('/buddy/request', json={**payload, 'summary': 'Different'}, headers=H)
+        assert changed.status_code == 409
+        assert 'idempotency' in changed.text.lower()
+        assert client.post('/buddy/request', json={**payload, 'nod': True}, headers=H).status_code == 409
