@@ -60,14 +60,14 @@ describe('WindowReveal', () => {
     expect(win.show).toHaveBeenCalledTimes(1);
   });
 
-  it('stays hidden when started with --hidden until it is presented', () => {
+  it('stays hidden when started with --hidden, however long the renderer takes', () => {
     const { win, emit } = fakeWindow();
     const gate = new WindowReveal(win, { startHidden: true });
     emit('ready-to-show');
+    emit('did-finish-load');
     vi.advanceTimersByTime(10_000);
     expect(win.show).not.toHaveBeenCalled();
-    gate.present();
-    expect(win.show).toHaveBeenCalledTimes(1);
+    expect(gate.hasRevealed).toBe(true);
   });
 
   it('does not touch a destroyed window', () => {
@@ -78,25 +78,11 @@ describe('WindowReveal', () => {
     expect(win.show).not.toHaveBeenCalled();
   });
 
-  it('present() restores a minimised window and always shows it', () => {
+  it('restores a minimised window before showing it', () => {
     const { win, emit } = fakeWindow({ isMinimized: () => true });
-    const gate = new WindowReveal(win);
+    new WindowReveal(win);
     emit('ready-to-show');
-    win.show.mockClear();
-    win.restore.mockClear();
-    gate.present();
     expect(win.restore).toHaveBeenCalledTimes(1);
-    expect(win.show).toHaveBeenCalledTimes(1);
-    expect(win.focus).toHaveBeenCalledTimes(2);
-  });
-
-  it('present() surfaces a window that was closed to the tray after reveal', () => {
-    const { win, emit } = fakeWindow();
-    const gate = new WindowReveal(win);
-    emit('ready-to-show');
-    expect(gate.hasRevealed).toBe(true);
-    win.show.mockClear();
-    gate.present();
     expect(win.show).toHaveBeenCalledTimes(1);
   });
 });

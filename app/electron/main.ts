@@ -81,7 +81,6 @@ const sidecar = new CoreSidecar({
 
 // ---- window + tray ----
 let win: BrowserWindow | null = null;
-let reveal: WindowReveal | null = null;
 let tray: Tray | null = null;
 let quitting = false;
 
@@ -132,7 +131,7 @@ function createWindow(): BrowserWindow {
   w.setMenuBarVisibility(false);
   // First paint is not guaranteed: if the renderer never becomes ready the window would stay
   // invisible, so the gate also reveals on did-finish-load and after a failsafe timeout.
-  reveal = new WindowReveal(w, { startHidden });
+  new WindowReveal(w, { startHidden });
   w.on('close', (e) => {
     if (!quitting && settings.closeToTray) {
       e.preventDefault();
@@ -163,7 +162,9 @@ function createWindow(): BrowserWindow {
 
 function showWindow() {
   if (!win || win.isDestroyed()) win = createWindow();
-  reveal?.present();
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
 }
 
 function createTray() {

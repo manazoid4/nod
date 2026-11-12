@@ -1,15 +1,11 @@
 /**
  * First-paint gate for the main window.
  *
- * A window created with `show: false` only appears once `ready-to-show` fires. If the renderer
- * never paints (bad file URL, crash while loading, a slow first run), that event never arrives
- * and the app keeps running with an invisible 0x0 window: the process is in Task Manager but
- * nothing is on screen. This gate reveals on the first of `ready-to-show`, `did-finish-load` or
- * a failsafe timeout — and only once — so the window always becomes visible.
- *
- * `present()` is the separate, repeatable path used when the user asks for the window (tray
- * click, second instance, dock activation). It ignores the gate, so a window that was closed to
- * the tray or started hidden still comes back.
+ * The window is created with `show: false`, so it only appears once `ready-to-show` fires. If that
+ * event never arrives (the renderer fails to paint, a slow first load) the app runs with an
+ * invisible window and nothing on screen. Reveal on the first of `ready-to-show`,
+ * `did-finish-load` or a failsafe timeout — exactly once. Tray clicks and second-instance
+ * activation keep using showWindow(), which shows the window directly.
  */
 
 export interface RevealableWindow {
@@ -55,16 +51,9 @@ export class WindowReveal {
   reveal(): boolean {
     if (this.revealed || this.win.isDestroyed()) return false;
     this.revealed = true;
-    this.present();
-    return true;
-  }
-
-  /** Always bring the window up: tray click, second instance, or an explicit request. */
-  present(): void {
-    if (this.win.isDestroyed()) return;
-    this.revealed = true;
     if (this.win.isMinimized()) this.win.restore();
     this.win.show();
     this.win.focus();
+    return true;
   }
 }
