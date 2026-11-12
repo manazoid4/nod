@@ -18,7 +18,7 @@ Hold a key and talk. Piblo listens, thinks and answers out loud. Capture an idea
 - **One-press actions.** A programmable deck for the things you do every day: start a focus session, message someone, control your computer, run a routine, trigger an automation.
 - **Stay in charge of your AI.** When an AI agent wants to do something that matters, like sending, buying, deleting or deploying, Piblo shows you exactly what and waits for your nod. Nothing happens without you.
 - **Built to keep you going.** XP, streaks and ranks turn focus, follow-through and finished tasks into a game you want to keep playing.
-- **Yours, not ours.** Open source. Works with free AI models. Your data goes through a small hub on your own computer. No subscription required.
+- **Yours, not ours.** Source-available and free for personal use. Works with free AI models. Your data goes through a small hub on your own computer. No subscription required.
 
 ### Who it's for
 
@@ -74,6 +74,6 @@ The working Cardputer firmware and the PC-side Piblo Core now live in this repo.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+[PolyForm Noncommercial License 1.0.0](LICENSE). The source is free to read, run and change for personal and other noncommercial use. Commercial use needs a separate licence: ask via info@piblo.co.uk. Earlier copies obtained under the MIT licence remain MIT for those copies. Third-party components keep their own licences (see [NOTICE](NOTICE)).
 
 Parts of `firmware/draft/buddy/` are adapted from [anthropics/claude-desktop-buddy](https://github.com/anthropics/claude-desktop-buddy), Copyright 2026 Anthropic, PBC, MIT License. See [NOTICE](NOTICE). Piblo is an independent project and is not affiliated with or endorsed by Anthropic.
