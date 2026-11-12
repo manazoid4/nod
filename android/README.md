@@ -7,8 +7,8 @@ computer running Piblo Core over Wi-Fi, or runs a built-in simulator with no com
 
 ```
 cd android
-export JAVA_HOME=/path/to/jdk21      # e.g. C:\Users\Maz\tools\jdk21
-export ANDROID_HOME=/path/to/sdk     # e.g. C:\Users\Maz\tools\android-sdk
+export JAVA_HOME=/path/to/jdk21
+export ANDROID_HOME=/path/to/sdk
 ./gradlew assembleDebug testDebugUnitTest
 ```
 
@@ -41,7 +41,7 @@ sender sends it — no speech recognition happens on the Cardputer.
 
 `hub/Link.kt` defines a `Transport` seam. Today it is Core over Wi-Fi HTTP. Bluetooth is a clearly
 labelled stub (`BleTransportStub`): the current firmware has no BLE GATT service. When firmware BLE
-ships, it will carry the same v1 JSON messages over BLE framing (see `HANDOVER.md`).
+ships, it will carry the same v1 JSON messages over BLE framing.
 
 ## Privacy
 

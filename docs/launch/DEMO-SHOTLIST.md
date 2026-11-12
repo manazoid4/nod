@@ -1,0 +1,15 @@
+# Real-device demo shotlist
+
+Use one continuous take per flow where practical. Keep the real Piblo prototype in frame, with an **Ender 5 3D printer in the background**. Show the computer/network when the flow depends on them. No simulated success, replacement screens or effects that imply unfinished behavior.
+
+| Story | First 3 seconds | Shots | What must be real |
+|---|---|---|---|
+| Press → speak → note saved | Finger reaches for the capture key: “I always lose this thought.” | Device and face; press and speak; release; open the actual inbox and show the note. | Real prototype, live capture, actual saved note and any paired-computer dependency. Repeat once; separately prove restart persistence before claiming it. Ender 5 visible behind device. |
+| Physical key → approved action | Show the waiting action and the physical key together. | Frame request; show the complete request on device; press key; show actual computer result. Include deny/timeout take. | Real agent request and safe allow-listed action; authenticated physical input. Do not film approval as working until firmware security gates pass. Ender 5 visible behind device. |
+| Glanceable focus timer | Close-up: start the timer, then glance without touching it. | Start session; show readable remaining time at a glance; brief time jump; show real completion state. | Real device timer from start through completion. Show offline only after verified; Ender 5 visible behind device. |
+| Lost thoughts button | “Thoughts disappear before I can type.” | Missed thought moment; press and speak; find saved note. | Genuine one-take capture and actual inbox result. Ender 5 visible behind device. |
+| Three clicks saved | Count the usual steps on fingers; cut to one physical shortcut. | Show baseline clicks; configure or select existing shortcut; press it; show result. | Counted real steps and a working shortcut, with computer dependency visible. Ender 5 visible behind device. |
+| Keyboard prototype two | “The first layout felt cramped.” | Compare the two physical layouts; type the same short task on each; show hands and result. | Both real prototypes and honest task comparison; no invented speed claim. Ender 5 visible behind device. |
+| The case that wasn't right | Hold up the flawed print: “This fit was wrong.” | Show flaw close-up; print revision; fit the real device; show the improved area. | Actual failed and revised prints, actual fit, and real prototype. Ender 5 visible behind device. |
+| Internet off | Disconnect the network on camera: “What still works?” | Show connection state; try one verified local feature; show one feature that needs connection and its honest message. | Real disconnect and real behavior. Do not imply offline voice or saving unless verified. Ender 5 visible behind device. |
+| What's inside Piblo? | “Here is the prototype, opened up.” | Unbox/open; identify actual parts; reassemble and boot. | Real components and current prototype only; distinguish concept from built hardware. Ender 5 visible behind device. |

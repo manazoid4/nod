@@ -1,0 +1,64 @@
+name: Windows app
+
+# Builds the Piblo app for Windows and uploads Piblo-Setup-<version>.exe as an artifact.
+# Only runs when app/ (or this workflow) changes, so firmware and site work is unaffected.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/app.yml"
+  pull_request:
+    paths:
+      - "app/**"
+      - ".github/workflows/app.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-app-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Build and package (NSIS, per-user)
+        run: npm run build
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Show installer
+        run: Get-ChildItem release -Filter *.exe | Select-Object Name, Length
+        shell: pwsh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Piblo-Setup
+          path: app/release/Piblo-Setup-*.exe
+          if-no-files-found: error
+          retention-days: 30

@@ -19,6 +19,7 @@ class CoreClient(baseUrl: String, private val token: String, private val clientV
         call("POST", "/buddy/alert/${java.net.URLEncoder.encode(id, "UTF-8")}/$action", if (action == "snooze") """{"minutes":$minutes}""" else "{}")
     }
     fun postAlert(json: String): String = Proto.parsePostedId(call("POST", "/buddy/alert", json))
+    fun share(json: String) { call("POST", "/share", json) }
 
     /** Phone keyboard mode: send literal text to the focused Piblo field. Returns the record id. */
     fun postText(id: String, text: String, mode: String): String = Proto.parseTextId(call("POST", "/buddy/text", Proto.textJson(id, text, mode)))
@@ -26,11 +27,18 @@ class CoreClient(baseUrl: String, private val token: String, private val clientV
     /** The device's answer for a text send: pending / inserted / no_field / too_long. */
     fun textStatus(id: String): String = Proto.parseTextStatus(call("GET", "/buddy/text/${java.net.URLEncoder.encode(id, "UTF-8")}"))
 
+    /** The live Cardputer frame (240x135 PNG). 503 when the device isn't reachable. */
+    fun screenPng(): ByteArray = requestBytes(base, "/core/cardputer/screen.png", token, clientVersion)
+
+    /** Press Cardputer keys by name (esc/up/enter/...), optionally repeated, e.g. "down*2". */
+    fun pressKeys(keys: String) { call("POST", "/core/cardputer/key", Proto.keysJson(keys)) }
+
     private fun call(method: String, path: String, body: String? = null): String = request(base, method, path, body, token, clientVersion)
 
     companion object {
         const val DEFAULT_PORT = 8787
         private const val MAX_BODY = 64 * 1024
+        private const val MAX_SCREEN = 512 * 1024
 
         /**
          * The legacy device/Core protocol uses cleartext HTTP on a trusted local network.
@@ -75,6 +83,38 @@ class CoreClient(baseUrl: String, private val token: String, private val clientV
                 out.write(buf, 0, n)
             }
             return out.toString("UTF-8")
+        }
+
+        private fun readBytesCapped(s: java.io.InputStream): ByteArray {
+            val out = java.io.ByteArrayOutputStream()
+            val buf = ByteArray(4096)
+            while (out.size() < MAX_SCREEN) {
+                val n = s.read(buf)
+                if (n < 0) break
+                out.write(buf, 0, n)
+            }
+            return out.toByteArray()
+        }
+
+        internal fun requestBytes(base: String, path: String, token: String?, clientVersion: String): ByteArray {
+            val url = URL(base + path)
+            if (url.protocol == "http" && !permitsLocalHttp(url.host))
+                throw IOException("HTTPS required for non-local Piblo Core")
+            val c = url.openConnection() as HttpURLConnection
+            try {
+                c.requestMethod = "GET"
+                c.connectTimeout = 4000
+                c.readTimeout = 8000
+                c.instanceFollowRedirects = false
+                c.setRequestProperty("X-Piblo-Client", "android/$clientVersion")
+                if (token != null) c.setRequestProperty("Authorization", "Bearer $token")
+                val status = c.responseCode
+                if (status !in 200..299) {
+                    val text = c.errorStream?.use { readCapped(it) } ?: ""
+                    throw CoreHttpException(status, Proto.parseError(text))
+                }
+                return c.inputStream.use { readBytesCapped(it) }
+            } finally { c.disconnect() }
         }
 
         internal fun request(base: String, method: String, path: String, body: String?, token: String?, clientVersion: String): String {

@@ -1,0 +1,173 @@
+/*
+ * Piblo design tokens: the ONLY place colours, radii, fonts, spacing and motion are defined.
+ * Source of truth: design/tokens-a.css (Concept A, "Toy-shop warm"), mirrored on the device in
+ * src/ui/theme.h. The screen tokens below are the same values the device draws with.
+ */
+:root {
+  /* brand palette (concept A) */
+  --paper: #fff4e0;
+  --paper-2: #fbe3bd;
+  --card: #fffaf0;
+  --ink: #2a1a12;
+  --ink-soft: #5b4336;
+  --tomato: #ee5a36;
+  --tomato-deep: #b3301a;
+  --mint: #8fdcb8;
+  --mint-deep: #0d6e4f;
+  --sun: #ffc93c;
+
+  /* type: brand fonts first, system fallbacks (fonts are not bundled yet) */
+  --font-ui: 'Manrope', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Arial Rounded MT Bold', 'Trebuchet MS', var(--font-ui);
+  --font-mono: 'Cascadia Mono', 'Consolas', ui-monospace, monospace;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-lg: 17px;
+  --text-xl: 22px;
+  --text-2xl: 30px;
+  --weight-regular: 400;
+  --weight-medium: 600;
+  --weight-strong: 700;
+
+  /* 8px grid */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+
+  /* radii: brand 14/24 scaled down for dense desktop UI */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+
+  /* motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+
+  /* layout */
+  --titlebar-h: 44px;
+  --rail-w: 224px;
+
+  /* surfaces and text */
+  --bg: var(--paper);
+  --surface: var(--card);
+  --surface-2: var(--paper-2);
+  --surface-3: #f4d3a0;
+  --line: #ead3ac;
+  --line-strong: #c9a877;
+  --text: var(--ink);
+  --text-2: var(--ink-soft);
+  --text-3: #6b5547;
+
+  /* primary: tomato fill takes ink text per brand contrast rule */
+            --accent: var(--tomato);
+            --accent-hover: #e85a30;
+            --accent-soft: #f7d7c0;
+            --on-accent: var(--ink);
+
+  /* status: mint = connected/success, sun = highlight only */
+          --ok: var(--mint-deep);
+          --ok-soft: #def4e7;
+          --warn: var(--ink);
+          --warn-soft: #b78918;
+          --danger: var(--tomato-deep);
+          --danger-soft: #ffd1c4;
+
+  /* tactile pressed-button feel: solid ink offset, not a blur */
+  --btn-stroke: 2px solid var(--ink);
+  --btn-shadow: 0 3px 0 var(--ink);
+  --btn-shadow-pressed: 0 0 0 var(--ink);
+  --shadow-1: 0 1px 0 rgb(42 26 18 / 8%);
+  --shadow-2: 0 10px 28px rgb(42 26 18 / 16%);
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink);
+  --screen-bg: #2a1a12;
+    --screen-ink: #fff4e0;
+    --screen-talk: #ee5a36;
+    --screen-ring: #8fdcb8;
+  }
+
+  /* ============================================================
+   * Dark mode overrides — applied when the user chooses Dark
+   * or when System preference is dark and theme=system.
+   * Palette: warm dark ink backgrounds (never pure #000), cream text,
+   * tomato/sun/mint accents kept recognisable.
+   * Live View (--screen-*) intentionally unchanged per spec.
+   * ============================================================ */
+  :root[data-theme="dark"] {
+          /* surfaces: warm dark ink family */
+          --bg: #2a1a12;
+          --surface: #352318;
+          --surface-2: #402d20;
+          --surface-3: #4a3628;
+          --line: #5a4536;
+          --line-strong: #7a624e;
+
+          /* text: cream scale */
+          --text: #fff4e0;
+          --text-2: #e8dcc8;
+          --text-3: #c8b8a8;
+
+          /* accents unchanged — brand recognisability */
+          --accent: var(--tomato);
+          --accent-hover: #f5694a;
+          --accent-soft: #ffd9c9;
+          --on-accent: var(--ink);
+
+          --ok: var(--mint);
+                    --ok-soft: #163f30;
+                    --warn: var(--text);
+                    --warn-soft: #986610;
+                    --danger: var(--tomato);
+                    --danger-soft: #ffd1c4;
+
+          /* tactile: cream stroke/shadow on dark */
+          --btn-stroke: 2px solid #fff4e0;
+          --btn-shadow: 0 3px 0 #fff4e0;
+          --btn-shadow-pressed: 0 0 0 #fff4e0;
+
+          /* calmer shadows in dark mode */
+          --shadow-1: 0 1px 0 rgb(255 244 224 / 6%);
+          --shadow-2: 0 10px 28px rgb(255 244 224 / 10%);
+
+          /* visible keyboard focus: cream ring on dark */
+          --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--text);
+        }
+
+  /* System preference dark — only active when theme=system
+     (we do NOT set data-theme when theme=system, so this media
+     query applies naturally). Keep identical to [data-theme="dark"]. */
+  @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #2a1a12;
+          --surface: #352318;
+          --surface-2: #402d20;
+          --surface-3: #4a3628;
+          --line: #5a4536;
+          --line-strong: #7a624e;
+          --text: #fff4e0;
+          --text-2: #e8dcc8;
+          --text-3: #c8b8a8;
+          --accent: var(--tomato);
+          --accent-hover: #f5694a;
+          --accent-soft: #ffd9c9;
+          --on-accent: var(--ink);
+          --ok: var(--mint);
+                    --ok-soft: #163f30;
+                    --warn: var(--text);
+                    --warn-soft: #986610;
+                    --danger: var(--tomato);
+                    --danger-soft: #ffd1c4;
+          --btn-stroke: 2px solid #fff4e0;
+          --btn-shadow: 0 3px 0 #fff4e0;
+          --btn-shadow-pressed: 0 0 0 #fff4e0;
+          --shadow-1: 0 1px 0 rgb(255 244 224 / 6%);
+          --shadow-2: 0 10px 28px rgb(255 244 224 / 10%);
+          --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--text);
+        }
+      }

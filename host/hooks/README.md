@@ -15,7 +15,7 @@ Install: add to `~/.claude/settings.json` (merge into existing `hooks`):
       {
         "matcher": "",
         "hooks": [
-          { "type": "command", "command": "python C:/Users/manaz/maz-pocket/host/hooks/nod_permission_hook.py", "timeout": 75 }
+          { "type": "command", "command": "python <path-to-repo>/host/hooks/nod_permission_hook.py", "timeout": 75 }
         ]
       }
     ]

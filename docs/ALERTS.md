@@ -21,6 +21,32 @@ FEATURE_INVENTORY stays unchecked until it is tried on a real Cardputer ADV.
   outcome (`GET /buddy/alerts`). An expired snooze fires the alert again; an ack never does.
 - Voice "remind me in N minutes to X" creates a `reminder` alert automatically.
 
+## The Nod: details + hold-to-approve for big actions
+
+Anything big (a payment, a message to a customer, a deleted file) can wait for a deliberate
+long-press. Add these optional fields to a `kind: approval` alert (or to `POST /buddy/request`):
+
+    {"kind":"approval","source":"bank","title":"Pay Acme","body":"Invoice 1042",
+     "nod":true,"category":"payment","amount":"£42.00","recipient":"Acme Ltd"}
+
+| field | rule |
+|---|---|
+| `amount` | string, e.g. "£42.00"; cut to 16 chars |
+| `recipient` | string; cut to 40 chars |
+| `category` | `payment` `send` `delete` `post` `share` `other`; anything else becomes `other` |
+| `nod` | `true` = the device needs Y/Enter HELD about 0.8 s (a filling bar shows); a short press only shows "hold Y to approve". N/Esc still stops at once |
+
+On `/buddy/summary` the device gets `nod` plus `summary` rewritten as three lines (head, amount, "to recipient"); the original `body` stays in `/buddy/pending`.
+Too-long values are cut, not rejected. Without the fields an approval looks and works exactly as before.
+Unanswered still means stopped (60 s timeout, Halt, fail closed), and the only way to approve is still `/buddy/decide`.
+
+`GET /buddy/nods?limit=20` (token required) is the nod log: newest first, each with `id`, `title`, `amount`,
+`recipient`, `category`, `nod`, `outcome` (`approved` | `stopped` | `expired`), `requested_at`, `decided_at`.
+It reads the in-memory approval queue (last 50), so it is cleared when Core restarts. Pending asks are not listed.
+Follow-up, not built: per-source limits ("under £10 needs no nod") and "ask me in 10 minutes".
+
+Demo: `MAZ_TOKEN=... python scripts/demo-alerts.py --only nod`
+
 ## Device (src/core/alerts.cpp, firmware/nod/include/alert_policy.h)
 
 | priority | sound (original tones) | edge flash | Buddy |
@@ -32,7 +58,7 @@ FEATURE_INVENTORY stays unchecked until it is tried on a real Cardputer ADV.
 
 `task_done` always shows Buddy celebrating. Quiet drops low/normal sounds; Silent leaves only
 urgent (forced, like the Focus alarm). The approval chime is unchanged and never muted.
-Keys: ENT/A ack, S snooze, ESC hide locally; every other key (Fn shortcuts included) still reaches the normal UI. The approval overlay always sits above alerts. Only high/urgent alerts wake the screen.
+Keys: ENT/A ack, S snooze, ESC hide locally; every other key (Fn shortcuts included) still reaches the normal UI. The approval overlay always sits above alerts (nod approvals: see above). Only high/urgent alerts wake the screen.
 
 Demo: `MAZ_TOKEN=... python scripts/demo-alerts.py`
 

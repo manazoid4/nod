@@ -10,15 +10,19 @@ import threading
 
 import httpx
 
-client = httpx.Client(limits=httpx.Limits(keepalive_expiry=300))
+from . import private_mode
+
+client = private_mode.client(limits=httpx.Limits(keepalive_expiry=300))
 
 
 def warm(*urls: str) -> None:
     """Fire-and-forget: open TLS connections to these hosts in the background."""
     def run() -> None:
         for url in urls:
+            if private_mode.enabled() and not private_mode.is_local_url(url):
+                continue  # private mode: never open a connection to a cloud host
             try:
                 client.head(url, timeout=5)
-            except httpx.HTTPError:
+            except (httpx.HTTPError, private_mode.PrivateModeError):
                 pass
     threading.Thread(target=run, name="netpool-warm", daemon=True).start()

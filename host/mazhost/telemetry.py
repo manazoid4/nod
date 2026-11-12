@@ -17,6 +17,7 @@ import httpx
 import psutil
 
 from .config import Settings
+from . import private_mode
 
 CACHE_SECONDS = 2.0
 
@@ -44,7 +45,7 @@ def parse_nvidia_smi_line(line: str) -> dict[str, int] | None:
 class SystemTelemetry:
     def __init__(self, settings: Settings, client: httpx.Client | None = None) -> None:
         self.settings = settings
-        self.client = client or httpx.Client(timeout=2)
+        self.client = client or private_mode.client(timeout=2)
         self._lock = threading.Lock()
         self._cached: dict[str, Any] | None = None
         self._cached_at = 0.0

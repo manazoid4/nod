@@ -213,6 +213,8 @@ def _save_one(root: Path, conn: sqlite3.Connection, it: dict, llm) -> dict:
     old, body = dumps._parse(old_text) if old_text is not None else ({}, "")
     sec = _split(body)
     sec["Caption"] = sec["Caption"] or text
+    if it.get("notes") and it["notes"] not in sec["Notes"]:
+        sec["Notes"] = "\n\n".join(filter(None, (sec["Notes"], str(it["notes"]).strip())))
     collection = _union(old.get("collection"), dumps._one_line(it.get("collection")))
     project = dumps._one_line(it.get("project"))
     if not project:
@@ -229,7 +231,7 @@ def _save_one(root: Path, conn: sqlite3.Connection, it: dict, llm) -> dict:
         "saved": old.get("saved") or dumps._one_line(it.get("saved")),
         "ingested": old.get("ingested") or datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "project": project,
-        "tags": old.get("tags") or [],
+        "tags": list(dict.fromkeys([*(old.get("tags") or []), *(it.get("tags") or [])])),
         "enriched": bool(old.get("enriched")),
         "source": old.get("source") or dumps._one_line(it.get("source") or "api"),
     }
@@ -258,12 +260,12 @@ def save_items(root, items, llm: Callable[[str, str], str] | None = None) -> lis
 
 
 def save_item(root, *, kind="url", url="", text="", author="", collection="", media="", saved="",
-              project=None, source="api", llm=None) -> dict:
+              project=None, source="api", llm=None, notes="", tags=None) -> dict:
     """Save one item. `kind` is only a hint: an Instagram post URL is always kind instagram, any
     other URL web, no URL text. Re-saving the same canonical URL updates and never erases
     Caption/Description/Notes. Returns {id, status: added|updated, project}."""
     item = dict(kind=kind, url=url, text=text, author=author, collection=collection, media=media,
-                saved=saved, project=project, source=source)
+                saved=saved, project=project, source=source, notes=notes, tags=tags)
     return save_items(root, [item], llm)[0]
 
 
@@ -459,3 +461,24 @@ def stats(root) -> dict:
     """Counts per kind, collection and project."""
     with closing(_fresh(Path(root))) as conn:
         return _stats(conn)
+
+
+def recent(root, limit: int = 10) -> list[dict]:
+    """Recent saves from the same Markdown source used by the search index."""
+    root = Path(root)
+    rows = []
+    for sub in _DIRS.values():
+        for path in (root / sub).glob("*.md"):
+            try:
+                meta, body = dumps._parse(path.read_text(encoding="utf-8"))
+                if meta.get("id") != path.stem:
+                    continue
+                sections = _split(body)
+                rows.append({**meta, "title": sections["Caption"][:280] or meta.get("url") or path.stem,
+                             "text": sections["Caption"], "notes": sections["Notes"],
+                             "url": meta.get("url", ""), "path": str(path),
+                             "when": meta.get("ingested") or meta.get("saved") or
+                             datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat()})
+            except (OSError, UnicodeError):
+                continue
+    return sorted(rows, key=lambda row: row["when"], reverse=True)[:limit]

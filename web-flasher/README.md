@@ -1,4 +1,4 @@
-# MAZ Pocket Web Flasher
+# Piblo Web Flasher
 
 Browser-first transition/update path for Cardputer ADV, following the simple browser-installer pattern while preserving M5Launcher ownership boundaries.
 
@@ -59,8 +59,8 @@ Passing CI is not physical hardware proof. The exact package still needs accepta
 - FZEE Flasher — minimal connect/program surface.
 - Tasmota Web Installer — browser-first install separated from device WebUI.
 - Meshtastic Web Flasher — clear device/firmware/flash flow and destructive-action boundaries.
-- Espressif `esptool-js` (Apache-2.0) — browser-side ESP transport/flash implementation; MAZ uses ROM-capable paths without invoking the normal stub-uploading `main()` flow.
+- Espressif `esptool-js` (Apache-2.0) — browser-side ESP transport/flash implementation; Piblo uses ROM-capable paths without invoking the normal stub-uploading `main()` flow.
 - Google `web-serial-polyfill` — Android WebUSB compatibility fallback.
 - `Mraanderson/CardputerSDtool` (MIT) — inspiration for non-destructive SD visibility, read/write sanity checking and recovery thinking. MAZ does not copy experimental formatting into normal updates.
 
-The MAZ implementation is its own code and preserves existing repository licence boundaries.
+The Piblo implementation is its own code and preserves existing repository licence boundaries.
