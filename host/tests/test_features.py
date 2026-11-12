@@ -39,3 +39,14 @@ def test_features_routes_require_token(tmp_path):
     api = TestClient(app)
     for method, path in [('get', '/features'), ('post', '/features/memory/confirm'), ('post', '/features/memory/unconfirm')]:
         assert getattr(api, method)(path).status_code in (401, 429), path
+
+
+def test_bare_confirm_and_damaged_store_never_wipes(tmp_path):
+    api = client(tmp_path)
+    assert api.post('/features/memory/confirm').json()['status'] == 'confirmed'
+    store = tmp_path / 'dev' / 'features.json'
+    store.write_text('{not json', encoding='utf-8')
+    assert api.get('/features').status_code == 500
+    assert (tmp_path / 'dev' / 'features.json.corrupt').read_text(encoding='utf-8') == '{not json'
+    # after setting it aside, Core starts clean rather than half-reading damaged data
+    assert api.get('/features').status_code == 200
