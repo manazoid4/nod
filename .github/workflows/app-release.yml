@@ -1,0 +1,54 @@
+name: Windows app release
+
+# Push a tag app-vX.Y.Z (matching app/package.json "version") to publish an update.
+# Installed Piblo apps find it on GitHub Releases, download it quietly and offer "Restart to update".
+
+on:
+  push:
+    tags: ["app-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Tag matches app version
+        shell: pwsh
+        run: |
+          $v = (Get-Content package.json | ConvertFrom-Json).version
+          if ("app-v$v" -ne "${{ github.ref_name }}") { throw "Tag ${{ github.ref_name }} does not match app version $v" }
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+      - name: Build installer and update files
+        run: npm run build:main && npm run build:renderer && npx electron-builder --win nsis --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      # The app reads releases/download/app-latest/latest.yml, so firmware releases in this repo never confuse it.
+      - name: Publish versioned release and move app-latest
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $files = @(Get-ChildItem release -File | Where-Object { $_.Name -match '(\.exe|\.blockmap|^latest\.yml)$' } | ForEach-Object FullName)
+          gh release create "${{ github.ref_name }}" $files --title "Piblo for Windows ${{ github.ref_name }}" --notes "Piblo for Windows update." --latest=false
+          gh release view app-latest *> $null
+          if ($LASTEXITCODE -ne 0) { gh release create app-latest --title "Piblo for Windows (latest)" --notes "Always the newest Piblo for Windows. The app updates itself from here." --latest=false }
+          gh release upload app-latest $files --clobber
