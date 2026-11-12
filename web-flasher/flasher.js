@@ -85,7 +85,7 @@ async function verifySelectedPackage(file) {
     verifiedPackage = { manifest, firmware, recovery };
     packageState.textContent = `VERIFIED • v0.03 • ${firmware.byteLength.toLocaleString()} bytes`;
     packageState.className = "ok";
-    setStage(0, "Package verified. Ready to connect Cardputer.", "ok");
+    setStage(0, "Package verified. Ready to connect Piblo.", "ok");
     log(`Package SHA verified: ${firmwareSha.slice(0, 16)}…`);
     log(`Recovery SHA verified: ${recoverySha.slice(0, 16)}…`);
     go.disabled = false;
@@ -113,7 +113,7 @@ const terminal = {
 async function detectRom(mode) {
   await loader.detectChip(mode);
   if (!loader.chip || loader.chip.CHIP_NAME !== "ESP32-S3") {
-    throw new Error(`Connected device is ${loader.chip?.CHIP_NAME || "unknown"}, not a Cardputer ADV ESP32-S3.`);
+    throw new Error(`Connected device is ${loader.chip?.CHIP_NAME || "unknown"}, not a compatible Piblo device.`);
   }
   if (typeof loader.chip.postConnect === "function") await loader.chip.postConnect(loader);
   loader.IS_STUB = false;
@@ -141,7 +141,7 @@ async function connectRomOnly() {
     try { await transport.disconnect(); } catch {}
     makeLoader();
     try { chip = await detectRom("no_reset"); }
-    catch { throw new Error("Could not enter ESP32-S3 ROM download mode. Unplug Cardputer, hold G0 (upper-right), plug USB back in, release G0, then tap CONNECT & UPDATE again."); }
+    catch { throw new Error("Could not enter ESP32-S3 ROM download mode. Unplug Piblo, hold G0 (upper-right), plug USB back in, release G0, then tap CONNECT & UPDATE again."); }
   }
   log(`ROM connected: ${chip} / no RAM flasher stub`);
 }
@@ -193,29 +193,29 @@ async function runUpdate() {
   const { manifest, firmware, recovery } = verifiedPackage;
   let target = null, wrote = false;
   try {
-    setStage(8, "Choose Cardputer ADV…");
+    setStage(8, "Choose Piblo…");
     await connectRomOnly();
     const table = await readPartitionTable();
     target = findMazPartition(parsePartitions(table));
     log(`Piblo partition: ${target.label} @ 0x${target.offset.toString(16)} / ${target.size.toLocaleString()} bytes`);
     if (firmware.byteLength > target.size) {
-      throw new Error(`v0.03 is ${firmware.byteLength.toLocaleString()} bytes but your existing Maz slot is only ${target.size.toLocaleString()} bytes. Nothing was erased.`);
+      throw new Error(`v0.03 is ${firmware.byteLength.toLocaleString()} bytes but your existing Piblo slot is only ${target.size.toLocaleString()} bytes. Nothing was erased.`);
     }
 
-    setStage(22, "Checking existing Maz slot…");
+    setStage(22, "Checking existing Piblo slot…");
     try {
       const oldMd5 = String(await loader.flashMd5sum(target.offset, recovery.byteLength)).toLowerCase();
-      if (oldMd5 === String(manifest.recovery_md5).toLowerCase()) log("Current Maz slot matches the known-good v0.02 release.");
-      else log("Current Maz slot differs from pristine v0.02 (possible after the failed old updater); recovery is ready.");
+      if (oldMd5 === String(manifest.recovery_md5).toLowerCase()) log("Current Piblo slot matches the known-good v0.02 release.");
+      else log("Current Piblo slot differs from pristine v0.02 (possible after the failed old updater); recovery is ready.");
     } catch (e) {
       log(`Existing-slot fingerprint unavailable: ${e?.message || e}. Recovery remains ready.`);
     }
 
-    setStage(28, "Writing v0.03 to Maz Pocket only…");
+    setStage(28, "Writing v0.03 to Piblo only…");
     wrote = true;
     await writeImage(firmware, target.offset, manifest.md5, 28, 82, "Writing v0.03 in ROM mode…");
     log("ROM flash MD5: exact match.");
-    setStage(94, "Verified. Rebooting Cardputer…");
+    setStage(94, "Verified. Rebooting Piblo…");
     try { await loader.after("hard_reset"); } catch (e) { log(`Reset handoff: ${e?.message || e}`); }
     setStage(100, "v0.03 FLASHED + VERIFIED", "ok");
     log("Done. No RAM stub, full erase, partition-table/NVS/Launcher/SD/sibling-app write occurred.");
