@@ -81,7 +81,7 @@ export function DevFeaturesView({ features, error }: { features: DevFeature[]; e
       <div className="row wrap"><h2 className="grow">{feature.name}</h2><span className="tag">{feature.status}</span></div>
       <p>{feature.summary}</p><p className="meta">{feature.source} · {feature.dependencies}</p>
       <details><summary>Test steps and evidence</summary><ol>{feature.steps.map((step, index) => <li key={index}>{step}</li>)}</ol>
-        <p>{feature.evidence.when ? `Confirmed ${feature.evidence.when}${feature.evidence.who ? ` by ${feature.evidence.who}` : ''}: ${feature.evidence.note}` : 'No confirmation recorded.'}</p></details>
+        <p>{feature.evidence.when ? `${feature.evidence.when}${feature.evidence.who ? ` · ${feature.evidence.who}` : ''}: ${feature.evidence.note}` : 'No evidence recorded.'}</p></details>
     </section>) : <section className="card"><Empty title="No features found"><p>Features for this category will appear here.</p></Empty></section>}
   </div>;
 }

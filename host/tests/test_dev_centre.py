@@ -56,6 +56,10 @@ def test_memory_is_opt_in_and_search_is_bounded(tmp_path):
     assert result['headings'] == ['# Index', '## Projects']
     assert 'A handover' in result['handoff'] and result['updated']
     assert len(result['results']) == 20
+    hidden = memory / '.notes'
+    hidden.mkdir()
+    (hidden / 'large.md').write_text('x' * 1_100_000 + '\nUnique needle\n', encoding='utf-8')
+    assert api.get('/dev/memory', params={'q': 'Unique needle'}).json()['results'][0]['path'] == '.notes/large.md'
 
 
 def test_parallel_checklist_ticks_preserve_all_items_and_proof(tmp_path):

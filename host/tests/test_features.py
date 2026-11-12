@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pathlib import Path
 
 
 def client(tmp_path):
@@ -14,10 +15,14 @@ def test_every_feature_starts_simulated_without_claiming_confirmation(tmp_path):
     rows = api.get('/features?dev_mode=true').json()['features']
     ids = {row['id'] for row in rows}
     assert {'ask-on-piblo', 'private-mode', 'where-was-i-park-it', 'catch-me-up', 'maker'} <= ids
-    assert all(row['status'] in ('simulated', 'implemented') and row['steps'] and row['summary'] for row in rows)
-    assert all(row['category'] and row['source'] and row['dependencies'] and not row['evidence']['when'] for row in rows)
+    assert all(row['status'] in ('simulated', 'implemented', 'hardware-tested') and row['steps'] and row['summary'] for row in rows)
+    assert all(row['category'] and row['source'] and row['dependencies'] for row in rows)
+    assert next(row for row in rows if row['id'] == 'live-view')['evidence']['when'] == '2026-10-11'
     assert 'piblo-dev' in ids
     assert all(row['category'] not in ('dev', 'electronics') for row in api.get('/features').json()['features'])
+    assert len(ids) == len(rows)
+    repo = Path(__file__).resolve().parents[2]
+    assert all((repo / row['source']).is_file() for row in rows)
 
 
 def test_confirm_then_unconfirm_round_trip(tmp_path):

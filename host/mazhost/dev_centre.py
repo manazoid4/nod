@@ -373,15 +373,21 @@ def build_dev_router(data_dir: Path, repo_dir: Path) -> APIRouter:
         query = q.strip().casefold()[:200]
         if query:
             for folder, dirs, files in os.walk(root, followlinks=False):
-                dirs[:] = [d for d in dirs if not d.startswith('.') and not (Path(folder) / d).is_symlink()]
+                dirs[:] = [d for d in dirs if d != '.git' and not (Path(folder) / d).is_symlink()]
                 for name in files:
                     if not name.lower().endswith('.md'):
                         continue
                     path = Path(folder) / name
-                    for line in read(path).splitlines():
-                        if query in line.casefold():
-                            results.append({'path': path.relative_to(root).as_posix(), 'line': line[:500]})
-                            break
+                    try:
+                        if not path.resolve().is_relative_to(root):
+                            continue
+                        with path.open(encoding='utf-8', errors='replace') as stream:
+                            for line in stream:
+                                if query in line.casefold():
+                                    results.append({'path': path.relative_to(root).as_posix(), 'line': line.strip()[:500]})
+                                    break
+                    except OSError:
+                        continue
                     if len(results) >= 20:
                         break
                 if len(results) >= 20:

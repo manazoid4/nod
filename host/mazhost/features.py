@@ -46,6 +46,27 @@ CATALOGUE = {
     'device-pairing': ('connect', 'host/mazhost/pairing.py', 'Piblo and a computer on the same network'),
     'piblo-dev': ('dev', 'app/src/pages/PibloDev.tsx', 'Piblo Core and the Windows app'),
     'workflow-templates': ('workflows', 'host/mazhost/data/workflow_templates/templates.json', 'Piblo Core and the Windows app'),
+    'voice-conversation': ('everyday', 'src/apps/comm.cpp', 'Piblo, microphone and configured voice services'),
+    'capture-thoughts': ('everyday', 'host/mazhost/dumps.py', 'Piblo and Core'),
+    'focus-timer': ('everyday', 'host/mazhost/focus.py', 'Piblo or the Windows app'),
+    'needs-you': ('everyday', 'host/mazhost/needs.py', 'Piblo Core'),
+    'saved-library': ('everyday', 'host/mazhost/library.py', 'Piblo Core'),
+    'live-view': ('connect', 'host/mazhost/device.py', 'Connected Piblo'),
+    'send-to-piblo': ('connect', 'host/mazhost/beam.py', 'Connected Piblo'),
+    'phone-approvals': ('secure', 'host/mazhost/phone_control.py', 'Paired phone and Core'),
+    'agent-jobs': ('dev', 'host/mazhost/agent_runner.py', 'Installed agent and phone approval'),
+    'screen-teaching': ('dev', 'host/mazhost/teach_capture.py', 'A computer with screen capture'),
+    'device-updates': ('connect', 'host/mazhost/fw.py', 'Compatible Piblo and an approved update'),
+    'buddy-alerts': ('buddy', 'host/mazhost/buddy.py', 'Connected Piblo'),
+    'today': ('everyday', 'src/apps/today.cpp', 'Piblo and Core'),
+    'quiet-mode': ('everyday', 'src/core/quiet.cpp', 'Piblo'),
+    'pause-approvals': ('secure', 'host/mazhost/buddy.py', 'Connected Piblo'),
+    'quick-actions': ('everyday', 'src/apps/home.cpp', 'Piblo'),
+    'work-tracks': ('workflows', 'host/mazhost/work_store.py', 'Piblo Core'),
+    'device-status': ('connect', 'host/mazhost/device.py', 'Connected Piblo'),
+    'utilities': ('everyday', 'src/apps/utility.cpp', 'Piblo'),
+    'charging-screen': ('everyday', 'src/apps/charging.cpp', 'Piblo and a charger'),
+    'dictation': ('everyday', 'src/audio/dictate.cpp', 'Piblo and configured speech recognition'),
 }
 
 EXTRA_FEATURES = [
@@ -55,7 +76,54 @@ EXTRA_FEATURES = [
      'steps': ['Open Piblo Dev in the Windows app.', 'Review Today, Agents and Builds.']},
     {'id': 'workflow-templates', 'name': 'Workflow templates', 'summary': 'Prepare a task from a reusable workflow.',
      'steps': ['Open Templates in Piblo Dev.', 'Use a template and save a task draft.']},
+    {'id': 'voice-conversation', 'name': 'Talk to Piblo', 'summary': 'Ask a question by voice and hear a reply.',
+     'steps': ['Start a voice turn on Piblo.', 'Ask a question.', 'Check the answer and audio.']},
+    {'id': 'capture-thoughts', 'name': 'Capture a thought', 'summary': 'Save a thought to the inbox.',
+     'steps': ['Capture a short thought on Piblo.', 'Find the saved thought in the inbox.']},
+    {'id': 'focus-timer', 'name': 'Focus timer', 'summary': 'Start and finish a timed focus session.',
+     'steps': ['Start a focus session.', 'Check the remaining time.', 'End the session.']},
+    {'id': 'needs-you', 'name': 'Needs you', 'summary': 'See the items waiting for your attention.',
+     'steps': ['Create an item that needs attention.', 'Open Actions and find the item.']},
+    {'id': 'saved-library', 'name': 'Saved library', 'summary': 'Search items saved to your library.',
+     'steps': ['Save an item in the library.', 'Search for a distinctive word in it.']},
+    {'id': 'live-view', 'name': 'Live View', 'summary': 'See the Piblo screen on your PC.',
+     'steps': ['Connect Piblo.', 'Open Live View.', 'Check that the screen updates.']},
+    {'id': 'send-to-piblo', 'name': 'Send to Piblo', 'summary': 'Send a note or link to Piblo.',
+     'steps': ['Send a short note from the Windows app.', 'Find it on Piblo.']},
+    {'id': 'phone-approvals', 'name': 'Phone approvals', 'summary': 'Review a computer action from a paired phone.',
+     'steps': ['Pair a phone.', 'Request an action.', 'Review and decide on the phone.']},
+    {'id': 'agent-jobs', 'name': 'Agent jobs', 'summary': 'Start approved agent work and see its progress.',
+     'steps': ['Request approval for an agent task.', 'Approve it on the phone.', 'Start and inspect the job.']},
+    {'id': 'screen-teaching', 'name': 'Teach a workflow', 'summary': 'Capture a workflow for later review.',
+     'steps': ['Start a teaching capture.', 'Complete a short workflow.', 'Review the captured result.']},
+    {'id': 'device-updates', 'name': 'Piblo updates', 'summary': 'Check for and stage a device update.',
+     'steps': ['Check for an update.', 'Review the offered version before installation.']},
+    {'id': 'buddy-alerts', 'name': 'Buddy alerts', 'summary': 'See reminders and alerts on Piblo.',
+     'steps': ['Create a reminder or alert.', 'Check that it appears on Piblo.']},
+    {'id': 'today', 'name': 'Today', 'summary': 'See what is due and what needs attention.',
+     'steps': ['Open Today on Piblo.', 'Check the displayed items.']},
+    {'id': 'quiet-mode', 'name': 'Quiet mode', 'summary': 'Reduce interruptions while you focus.',
+     'steps': ['Turn on quiet mode.', 'Check its status.', 'Turn quiet mode off.']},
+    {'id': 'pause-approvals', 'name': 'Pause asks', 'summary': 'Pause new agent approval requests.',
+     'steps': ['Pause asks.', 'Check that requests do not proceed.', 'Resume asks.']},
+    {'id': 'quick-actions', 'name': 'Quick actions', 'summary': 'Open common actions from Piblo.',
+     'steps': ['Open the Piblo home screen.', 'Choose a quick action.']},
+    {'id': 'work-tracks', 'name': 'Work tracks', 'summary': 'Keep progress for repeatable work.',
+     'steps': ['Open a work track.', 'Record progress.', 'Check the updated count.']},
+    {'id': 'device-status', 'name': 'Piblo status', 'summary': 'Check connection, battery and software status.',
+     'steps': ['Connect Piblo.', 'Open Home in the Windows app.', 'Check the device status.']},
+    {'id': 'utilities', 'name': 'Piblo utilities', 'summary': 'Open built-in tools such as a calculator and QR generator.',
+     'steps': ['Open More on Piblo.', 'Open a utility and check its result.']},
+    {'id': 'charging-screen', 'name': 'Charging screen', 'summary': 'See charging status on Piblo.',
+     'steps': ['Connect a charger.', 'Check the charging screen.']},
+    {'id': 'dictation', 'name': 'Dictation', 'summary': 'Turn spoken words into text.',
+     'steps': ['Open dictation.', 'Speak a short phrase.', 'Check the resulting text.']},
 ]
+
+HARDWARE_EVIDENCE = {
+    'live-view': {'who': 'Owner', 'when': '2026-10-11', 'note': 'Screen mirror observed on an earlier build; see docs/evidence/TEST-LEDGER-2026-10-11.md, test 3.'},
+    'capture-thoughts': {'who': 'Owner', 'when': '2026-10-11', 'note': 'A note reached the inbox on an earlier build; persistence was not tested. See docs/evidence/TEST-LEDGER-2026-10-11.md, test 5.'},
+}
 
 
 def slug(text: str) -> str:
@@ -111,11 +179,12 @@ def build_features_router(data_dir: Path) -> APIRouter:
     def view(feature: dict, state: dict) -> dict:
         record = state.get(feature['id'], {})
         confirmed_at = record.get('confirmed_at')
-        simulated = feature['id'] in {'private-mode', 'where-was-i-park-it', 'memory', 'rescue', 'agent-builder', 'speaks-first', 'catch-me-up', 'buddy-forms', 'maker', 'device-pairing', 'piblo-dev', 'workflow-templates'}
-        status = 'simulated' if simulated else ('implemented' if feature['source'] else 'proposed')
+        simulated = feature['id'] in {'private-mode', 'where-was-i-park-it', 'memory', 'rescue', 'agent-builder', 'speaks-first', 'catch-me-up', 'buddy-forms', 'maker', 'device-pairing', 'piblo-dev', 'workflow-templates', 'voice-conversation', 'capture-thoughts', 'focus-timer', 'needs-you', 'saved-library', 'live-view', 'phone-approvals', 'agent-jobs', 'screen-teaching', 'device-updates', 'buddy-alerts'}
+        historical = HARDWARE_EVIDENCE.get(feature['id'])
+        status = 'hardware-tested' if historical else ('simulated' if simulated else ('implemented' if feature['source'] else 'proposed'))
         return {**feature, 'status': 'confirmed' if confirmed_at else status,
                 'confirmed_at': confirmed_at, 'note': record.get('note', ''),
-                'evidence': {'who': record.get('who') or None, 'when': confirmed_at, 'note': record.get('note', '')}}
+                'evidence': {'who': record.get('who') or None, 'when': confirmed_at, 'note': record.get('note', '')} if confirmed_at else (historical or {'who': None, 'when': None, 'note': ''})}
 
     def find(feature_id: str) -> dict:
         feature = next((row for row in catalogue() if row['id'] == feature_id), None)
