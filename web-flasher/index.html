@@ -14,13 +14,13 @@
 <header><h1><span class="accent">Piblo</span> / FLASH</h1><div class="dim">ROM-only safe updater</div></header>
 
 <section class="card"><div class="step">1 / PACKAGE</div>
-  <p class="help">Choose the official <b>maz-pocket-v0.03-phone-first.zip</b>. The browser verifies the v0.03 firmware and v0.02 recovery hashes before it is allowed to write anything.</p>
+  <p class="help">Choose the official <b>Piblo v0.03 release ZIP</b>. The browser verifies the v0.03 firmware and v0.02 recovery hashes before it is allowed to write anything.</p>
   <label class="pick">CHOOSE PIBLO ZIP<input id="package" type="file" accept=".zip,application/zip"></label>
   <div id="packageState" class="dim" style="margin-top:9px">No package selected.</div>
 </section>
 
 <section class="card"><div class="step">2 / CONNECT + UPDATE</div>
-  <p class="help">Connect the Cardputer with a USB data cable, then tap once. Piblo reads the live M5Launcher map, finds only the existing Piblo app partition, checks the image fits, writes it and verifies it.</p>
+  <p class="help">Connect Piblo with a USB data cable, then tap once. Piblo reads the live M5Launcher map, finds only the existing Piblo app partition, checks the image fits, writes it and verifies it.</p>
   <button id="go" class="big" disabled>CONNECT & UPDATE v0.03</button>
   <progress id="progress" max="100" value="0"></progress>
   <div id="state" class="dim">Waiting for verified package.</div>
@@ -36,7 +36,7 @@
 </section>
 
 <section class="card"><div class="step">IF CONNECT DOESN'T WORK</div>
-  <p class="help">Unplug the Cardputer, hold <b>G0</b> (upper-right), plug USB back in while holding G0, release it, then tap CONNECT & UPDATE again. No COM port, token or M5Launcher screen is needed.</p>
+  <p class="help">Unplug Piblo, hold <b>G0</b> (upper-right), plug USB back in while holding G0, release it, then tap CONNECT & UPDATE again. No COM port, token or M5Launcher screen is needed.</p>
 </section>
 
 <section class="card"><div class="step">LOG</div><pre id="log">No package or serial connection yet.</pre></section>

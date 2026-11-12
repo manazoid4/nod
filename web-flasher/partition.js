@@ -33,7 +33,7 @@ export function parsePartitions(bytes) {
     const label = decoder.decode(labelBytes);
 
     if (!size || offset < 0x1000 || offset + size > FLASH_SIZE) {
-      throw new Error(`Unsafe partition bounds for ${label || "unnamed partition"}.`);
+      throw new Error(`Unsafe partition bounds at 0x${offset.toString(16)}.`);
     }
 
     parts.push({ type, subtype, offset, size, label });
@@ -60,8 +60,8 @@ export function findMazPartition(parts) {
 
   if (matches.length !== 1) {
     throw new Error(matches.length === 0
-      ? "No existing MAZ-Pocket Launcher partition was found. Install through M5Launcher first."
-      : "More than one MAZ-Pocket partition exists; automatic in-place update is intentionally disabled.");
+      ? "No existing Piblo Launcher partition was found. Install through M5Launcher first."
+      : "More than one Piblo partition exists; automatic in-place update is intentionally disabled.");
   }
 
   return matches[0];
