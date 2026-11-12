@@ -516,6 +516,39 @@ def test_live_connect_rechecks_private_mode(tmp_path, monkeypatch):
         asyncio.run(bridge._connect())
 
 
+def test_live_private_mode_never_follows_redirect_to_public_host(tmp_path):
+    from websockets.exceptions import InvalidStatus
+    async def run():
+        async def redirect(reader, writer):
+            await reader.readuntil(b'\r\n\r\n')
+            writer.write(b'HTTP/1.1 302 Found\r\nLocation: ws://203.0.113.1:8765/\r\nContent-Length: 0\r\n\r\n')
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
+        server = await asyncio.start_server(redirect, '127.0.0.1', 0)
+        port = server.sockets[0].getsockname()[1]
+        loop = asyncio.get_running_loop()
+        original = loop.create_connection
+        destinations = []
+        async def tracked(factory, host=None, port=None, **kwargs):
+            destinations.append(host)
+            if host != '127.0.0.1':
+                raise OSError('public socket blocked by test')
+            return await original(factory, host, port, **kwargs)
+        loop.create_connection = tracked
+        private_mode.set_enabled(True)
+        try:
+            bridge = LiveBridge(None, _settings(tmp_path, llamacpp_url=f'http://127.0.0.1:{port}'))
+            with pytest.raises(InvalidStatus):
+                await bridge._connect()
+            assert destinations == ['127.0.0.1']
+        finally:
+            loop.create_connection = original
+            server.close()
+            await server.wait_closed()
+    asyncio.run(run())
+
+
 def test_private_blocks_updater_subprocesses(tmp_path, monkeypatch):
     updater = SelfUpdater(repo_dir=str(Path(__file__).resolve().parents[2]))
     private_mode.set_enabled(True)

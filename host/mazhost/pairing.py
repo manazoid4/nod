@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import secrets
 import threading
@@ -152,6 +153,8 @@ class DevicePairingStore:
     def create(self, device_id: str, name: str, ip: str, approval_proof: bool = False) -> _DeviceRequest | None:
         """None means 429 (per-IP rate limit or too many pending)."""
         with self._lock:
+            if approval_proof and self.device_keys and os.getenv('PIBLO_ASK_ALLOW_ENROLL') != '1':
+                raise HTTPException(status.HTTP_409_CONFLICT, 'device_already_enrolled')
             now = time.monotonic()
             self._purge(now)
             recent = [t for t in self._attempts_by_ip.get(ip, []) if now - t < 60]
@@ -202,19 +205,27 @@ class DevicePairingStore:
                 for r in live
             ]
 
-    def decide(self, request_id: str, approve: bool) -> bool:
+    def decide(self, request_id: str, approve: bool, code: str | None = None) -> bool:
         with self._lock:
             now = time.monotonic()
             req = self._reqs.get(request_id)
             if req is None or req.state != "pending" or now > req.expires_at:
                 return False
             if approve and req.approval_proof:
+                if not isinstance(code, str) or not re.fullmatch(r'[0-9]{6}', code) or not secrets.compare_digest(code, req.code):
+                    raise HTTPException(status.HTTP_403_FORBIDDEN, 'invalid_pairing_code')
+                if self.device_keys and os.getenv('PIBLO_ASK_ALLOW_ENROLL') != '1':
+                    raise HTTPException(status.HTTP_409_CONFLICT, 'device_already_enrolled')
                 key = secrets.token_hex(32)
+                old_key = self.device_keys.get(req.device_id)
                 self.device_keys[req.device_id] = key
                 try:
                     self.save_keys()
                 except Exception:
-                    self.device_keys.pop(req.device_id, None)
+                    if old_key is None:
+                        self.device_keys.pop(req.device_id, None)
+                    else:
+                        self.device_keys[req.device_id] = old_key
                     raise
                 req.approval_key = key
             req.state = "approved" if approve else "denied"
@@ -228,7 +239,7 @@ class ClaimRequest(BaseModel):
 
 def build_pairing_app(
     settings: Settings, security: Security, store: PairingStore | None = None,
-    device_keys: dict[str, str] | None = None, save_keys=None
+    device_keys: dict[str, str] | None = None, save_keys=None, audit=None
 ) -> FastAPI:
     pairing_store = store or PairingStore()
     pair_app = FastAPI(title="MAZ Pairing")
@@ -269,6 +280,8 @@ def build_pairing_app(
             body = None
         body = body if isinstance(body, dict) else {}
         device_id, name = body.get("device_id"), body.get("name")
+        if body.get('approval_proof') is True and audit:
+            audit('device_enrollment', {'device_id': device_id if isinstance(device_id, str) and _DEVICE_ID_RE.fullmatch(device_id) else 'invalid', 'ip': _ip(request)})
         if not (isinstance(device_id, str) and _DEVICE_ID_RE.fullmatch(device_id)
                 and isinstance(name, str) and _DEVICE_NAME_RE.fullmatch(name)):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "bad_request")
@@ -293,8 +306,13 @@ def build_pairing_app(
         return {"requests": device_store.pending()}
 
     @pair_app.post("/device/{request_id}/approve", dependencies=[Depends(security.authorize)])
-    def device_approve(request_id: str) -> dict:
-        if not device_store.decide(request_id, True):
+    async def device_approve(request_id: str, request: Request) -> dict:
+        try:
+            body = await request.json()
+        except ValueError:
+            body = None
+        code = body.get('code') if isinstance(body, dict) else None
+        if not device_store.decide(request_id, True, code):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "not_found")
         return {"ok": True}
 

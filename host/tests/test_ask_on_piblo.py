@@ -131,7 +131,7 @@ def test_pairing_key_proves_decisions_after_restart(tmp_path):
     client.headers.update({'Authorization': 'Bearer test-secret'})
     pair = client.post('/pair/device/request', json={'device_id': 'device-123', 'name': 'Piblo', 'approval_proof': True}).json()
     assert 'approval_key' not in pair
-    assert client.post(f"/pair/device/{pair['request_id']}/approve").status_code == 200
+    assert client.post(f"/pair/device/{pair['request_id']}/approve", json={'code': pair['code']}).status_code == 200
     credentials = client.get(f"/pair/device/request/{pair['request_id']}").json()
     assert credentials['device_id'] == 'device-123'
     client = TestClient(create_app(settings))
@@ -140,6 +140,34 @@ def test_pairing_key_proves_decisions_after_restart(tmp_path):
     message = f"{item['id']}:{item['digest']}:allow:{item['nonce']}".encode()
     proof = hmac.new(credentials['approval_key'].encode(), message, hashlib.sha256).hexdigest()
     assert client.post('/buddy/decide', json={'id': item['id'], 'decision': 'allow', 'proof': proof}).json()['decision'] == 'allow'
+
+
+def test_enrolment_is_first_use_only_and_audited(tmp_path, monkeypatch):
+    monkeypatch.delenv('PIBLO_ASK_ALLOW_ENROLL', raising=False)
+    cfg = Settings(token='test-secret', data_dir=str(tmp_path), control_dir=str(tmp_path / 'control'), buddy_db='off', _env_file=None)
+    client = TestClient(create_app(cfg), headers={'Authorization': 'Bearer test-secret'})
+    def enroll(device):
+        return client.post('/pair/device/request', json={'device_id': device, 'name': 'Piblo', 'approval_proof': True})
+    first = enroll('device-123').json()
+    pending = enroll('device-456').json()
+    url = f"/pair/device/{first['request_id']}/approve"
+    assert client.post(url).status_code == 403
+    assert client.post(url, json={'code': 'wrong'}).status_code == 403
+    assert client.post(url, json={'code': '000000' if first['code'] != '000000' else '000001'}).status_code == 403
+    assert client.post(url, json={'code': '１２３４５６'}).status_code == 403
+    assert client.post(url, json={'code': first['code']}).status_code == 200
+    assert client.post(f"/pair/device/{pending['request_id']}/approve", json={'code': pending['code']}).status_code == 409
+    for device in ('device-123', 'device-456'):
+        response = enroll(device)
+        assert response.status_code == 409 and response.json()['detail'] == 'device_already_enrolled'
+    client = TestClient(create_app(cfg), headers={'Authorization': 'Bearer test-secret'})
+    assert enroll('device-789').status_code == 409
+    monkeypatch.setenv('PIBLO_ASK_ALLOW_ENROLL', '1')
+    again = enroll('device-123').json()
+    assert client.post(f"/pair/device/{again['request_id']}/approve", json={'code': again['code']}).status_code == 200
+    audit = (tmp_path / 'control' / 'authority-audit.jsonl').read_text()
+    assert audit.count('device_enrollment') == 6
+    assert client.get(f"/pair/device/request/{again['request_id']}").json()['approval_key'] not in audit
 
 
 def test_focus_start_and_end_extend_an_existing_deadline_without_polling(ask, monkeypatch):
