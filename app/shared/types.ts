@@ -64,6 +64,13 @@ export interface SaveResult {
   message?: string;
 }
 
+/** Quiet app updates: downloads in the background, then one "Restart to update". */
+export interface UpdateStatus {
+  state: 'disabled' | 'idle' | 'checking' | 'downloading' | 'ready' | 'error';
+  progress: number;
+  version: string;
+}
+
 export interface PibloBridge {
   platform: string;
   version: string;
@@ -102,6 +109,13 @@ export interface PibloBridge {
     onWindowVisible(cb: (visible: boolean) => void): () => void;
   /** USB fallback: send this PC's address and key to Piblo over the cable. */
   device: { pair(): Promise<{ ok: boolean; message: string }> };
+  update: {
+    status(): Promise<UpdateStatus>;
+    check(): Promise<UpdateStatus>;
+    /** Restarts into the downloaded version; false when nothing is ready. */
+    install(): Promise<boolean>;
+    onChange(cb: (s: UpdateStatus) => void): () => void;
+  };
 }
 
 declare global {

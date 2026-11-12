@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { CoreState, PairRequest, PibloBridge, ThemeMode } from '../shared/types';
+import type { CoreState, PairRequest, PibloBridge, ThemeMode, UpdateStatus } from '../shared/types';
 
 const invoke = <T>(channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args) as Promise<T>;
 
@@ -22,6 +22,16 @@ const bridge: PibloBridge = {
   screen: () => invoke('api:screen'),
   screenPng: () => invoke('api:screen-png'),
   device: { pair: () => invoke('device:pair') },
+  update: {
+    status: () => invoke('update:status'),
+    check: () => invoke('update:check'),
+    install: () => invoke('update:install'),
+    onChange(cb) {
+      const handler = (_e: unknown, s: UpdateStatus) => cb(s);
+      ipcRenderer.on('update:changed', handler);
+      return () => ipcRenderer.removeListener('update:changed', handler);
+    },
+  },
   audio: (path, body) => invoke('api:audio', path, body),
   settings: { get: () => invoke('settings:get'), set: (patch) => invoke('settings:set', patch) },
   env: { get: () => invoke('env:get'), set: (key, value) => invoke('env:set', key, value) },

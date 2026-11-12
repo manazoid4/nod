@@ -34,7 +34,8 @@
   },
   "dependencies": {
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "electron-updater": "6.3.9"
   },
   "build": {
     "appId": "uk.piblo.app",
@@ -87,6 +88,12 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Piblo",
       "artifactName": "Piblo-Setup-${version}.${ext}"
-    }
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://github.com/manazoid4/piblo/releases/download/app-latest"
+      }
+    ]
   }
 }

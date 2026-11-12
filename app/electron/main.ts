@@ -9,6 +9,8 @@ import { discoverPort, discoverToken, locateCore, type FsLike } from './core-loc
 import { applyEnvEdit, validateEnvEdit, viewEnv } from './env-file';
 import { isSafeTaskName, planInstall } from './install-plan';
 import { CoreSidecar } from './sidecar';
+import { autoUpdater } from 'electron-updater';
+import { createAppUpdater, type UpdaterLike } from './updater';
 
 const realFs: FsLike = {
   exists: (p) => fs.existsSync(p),
@@ -200,8 +202,26 @@ function applyLoginItem() {
   app.setLoginItemSettings({ openAtLogin: settings.startWithWindows, args: ['--hidden'] });
 }
 
+// ---- updates ----
+const appUpdater = createAppUpdater(autoUpdater as unknown as UpdaterLike, (s) => win?.webContents.send('update:changed', s), !isDev);
+
 // ---- IPC ----
 function setupIpc() {
+  ipcMain.handle('update:status', () => appUpdater.status());
+  ipcMain.handle('update:check', () => appUpdater.check());
+  ipcMain.handle('update:install', async () => {
+    if (appUpdater.status().state !== 'ready') return false;
+    quitting = true;
+    sidecar.stop();
+    await new Promise((r) => setTimeout(r, 800)); // let a Core this app started release its files
+    try {
+      return appUpdater.install();
+    } catch {
+      quitting = false;
+      void sidecar.ensure();
+      return false;
+    }
+  });
   ipcMain.handle('core:state', () => sidecar.state);
   ipcMain.handle('core:ensure', () => sidecar.ensure());
   ipcMain.handle('core:restart', () => sidecar.restart());
@@ -379,6 +399,7 @@ if (!app.requestSingleInstanceLock()) {
       applyLoginItem();
       void sidecar.ensure();
       setInterval(() => void pollPairing(), 5000);
+      appUpdater.start();
     });
   app.on('before-quit', () => {
     quitting = true;
