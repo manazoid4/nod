@@ -10,6 +10,11 @@ on:
 permissions:
   contents: write
 
+# Releases finish in tag order, so an older build never overwrites a newer app-latest.
+concurrency:
+  group: app-release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: windows-latest

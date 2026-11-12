@@ -28,7 +28,7 @@ describe('app updater', () => {
     await up.check();
     expect(u.checkForUpdates).toHaveBeenCalledTimes(1); // no re-check once ready
     expect(up.install()).toBe(true);
-    expect(u.quitAndInstall).toHaveBeenCalledWith(false, true);
+    expect(u.quitAndInstall).toHaveBeenCalledWith(true, true);
     expect(seen).toEqual(['checking', 'downloading', 'downloading', 'ready']);
   });
 

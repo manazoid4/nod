@@ -43,7 +43,7 @@ export function createAppUpdater(updater: UpdaterLike, onChange: (s: UpdateStatu
     check,
     install: () => {
       if (status.state !== 'ready') return false;
-      updater.quitAndInstall(false, true);
+      updater.quitAndInstall(true, true); // silent: no installer wizard, then reopen Piblo
       return true;
     },
     start: () => {

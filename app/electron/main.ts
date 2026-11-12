@@ -209,11 +209,18 @@ const appUpdater = createAppUpdater(autoUpdater as unknown as UpdaterLike, (s) =
 function setupIpc() {
   ipcMain.handle('update:status', () => appUpdater.status());
   ipcMain.handle('update:check', () => appUpdater.check());
-  ipcMain.handle('update:install', () => {
+  ipcMain.handle('update:install', async () => {
     if (appUpdater.status().state !== 'ready') return false;
     quitting = true;
     sidecar.stop();
-    return appUpdater.install();
+    await new Promise((r) => setTimeout(r, 800)); // let a Core this app started release its files
+    try {
+      return appUpdater.install();
+    } catch {
+      quitting = false;
+      void sidecar.ensure();
+      return false;
+    }
   });
   ipcMain.handle('core:state', () => sidecar.state);
   ipcMain.handle('core:ensure', () => sidecar.ensure());
