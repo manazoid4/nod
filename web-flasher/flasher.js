@@ -48,7 +48,7 @@ function validEspImage(bytes) {
 }
 function oneZipFile(files, suffix) {
   const matches = Object.entries(files).filter(([name]) => name.replaceAll("\\", "/").endsWith(suffix));
-  if (matches.length !== 1) throw new Error(`Package must contain exactly one ${suffix}.`);
+  if (matches.length !== 1) throw new Error("Package is missing a required file or contains duplicates.");
   return matches[0][1];
 }
 
