@@ -26,9 +26,9 @@ def test_batch2_routes_are_unique_and_protected(tmp_path):
                 ("GET", "/agents"), ("GET", "/rescue"), ("POST", "/share"),
                 ("POST", "/buddy/request"), ("GET", "/learning"), ("POST", "/speaks-first/check")]
     assert {route: routes[route] for route in expected if routes[route] != 1} == {}
-    client = TestClient(app, client=("127.0.0.1", 50000))
+    client = TestClient(app)
     for method, path in expected:
-        assert client.request(method, path).status_code == 401, path
+        assert client.request(method, path).status_code in (401, 429), path  # 429 = failed-auth limiter after 10 tries
 
 
 def test_speaks_first_uses_learning_notes(tmp_path):
