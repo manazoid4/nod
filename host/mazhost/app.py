@@ -40,6 +40,7 @@ from .control_routes import install_control_routes
 from .core import CoreError, MazCore
 from .debug_capsule import DebugCapsules
 from .device import DeviceMonitor
+from .dev_centre import build_dev_router
 from .discovery import DiscoveryResponder
 from . import fw
 from . import private_mode
@@ -1055,6 +1056,7 @@ def create_app(
         except (KeyError, TypeError, ValueError, OverflowError) as error:
             raise HTTPException(400, "invalid_event_or_deadline") from error
 
+    api.include_router(build_dev_router(resolve_data_dir(cfg), Path(cfg.repo_dir) if cfg.repo_dir else Path(__file__).resolve().parents[2]))
     api.include_router(build_dump_router(cfg, model_router))
     api.include_router(webui_router)
     api.include_router(build_library_router(cfg, model_router))
