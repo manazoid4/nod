@@ -35,16 +35,12 @@ antenna_open   = true;    // open windows over the Stamp/antenna zone
 // module rail. See the commented block near the end of this file.
 
 // ---------- print tolerances ----------------------------------------
-clr       = 0.30;  // XY clearance between device and cavity wall
-clr_z     = 0.30;  // Z clearance above device faces
+include <case_dimensions.scad> // Shared unchanged dimensions; also used by accessories.
 joint_gap = 0.18;  // gap between back-shell lip and frame skirt
 snap_depth= 0.40;  // snap bump height
 hole_tol  = 0.20;  // added to round holes (printer undersizing)
 
 // ---------- device dimensions ---------------------------------------
-dev_L        = 84.0;   // [OFFICIAL] length
-dev_W        = 54.0;   // [OFFICIAL] width
-dev_T_block  = 19.6;   // [OFFICIAL] max thickness (screen/Stamp end block)
 dev_T_plate  = 16.0;   // [OFFICIAL] thickness at keyboard plate (drawing "16")
 key_top_z    = 17.0;   // [SCALED]  keycap top above back (STL: 17.0)
 block_y0     = 6.2;    // [SCALED]  block (thick end) spans Y=block_y0..+27
@@ -76,9 +72,6 @@ ant_x0 = 16.5; ant_x1 = 40.0; ant_y0 = 7.5; ant_y1 = 24.5;     // [OWNER-MEASURE
 front_screw_pts = [[-29, 9], [12.5, 9]];  // [OFFICIAL] drawing: 13 from edge, 41.5 apart, 18 from screen end
 
 // ---------- case design parameters ----------------------------------
-wall      = 2.4;      // total side wall (lip half + skirt half + gap)
-floor_t   = 1.8;      // back shell floor
-plate_t   = 1.5;      // front frame plate thickness
 z_split   = 8.0;      // joint height (device Z) between parts
 lap       = 3.0;      // overlap height of lip inside skirt
 edge_r    = 1.4;      // soft outer edge rounding

@@ -23,7 +23,7 @@ Reads `MAZ_TOKEN` from the environment or `host/.env` (never printed), posts a f
         "PermissionRequest": [
           { "matcher": "",
             "hooks": [ { "type": "command",
-                         "command": "python C:/Users/manaz/maz-pocket/host/hooks/nod_permission_hook.py",
+                         "command": "python <path-to-repo>/host/hooks/nod_permission_hook.py",
                          "timeout": 75 } ] }
         ]
       }

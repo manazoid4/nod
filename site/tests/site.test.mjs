@@ -7,7 +7,7 @@ import { execFileSync } from "node:child_process";
 import vm from "node:vm";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const pages = ["/", "/roadmap/", "/readiness/", "/privacy/"];
+const pages = ["/", "/roadmap/", "/timeline/", "/readiness/", "/privacy/"];
 const contents = Object.fromEntries(pages.map(path => [path, readFileSync(join(root, path, "index.html"), "utf8")]));
 const attrs = (html, name) => [...html.matchAll(new RegExp(name + '="([^"]+)"', "g"))].map(match => match[1]);
 const ids = html => new Set(attrs(html, "id"));
@@ -27,7 +27,7 @@ test("all four pages have semantic structure and indexed identity", () => {
 test("all internal paths, static assets and hash targets resolve locally", () => {
   for (const [page, html] of Object.entries(contents)) {
     for (const url of [...attrs(html, "href"), ...attrs(html, "src")]) {
-      if (/^(https?:|mailto:|tel:|data:)/.test(url)) continue;
+      if (/^(https?:|mailto:|tel:|data:|\/_vercel\/)/.test(url)) continue; // /_vercel/* is served by Vercel at runtime
       const [location, fragment] = url.split("#", 2);
       const route = location.startsWith("/") ? location : location ? (page + location) : page;
       if (location) assert.ok(existsSync(locallyResolve(route)), page + " missing " + route);
@@ -58,7 +58,7 @@ test("roadmap is a short honest page — no 21-package slop, no filter UI", () =
 
 test("homepage is a clean Kickstarter teaser — no fake claims, real waitlist", () => {
   const html = contents["/"];
-  assert.match(html, /Concept film/i);
+  assert.match(html, /Concept render/i);
   assert.match(html, /action="\/api\/waitlist"/);
   assert.match(html, /heading to Kickstarter/i);
   assert.doesNotMatch(html, /everything is for sale|preorder/i);
@@ -97,7 +97,7 @@ test("Vercel defensive headers and sitemap exclude private-readiness indexing", 
 test("concept A palette: labelled as concept, CSP-safe, real waitlist, tokens in sync, AA contrast", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
   const css = readFileSync(join(root, "styles.css"), "utf8");
-  assert.match(html, /Concept film/i);
+  assert.match(html, /Concept render/i);
   assert.match(html, /action="\/api\/waitlist"/);
   assert.doesNotMatch(html, /\son[a-z]+\s*=|style=|<style|<script(?![^>]*(?:\ssrc=|\s+type="application\/ld\+json"))/i);
   assert.equal(readFileSync(join(root, "tokens.css"), "utf8"), readFileSync(join(root, "..", "design", "tokens-a.css"), "utf8"));
@@ -111,15 +111,15 @@ test("films: muted, playsinline, no autoplay, labelled as concept, small enough 
   const { statSync } = await import("node:fs");
   const html = contents["/"];
   const videos = html.match(/<video\b[^>]*>/g) || [];
-  assert.ok(videos.length >= 3);
+  assert.ok(videos.length === 0 || videos.length >= 1); // Nov 2026 redesign: homepage has no film; any video must still follow these rules
   for (const tag of videos) {
     assert.match(tag, /\smuted\b/, "no video may play with sound by default");
     assert.match(tag, /\splaysinline\b/);
     assert.match(tag, /poster="\/media\/[^"]+\.jpg"/);
     assert.match(tag, /preload="(none|metadata)"/);
   }
-  assert.match(html, /Concept film/);
-  assert.match(html, /screen is simulated/);
+  assert.match(html, /Concept render/);
+  assert.match(html, /simulated concepts/);
   for (const src of html.match(/\/media\/[\w.-]+\.(mp4|webp|jpg)/g)) assert.ok(statSync(join(root, src)).size < 3_000_000, src + " is over 3 MB");
 });
 test("Piblo rebrand: piblo.co.uk canonical/og:url and no visible Nod brand text", () => {
@@ -142,9 +142,44 @@ test("media references use piblo-* files that exist, and no nod-* media remains"
   const { readdirSync } = await import("node:fs");
   const html = contents["/"];
   const refs = html.match(/\/media\/[\w.-]+\.(mp4|webp|jpg)/g) || [];
-  assert.ok(refs.length >= 8);
+  assert.ok(refs.length >= 2); // og image + twitter image
   for (const ref of refs) { assert.match(ref, /\/media\/piblo-/); assert.ok(existsSync(join(root, ref)), ref); }
   assert.deepEqual(readdirSync(join(root, "media")).filter(f => /nod/i.test(f)), []);
   assert.match(html, /name="piblo_hp_field"/);
   assert.ok(existsSync(join(root, "media/piblo-og.jpg")));
+});
+
+test("analytics script is on every page and the share box and ref handling exist", () => {
+  const all = pages.map(p => contents[p]);
+  for (const html of all) assert.match(html, /<script defer src="\/_vercel\/insights\/script\.js"><\/script>/);
+  assert.match(contents["/privacy/"], /Vercel Web Analytics[^.]*without cookies/);
+  assert.match(contents["/"], /id="share-box"[^>]*hidden/);
+  assert.match(contents["/"], /name="ref"/);
+  assert.match(contents["/"], /data-va="cta_click"/);
+});
+
+test("script.js: ref is validated and stored safely, share box shows only the user's link, events fire", () => {
+  const src = readFileSync(join(root, "script.js"), "utf8");
+  const events = [];
+  const shareBox = { hidden: true, el: {}, querySelector(sel) { return (this.el[sel] ||= { hidden: true, value: "", textContent: "" }); } };
+  const refInput = { value: "" };
+  const form = { querySelector: () => ({ textContent: "", classList: { toggle() {} } }), addEventListener() {} };
+  const store = {};
+  const run = (search) => vm.runInNewContext(src, {
+    window: { va: (...a) => events.push(a), matchMedia: () => ({ matches: true }) }, navigator: { share: () => Promise.resolve() },
+    location: { search }, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = v; } },
+    URLSearchParams, IntersectionObserver: class { observe() {} }, matchMedia: () => ({ matches: true, addEventListener() {} }),
+    document: { querySelectorAll: () => [], querySelector: () => refInput, getElementById: id => id === "share-box" ? shareBox : id === "waitlist-form" ? form : null, documentElement: {}, body: {} },
+    console, setTimeout, fetch: async () => ({}),
+  });
+  try { run("?ref=AbCd1234"); } catch (e) { if (!/reading|null|undefined/.test(String(e))) throw e; }
+  assert.equal(store.piblo_ref, "abcd1234");
+  assert.equal(refInput.value, "abcd1234");
+  delete store.piblo_ref;
+  try { run("?ref=%3Cscript%3E"); } catch {}
+  assert.equal(store.piblo_ref, undefined);
+  try { run("?subscribed=1&code=zz99yy88"); } catch {}
+  assert.equal(shareBox.hidden, false);
+  assert.equal(shareBox.querySelector("#share-link").value, "https://piblo.co.uk/?ref=zz99yy88");
+  assert.ok(events.some(e => e[0] === "event" && e[1].name === "waitlist_signup"));
 });

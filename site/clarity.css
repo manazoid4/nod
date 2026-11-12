@@ -1,0 +1,105 @@
+/* Kickstarter clarity pass (Nov 2026): how it works, uses, Buddy day, ownership, editions, FAQ. */
+.hero h1 { font-size: clamp(2.4rem, 5.4vw, 4.4rem); line-height: 1.04; max-width: 17ch; }
+.hero h1 span { display: inline; }
+.hero .eyebrow { margin-bottom: var(--space-4); }
+.hero .fine { margin-top: var(--space-4); }
+.hero-device figcaption { margin-top: 2em; }
+.screen .screen-buddy { width: 6.6em; height: 6.6em; align-self: center; }
+.screen-buddy .bf-head { stroke: var(--screen-ink); }
+
+.steps-section, .uses, .buddy-section, .own, .editions, .faq-section { padding-block: var(--space-8); }
+.steps, .use-grid, .own-grid, .buddy-day { list-style: none; margin: var(--space-6) 0 0; padding: 0; display: grid; gap: var(--space-5); }
+.steps { grid-template-columns: repeat(3, 1fr); }
+.steps li, .use, .own-grid li, .edition, .needs { background: var(--card); border: var(--stroke); border-radius: var(--radius-l); padding: var(--space-6); box-shadow: var(--shadow-m); }
+.step-n { display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--tomato); border: var(--stroke); font: 800 1.1rem/1 var(--font-mono); margin-bottom: var(--space-3); }
+.steps h3, .use h3, .own-grid h3, .edition h3, .needs h3, .buddy-day h3 { font-size: 1.4rem; margin: 0 0 var(--space-2); }
+.steps p, .use p, .own-grid p, .edition p, .buddy-day p { margin: 0; }
+.needs { margin-top: var(--space-5); background: var(--paper); }
+.needs ul { margin: 0; padding-left: 1.2em; }
+.needs li + li { margin-top: var(--space-2); }
+
+.use-grid { grid-template-columns: repeat(6, 1fr); }
+.use { grid-column: span 2; }
+.use-4, .use-5 { grid-column: span 3; }
+.use-1 { background: var(--sun); }
+.use-5 { background: var(--ink); color: var(--paper); }
+.use-6 { grid-column: span 6; background: var(--mint); }
+
+.buddy-lede { max-width: 46ch; font-size: 1.15rem; }
+.buddy-day { grid-template-columns: repeat(5, 1fr); counter-reset: none; }
+.buddy-day li { position: relative; text-align: center; }
+.buddy-day li + li::before { content: "→"; position: absolute; left: calc(-1 * var(--space-5)); top: 2.2rem; width: var(--space-5); text-align: center; font: 800 1.2rem/1 var(--font-mono); }
+.buddy-day .bface { width: 5.5rem; height: 5.5rem; margin-bottom: var(--space-2); }
+.buddy-day p { font-size: .95rem; }
+.status-note { margin-top: var(--space-6); font-size: .95rem; max-width: 60ch; }
+.chip { display: inline-block; font: 800 .75rem/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; background: var(--sun); border: var(--stroke); border-radius: 99px; padding: .35em .8em; margin-right: .4em; }
+
+.bface { width: 100%; height: auto; overflow: visible; }
+.bf-head { fill: var(--mint); stroke: var(--ink); stroke-width: 4; }
+.bf-ink, .bf-fill { fill: var(--ink); }
+.bf-line { fill: none; stroke: var(--ink); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.b-idle .bf-head { fill: var(--paper); }
+.b-celebrating .bf-head { fill: var(--sun); }
+.b-attention .bf-head { fill: var(--tomato); }
+.b-sleeping .bf-head { fill: var(--paper-2); }
+
+.own-grid { grid-template-columns: repeat(4, 1fr); }
+.edition-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); margin-top: var(--space-6); }
+.edition-pro { background: linear-gradient(135deg, #cdeedb, #f5fbf7 45%, #b9e6cd); }
+.films-section { padding-block: var(--space-6) 0; }
+.film-solo { max-width: 720px; margin: 0 auto; }
+.faq-section .faq { margin-top: var(--space-5); }
+
+@media (max-width: 900px) {
+  .steps, .own-grid, .edition-grid { grid-template-columns: 1fr; }
+  .use-grid { grid-template-columns: 1fr; }
+  .use, .use-4, .use-5, .use-6 { grid-column: auto; }
+  .buddy-day { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
+  .buddy-day li + li::before { display: none; }
+  .buddy-day .bface { width: 100%; max-width: 4rem; height: auto; }
+  .buddy-day h3 { font-size: .8rem; }
+  .buddy-day p { display: none; }
+  .steps-section, .uses, .buddy-section, .own, .editions, .faq-section { padding-block: var(--space-7); }
+  .steps li, .use, .own-grid li, .edition, .needs { padding: var(--space-5); }
+}
+@media (max-width: 560px) {
+  .hero { padding-block: var(--space-5) var(--space-7); gap: var(--space-5); }
+  .hero-device { order: -1; }
+  .hero-device .device { font-size: 6.4px; }
+  .hero-device figcaption { margin-top: 1.4em; font-size: .72rem; }
+  .steps { gap: var(--space-3); }
+  .steps li { display: grid; grid-template-columns: auto 1fr; column-gap: var(--space-4); align-items: start; box-shadow: none; }
+  .step-n { grid-row: span 2; margin: 0; }
+  .use-grid { gap: var(--space-3); }
+  .use { box-shadow: none; padding: var(--space-4) var(--space-5); }
+  .use h3, .steps h3, .own-grid h3 { font-size: 1.15rem; }
+  .own-grid { gap: 0; }
+  .own-grid li { background: none; border: 0; border-top: 2px dashed var(--ink-soft); border-radius: 0; box-shadow: none; padding: var(--space-4) 0; }
+  .film-solo { max-width: 240px; }
+}
+
+/* Feature groups (Nov 2026 plain-words pass): every feature carries an honest status chip. */
+.feat-key { margin: var(--space-4) 0 0; font-size: .95rem; line-height: 2.2; max-width: none; }
+.feat-group { margin-top: var(--space-7); }
+.feat-group h3 { font-size: 1.7rem; margin: 0; }
+.feat-sub { margin: var(--space-1) 0 0; color: var(--ink-soft); }
+.feat-grid { list-style: none; margin: var(--space-5) 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+.feat { display: flex; flex-direction: column; gap: var(--space-2); background: var(--card); border: var(--stroke); border-radius: var(--radius-m); padding: var(--space-5); box-shadow: var(--shadow-s); }
+.feat h4 { font: 800 1.2rem/1.2 var(--font-display); margin: 0; }
+.feat p { margin: 0; font-size: 1rem; flex: 1; }
+.feat .chip { align-self: flex-start; margin: var(--space-2) 0 0; }
+.chip.chip-done { background: var(--mint); }
+.chip.chip-wip { background: var(--sun); }
+.chip.chip-none { background: var(--paper); border-style: dashed; }
+.forms-title { margin: var(--space-7) 0 0; font-size: 1.4rem; }
+.forms { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+.forms li { background: var(--card); border: var(--stroke); border-radius: var(--radius-m); padding: var(--space-4) var(--space-5); }
+.forms strong { display: block; font: 800 1.1rem/1.2 var(--font-display); }
+@media (max-width: 1100px) { .feat-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) {
+  .feat-grid { grid-template-columns: 1fr; gap: var(--space-3); }
+  .feat { box-shadow: none; padding: var(--space-4) var(--space-5); }
+  .feat-group { margin-top: var(--space-6); }
+  .forms { grid-template-columns: 1fr 1fr; }
+  .hero .actions .btn { width: 100%; }
+}

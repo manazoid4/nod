@@ -29,6 +29,15 @@ jobs:
           cache: pip
           cache-dependency-path: host/requirements.txt
 
+      # Toolchain + Arduino framework + libs were re-downloaded every run (~5 of the 9 build minutes).
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio/libdeps
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: pio-${{ runner.os }}-
+
       - name: Read version
         id: version
         shell: pwsh
@@ -41,13 +50,13 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
-          pip install platformio pytest playwright
+          pip install platformio pytest pytest-xdist playwright
           pip install -r host/requirements.txt
           pip install "click>=8.0.4,<8.4"
           python -m playwright install chromium
 
       - name: Test MAZ Core + Host
-        run: python -m pytest host/tests -q
+        run: python -m pytest host/tests -q -n auto
 
       - name: Validate version/install contract
         run: python scripts/check-version.py

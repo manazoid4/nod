@@ -11,3 +11,7 @@ host/**/__pycache__/
 host/.env
 *.pyc
 .claude/worktrees/
+.venv/
+host/data/
+node_modules/
+host/Microsoft/

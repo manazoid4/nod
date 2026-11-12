@@ -20,6 +20,7 @@ Source of truth for "nothing useful gets silently removed". Base: MAZ Pocket **v
 | Today | `today` | Restored (was missing in v0.8.0 import) | ✅ | ⬜ | ✅ | ⬜ |
 | Focus timer, Sprint, Tasks, Reminders, Shift | `flowtools` under WORK | Moved (one level deeper) | ✅ | ⬜ | ✅ | ⬜ |
 | Alerts / agent events | `notify`, `nudge` | Restored | ✅ | ⬜ | ✅ | ⬜ |
+| Alerts + Piblo Buddy (reminder / webhook / ack-snooze, priority sound table) | `alerts.cpp`, `buddy_face.cpp`, `alert_policy.h`, host `buddy.py` `/buddy/alert` | New (this PR; see docs/ALERTS.md) | ✅ | ⬜ | ✅ host + policy table | ⬜ |
 | Quiet (approval chime never muted) | `quiet.cpp`, Fn+Q | Restored | ✅ | ⬜ | ✅ | ⬜ |
 | Halt / Pause Asks (Fn+H, fail closed) | `approvals.cpp` | Restored | ✅ | ⬜ | ✅ | ⬜ |
 | Agent approval | `approvals.cpp`, host `authority.py` | Restored (security P0 fixes) | ✅ | ⬜ | ✅ | ⬜ |

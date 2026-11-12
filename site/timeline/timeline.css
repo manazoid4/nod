@@ -1,0 +1,13 @@
+.tl-wrap{max-width:46rem;margin:0 auto;padding:var(--space-5) 1rem 4rem}
+.tl-lead{font-size:1.15rem;color:var(--ink-soft);max-width:36rem}
+.tl-list{list-style:none;margin:2.5rem 0 0;padding:0;border-left:3px solid var(--ink)}
+.tl-step{position:relative;margin:0 0 1.75rem 1.5rem;padding:1.1rem 1.25rem;background:var(--card);border:var(--stroke);border-radius:var(--radius-m);box-shadow:var(--shadow-s)}
+.tl-step::before{content:"";position:absolute;left:-2.05rem;top:1.4rem;width:.9rem;height:.9rem;border-radius:50%;background:var(--paper-2);border:3px solid var(--ink)}
+.tl-step[data-state="done"]::before{background:var(--mint)}
+.tl-step[data-state="now"]::before{background:var(--sun)}
+.tl-step h2{margin:.35rem 0 .4rem;font-size:1.3rem}
+.tl-step p{margin:0;color:var(--ink-soft)}
+.tl-chip{display:inline-block;font-family:var(--font-mono);font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .6rem;border-radius:var(--radius-pill);border:2px solid var(--ink);background:var(--paper-2)}
+.tl-step[data-state="done"] .tl-chip{background:var(--mint)}
+.tl-step[data-state="now"] .tl-chip{background:var(--sun)}
+.tl-note{margin-top:2rem;color:var(--ink-soft)}

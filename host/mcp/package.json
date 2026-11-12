@@ -1,0 +1,29 @@
+{
+  "name": "piblo-mcp",
+  "version": "0.1.0",
+  "description": "MCP server (stdio) that lets Claude Code, Codex and other MCP apps notify you and ask for approval through Piblo Core.",
+  "type": "module",
+  "bin": {
+    "piblo-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "test": "npm run build && node --test \"test/*.test.mjs\""
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "@modelcontextprotocol/client": "^2.4.0",
+    "@modelcontextprotocol/server": "^2.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}

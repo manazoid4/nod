@@ -5,14 +5,17 @@
 
 #include <algorithm>
 #include <ctime>
+#include <poll_backoff.h>
 
 #include "../apps/apps.h"
 #include "../audio/sfx.h"
 #include "../net/host_worker.h"
 #include "../net/mazhost.h"
 #include "../storage/store.h"
+#include "alerts.h"
 #include "launcher.h"
 #include "notify.h"
+#include "phone_input.h"
 #include "quiet.h"
 #include "settings.h"
 #include "shell.h"
@@ -166,6 +169,8 @@ void finishBeamPull(const host::BeamMessage& msg) {
     for (const auto& e : msg.events) {
         std::string detail = e.source.empty() ? e.text : e.source + ": " + e.text;
         if (detail.size() > 160) detail.resize(160);
+        if (e.kind == "alert") { alerts::onEvent(e); continue; }  // generic alerts: Buddy overlay + priority table
+        if (e.kind == "text_input") { phone::onTextInput(e); continue; }  // phone keyboard: literal insert only
         // Quiet mode decides the sound only; the toast is always posted.
         using quiet::Ev;
         const Ev ev = e.kind == "done" ? Ev::Done : e.kind == "usage" ? Ev::Usage
@@ -397,7 +402,10 @@ void update() {
     if (static_cast<int32_t>(millis() - gNextBeamPoll) >= 0) {
         // Schedule before submitting: returning first re-polled every tick and
         // kept the single worker busy, so Call reported "busy".
-        gNextBeamPoll = millis() + (Cfg.fieldMode ? 45000u : 15000u);
+        // Hub offline (the previous poll failed): back off to 30 s instead of burning a connect timeout every 15 s.
+        static uint8_t offlinePolls = 0;
+        offlinePolls = Sys.hostOnline ? 0 : (offlinePolls < 255 ? offlinePolls + 1 : 255);
+        gNextBeamPoll = millis() + nod::backoffMs(Cfg.fieldMode ? 45000u : 15000u, offlinePolls, 30000u);
         host_worker::submitBeamPull();
     }
 }

@@ -1,11 +1,18 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include "../include/alert_policy.h"
 #include "../include/charge_monitor.h"
+#include "../include/poll_backoff.h"
+#include "../include/nod_hold.h"
+#include "../include/tone_seq.h"
+#include "../include/easy_keys.h"
 #include "../include/home_layout.h"
+#include "../include/phone_text.h"
 #include "../include/talk_home.h"
 #include "../include/nod_theme.h"
 #include "../include/safe_file.h"
+#include "../include/pair_connect.h"
 #include <map>
 #include <string>
 using namespace nod;
@@ -52,6 +59,11 @@ int main() {
     // full detection with VBUS, plateau at 4.17V
     { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 4170, 0.0f, 5, 1);
       CHECK(m.state() == PowerState::Full); CHECK(m.percent() == 100); }
+    // load-recovery bump then a slow light-load decline must not stay "charging" (live bug, 10 Nov)
+    { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 3800, 8.0f, 4); CHECK(m.state() == PowerState::Charging);
+      feedRun(m, t, 3832, -0.5f, 5); CHECK(m.state() == PowerState::OnBattery); }
+    // a real charge keeps rising, so it stays Charging
+    { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 3700, 4.0f, 10); CHECK(m.state() == PowerState::Charging); }
     // VBUS removed => immediately OnBattery
     { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 3700, 6.0f, 5, 1); CHECK(m.state() == PowerState::Charging);
       t += 10000; m.feed(t, 3900, 0); CHECK(m.state() == PowerState::OnBattery); }
@@ -162,6 +174,173 @@ int main() {
       CHECK(uniquePath("/maz/notes/19700101-000012", "txt", ex) == "/maz/notes/19700101-000012-1.txt");
       fs.files["/maz/notes/19700101-000012-1.txt"] = "b";
       CHECK(uniquePath("/maz/notes/19700101-000012", "txt", ex) == "/maz/notes/19700101-000012-2.txt"); }
+    // alert policy: priority -> sound/LED/mood table, Quiet-aware
+    { using namespace maz::alert_policy;
+      CHECK(parsePriority("urgent") == Priority::Urgent && parsePriority("low") == Priority::Low);
+      CHECK(parsePriority("high") == Priority::High && parsePriority("garbage") == Priority::Normal && parsePriority(nullptr) == Priority::Normal);
+      for (int p = 0; p < 4; p++) {
+          const Rule& r = rule(static_cast<Priority>(p));
+          CHECK(r.toneCount >= 1 && r.toneCount <= MAX_TONES);
+          for (int i = 0; i < r.toneCount; i++) CHECK(r.tones[i].hz >= 200 && r.tones[i].ms >= 20 && r.tones[i].ms <= 200);
+      }
+      // more urgent never sounds shorter or flashes less than a calmer one
+      for (int p = 1; p < 4; p++) CHECK(rule(static_cast<Priority>(p)).toneCount >= rule(static_cast<Priority>(p - 1)).toneCount);
+      CHECK(rule(Priority::Urgent).flashes == FLASH_UNTIL_ACK && rule(Priority::Low).flashes == 0);
+      // Quiet (1) mutes low/normal only; Silent (2) leaves only urgent; Normal (0) plays all
+      for (int p = 0; p < 4; p++) CHECK(shouldSound(0, static_cast<Priority>(p)));
+      CHECK(!shouldSound(1, Priority::Low) && !shouldSound(1, Priority::Normal));
+      CHECK(shouldSound(1, Priority::High) && shouldSound(1, Priority::Urgent));
+      CHECK(!shouldSound(2, Priority::High) && shouldSound(2, Priority::Urgent));
+      CHECK(forced(Priority::Urgent) && !forced(Priority::High));
+      CHECK(moodFor(Priority::Low, true) == Mood::Celebrating && moodFor(Priority::Urgent, false) == Mood::NeedsAttention); }
+    { using namespace maz::nod;  // The Nod: hold-to-approve timing
+      CHECK(!holdDone(0) && !holdDone(HOLD_MS - 1) && holdDone(HOLD_MS) && holdDone(HOLD_MS + 5000));
+      CHECK(holdPercent(0) == 0 && holdPercent(HOLD_MS / 2) == 50 && holdPercent(HOLD_MS) == 100 && holdPercent(60000) == 100);
+      for (uint32_t ms = 0; ms < HOLD_MS + 50; ms += 7) CHECK(holdPercent(ms) <= holdPercent(ms + 7));  // monotonic
+      CHECK(HOLD_MS >= 500 && HOLD_MS <= 1200);  // deliberate, not tedious
+      CHECK(holdPercent(HOLD_MS - 1) == 99); }
+    // tone sequencer: notes start on schedule, never early, never skipped, and nothing blocks
+    { ToneSeq q; ToneStep s{};
+      CHECK(!q.poll(0, s) && !q.playing(0));  // empty queue is silent
+      CHECK(q.push(880, 70)); CHECK(q.push(1175, 70)); CHECK(q.push(1480, 90, true, 150));
+      CHECK(q.playing(0));
+      CHECK(q.poll(1000, s) && s.hz == 880 && s.ms == 70 && !s.force);
+      CHECK(!q.poll(1069, s));                                   // first note still owns the speaker
+      CHECK(q.poll(1070, s) && s.hz == 1175);
+      CHECK(!q.poll(1139, s) && q.playing(1139));
+      CHECK(q.poll(1140, s) && s.hz == 1480 && s.force && s.slot == 150 && s.ms == 90);  // gap after the note
+      CHECK(!q.poll(1289, s) && q.playing(1289));
+      CHECK(!q.poll(1290, s) && !q.playing(1290));               // drained: silent again
+      // clock wrap: the schedule survives millis() rolling over
+      CHECK(q.push(500, 20)); CHECK(q.push(600, 20));
+      CHECK(q.poll(0xFFFFFFF0u, s) && s.hz == 500);
+      CHECK(!q.poll(0xFFFFFFFFu, s));
+      CHECK(q.poll(4u, s) && s.hz == 600);                       // 0xFFFFFFF0 + 20 wraps to 4
+      // overflow drops the extra notes instead of corrupting the queue; clear() cancels what is queued
+      q.clear();
+      for (int i = 0; i < ToneSeq::CAP; i++) CHECK(q.push(300 + i, 10));
+      CHECK(!q.push(999, 10));
+      CHECK(q.poll(5000, s) && s.hz == 300);
+      q.clear(); CHECK(!q.poll(9000, s) && !q.playing(9000));
+      // a replacement sequence starts at once even if the previous note was still sounding
+      CHECK(q.push(700, 50)); CHECK(q.poll(9001, s) && s.hz == 700);
+      q.clear(); CHECK(q.push(800, 50)); CHECK(q.poll(9002, s) && s.hz == 800); }
+
+    // poll back-off: doubles per failure, capped, never faster than the base cadence, resets with fails=0
+    CHECK(backoffMs(5000, 0, 15000) == 5000); CHECK(backoffMs(5000, 1, 15000) == 10000);
+    CHECK(backoffMs(5000, 2, 15000) == 15000); CHECK(backoffMs(5000, 200, 15000) == 15000);
+    CHECK(backoffMs(45000, 3, 30000) == 45000);  // field-mode cadence is already slower than the cap
+    CHECK(backoffMs(2500, 1, 15000) == 5000);
+    CHECK(backoffMs(0xC0000000u, 255, 0xFFFFFFFFu) == 0xFFFFFFFFu);  // no overflow wrap-around
+    for (uint8_t f = 0; f < 20; f++) CHECK(backoffMs(5000, f, 15000) <= backoffMs(5000, f + 1, 15000));
+
+    // ---- Easy Mode keys: only Y/ENTER approve; phone text never can ----
+    { using namespace maz::easy_keys;
+      CHECK(isApproveKey(KEY_Y) && isApproveKey(KEY_ENTER));
+      CHECK(!isApproveKey(KEY_N) && !isApproveKey(KEY_ESC) && !isApproveKey(KEY_SPACE));
+      CHECK(!isApproveKey(KEY_UP) && !isApproveKey(KEY_DOWN) && !isApproveKey(KEY_LEFT) && !isApproveKey(KEY_RIGHT));
+      CHECK(!isApproveKey(KEY_BACKSPACE) && !isApproveKey(0) && !isApproveKey(0xFF));
+      CHECK(isRejectKey(KEY_N) && isRejectKey(KEY_ESC) && !isRejectKey(KEY_Y) && !isRejectKey(KEY_ENTER));
+      CHECK(isEasyNavKey(KEY_UP) && isEasyNavKey(KEY_DOWN) && isEasyNavKey(KEY_ENTER) && isEasyNavKey(KEY_ESC));
+      CHECK(escGoesBack(false) && !escGoesBack(true));
+      CHECK(backspaceGoesBack(false) && !backspaceGoesBack(true));
+      CHECK(!phoneTextMayApprove()); }
+
+    // ---- Phone text: literal insert only; never keys, never approve ----
+    { using namespace maz::phone_text;
+      std::string dst, clean; size_t dropped = 0, cur = 0; Mode m = Mode::Insert;
+      CHECK(parseMode("insert", m) && m == Mode::Insert);
+      CHECK(parseMode("replace", m) && m == Mode::Replace);
+      CHECK(parseMode("send", m) && m == Mode::Send);
+      CHECK(!parseMode("approve", m) && !parseMode("", m) && !parseMode(nullptr, m));
+      // literal: approval words, "Y"/newlines/ESC stay plain text, never keys
+      dst = "Say "; cur = dst.size();
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "Y approve\nENTER\x1b", true) == Status::Inserted);
+      CHECK(dst == "Say Y approveENTER" && cur == dst.size());
+      CHECK(dst.find('\n') == std::string::npos && dst.find('\x1b') == std::string::npos);
+      // controls never become separators; non-ASCII bytes dropped
+      sanitize(std::string("a\tb\xC3\xA9" "c"), clean, dropped);
+      CHECK(clean == "abc" && dropped == 3);
+      // ...but a message with non-ASCII is rejected whole, never silently trimmed
+      dst = "keep"; cur = 4;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "caf\xC3\xA9", true) == Status::Unsupported);
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Replace, "\xF0\x9F\x98\x80", true) == Status::Unsupported);
+      CHECK(dst == "keep" && cur == 4);
+      // no field focused -> NoField and untouched
+      dst = "keep"; cur = 2;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "hello", false) == Status::NoField);
+      CHECK(dst == "keep" && cur == 2);
+      // too long -> rejected whole, never partially inserted
+      dst = "ab"; cur = 2;
+      CHECK(applyPhoneText(dst, 4, cur, Mode::Insert, "cdef", true) == Status::TooLong);
+      CHECK(dst == "ab" && cur == 2);
+      CHECK(applyPhoneText(dst, 4, cur, Mode::Replace, "abcdef", true) == Status::TooLong);
+      CHECK(dst == "ab" && cur == 2);
+      // insert at cursor; cursor follows the insert
+      dst = "ac"; cur = 1;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "b", true) == Status::Inserted);
+      CHECK(dst == "abc" && cur == 2);
+      // replace swaps the whole buffer and moves the cursor to the end
+      dst = "old"; cur = 1;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Replace, "new", true) == Status::Inserted);
+      CHECK(dst == "new" && cur == 3);
+      // send inserts only: no trailing ENTER/separator is ever synthesized
+      dst.clear(); cur = 0;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Send, "send it", true) == Status::Inserted);
+      CHECK(dst == "send it");
+      // cursor clamps to the end, never past it
+      dst = "ab"; cur = 99;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "c", true) == Status::Inserted);
+      CHECK(dst == "abc" && cur == 3);
+      // empty text never inserts (Core validates 1..500; firmware is strict too)
+      dst = "ab"; cur = 0;
+      CHECK(applyPhoneText(dst, 120, cur, Mode::Insert, "\n\x1b", true) == Status::Inserted);
+      CHECK(dst == "ab" && cur == 0);
+      // freshness: 2 min TTL, inclusive at the boundary; unsafe clock -> fresh
+      CHECK(fresh(1000, 1120, true) && !fresh(1000, 1121, true));
+      CHECK(fresh(1000, 999999, false) && !fresh(0, 2000, true));
+      // ids: bounded printable; dedupe ring never holds a repeat
+      CHECK(validId("a-1") && !validId("") && !validId(nullptr));
+      char longId[80]; memset(longId, 'x', sizeof(longId) - 1); longId[sizeof(longId) - 1] = 0;
+      CHECK(!validId(longId));
+      SeenIds seen;
+      CHECK(!seen.seen("id-1")); seen.add("id-1"); CHECK(seen.seen("id-1"));
+      seen.add("id-1"); CHECK(seen.count == 1);  // re-adding a repeat is a no-op
+      for (int i = 2; i <= 10; ++i) { char id[16]; snprintf(id, sizeof(id), "id-%d", i); seen.add(id); }
+      CHECK(seen.count == kMaxSeenIds && !seen.seen("id-1") && seen.seen("id-10")); }
+
+    // pair_connect.h: discovery reply, code format, device id, poll states
+    { using namespace nod::pair;
+      Discovery d;
+      CHECK(parseDiscovery("{\"piblo\":1,\"port\":8787,\"name\":\"MAZPC\",\"version\":\"1.2\"}", d));
+      CHECK(d.port == 8787 && d.name == "MAZPC");
+      CHECK(parseDiscovery("{ \"piblo\" : 1 , \"port\" : 9000 }", d) && d.port == 9000 && d.name.empty());
+      CHECK(!parseDiscovery("{\"piblo\":2,\"port\":8787}", d));
+      CHECK(!parseDiscovery("{\"port\":8787}", d));
+      CHECK(!parseDiscovery("{\"piblo\":1,\"port\":0}", d));
+      CHECK(!parseDiscovery("{\"piblo\":1,\"port\":70000}", d));
+      CHECK(!parseDiscovery("not json", d));
+      CHECK(printableName(std::string("ab\x01\x7f" "c"), 32) == "abc");
+      CHECK(printableName(std::string(50, 'x'), 32).size() == 32);
+      CHECK(formatCode("482913") == "482 913");
+      CHECK(formatCode("48291").empty() && formatCode("4829133").empty() && formatCode("48a913").empty());
+      const uint8_t mac[6] = {0x12, 0x34, 0x56, 0xAB, 0xCD, 0x0F};
+      CHECK(deviceIdFromMac(mac) == "piblo-abcd0f");
+      CHECK(requestBody("piblo-abcd0f", "Piblo") == "{\"device_id\":\"piblo-abcd0f\",\"name\":\"Piblo\"}");
+      std::string tok;
+      CHECK(jsonString("{\"status\": \"approved\", \"token\": \"t\\\"k\"}", "token", tok) && tok == "t\"k");
+      CHECK(nextPhase(Phase::Waiting, 200, "pending") == Phase::Waiting);
+      CHECK(nextPhase(Phase::Waiting, 200, "approved") == Phase::Approved);
+      CHECK(nextPhase(Phase::Waiting, 200, "denied") == Phase::Denied);
+      CHECK(nextPhase(Phase::Waiting, 200, "expired") == Phase::TimedOut);
+      CHECK(nextPhase(Phase::Waiting, 404, "") == Phase::TimedOut);
+      CHECK(nextPhase(Phase::Waiting, -1, "") == Phase::Waiting);
+      CHECK(nextPhase(Phase::Waiting, 500, "") == Phase::Waiting);
+      CHECK(nextPhase(Phase::Denied, 200, "approved") == Phase::Denied);
+      CHECK(afterElapsed(Phase::Waiting, 119999) == Phase::Waiting);
+      CHECK(afterElapsed(Phase::Waiting, 120000) == Phase::TimedOut);
+      CHECK(afterElapsed(Phase::Approved, 999999) == Phase::Approved); }
+
     printf("%d checks, %d failed\n", checks, fails);
     return fails ? 1 : 0;
 }

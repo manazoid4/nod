@@ -16,9 +16,11 @@
 #include "../storage/store.h"
 #include "../ui/ui.h"
 #include "../ui/lvgl_ui.h"
+#include "alerts.h"
 #include "approvals.h"
 #include "field.h"
 #include "notify.h"
+#include "phone_input.h"
 #include "quiet.h"
 #include "settings.h"
 #include "launcher.h"
@@ -77,11 +79,12 @@ void pollPower() {
     static bool wasCharging = false;
     Sys.batteryPct = M5.Power.getBatteryLevel();
     Sys.batteryMv  = (int)M5.Power.getBatteryVoltage();
-    chargeMon.feed(millis(), Sys.batteryMv, -1);
-    const bool m5Says = M5.Power.isCharging() == m5::Power_Class::is_charging;
-    Sys.charging     = m5Says || chargeMon.charging();
-    Sys.powerState   = (uint8_t)(m5Says && chargeMon.state() != nod::PowerState::Full
-                                     ? nod::PowerState::Charging : chargeMon.state());
+    // A computer's USB host is certain power (1). Not plugged into a host is unknown (-1), not
+    // "absent": a wall charger has no USB host. M5.Power.isCharging() is no longer trusted: it
+    // reported charging while unplugged and kept the device stuck in charging mode.
+    chargeMon.feed(millis(), Sys.batteryMv, Serial.isPlugged() ? 1 : -1);
+    Sys.charging     = chargeMon.charging();
+    Sys.powerState   = (uint8_t)chargeMon.state();
     Sys.chargeEtaMin = chargeMon.etaMinutes();
     if (Sys.charging && !wasCharging && !Sys.recording && !host_worker::busy() &&
         strcmp(currentId(), "home") == 0) {
@@ -425,6 +428,10 @@ void dispatchKey(const KeyEvent& e) {
         if (!wasAsleep) approvals::handleKey(e);
         return;
     }
+    if (alerts::active()) {
+        if (wasAsleep) return;                 // that key only woke the screen
+        if (alerts::handleKey(e)) return;      // A/Enter/S/Esc only; Fn and other keys fall through
+    }
     if (notify::active() && e.down) notify::dismiss();
 
     if (handleGlobalKey(e)) return;
@@ -537,6 +544,8 @@ void loop() {
     net::update();
     field::update();
     if (approvals::update(gScreenOff)) wake();
+    alerts::update();
+    phone::update();  // phone-keyboard acks piggyback the host worker
     notify::update();
     quiet::update();
     apps::updateProductServices();
@@ -548,7 +557,7 @@ void loop() {
     top->update();
 
     static uint32_t lastPaint = 0;
-    const bool due = millis() - lastPaint > 250;
+    const bool due = millis() - lastPaint > (approvals::holding() ? 50u : 250u);
     if (!top->dirty() && !due) return;
     if (gScreenOff) return;
 
@@ -556,6 +565,7 @@ void loop() {
     ui::statusBar(gCanvas);
     ui::hintBar(gCanvas, top->hints());
     notify::render(gCanvas);
+    alerts::render(gCanvas);
     approvals::render(gCanvas);
     if (gFwConfirm) {
         gCanvas.fillRoundRect(20, 38, SCREEN_W - 40, 52, 4, PANEL);

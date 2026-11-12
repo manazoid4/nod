@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import ast
 import operator
+import os
 import re
 import time
 from pathlib import Path
 
 import httpx
+
+from . import private_mode
 
 REFUSAL = re.compile(
     r"(i (do not|don't|do n't) have (access|the ability|real-?time|a way)|"
@@ -70,8 +73,9 @@ _WMO = {0: "clear", 1: "mostly clear", 2: "partly cloudy", 3: "overcast", 45: "f
         65: "heavy rain", 71: "light snow", 73: "snow", 75: "heavy snow", 80: "showers",
         81: "showers", 82: "heavy showers", 95: "thunderstorms", 96: "thunderstorms", 99: "thunderstorms"}
 _weather_cache: dict[str, tuple[float, str]] = {}
-# London default; ponytail: single fixed location, add geocoding when the owner travels.
-LAT, LON = 51.5072, -0.1276
+# UK default (centre of the UK); set PIBLO_WEATHER_LAT / PIBLO_WEATHER_LON for a precise spot.
+LAT = float(os.environ.get("PIBLO_WEATHER_LAT", "54.0"))
+LON = float(os.environ.get("PIBLO_WEATHER_LON", "-2.5"))
 
 
 def weather_line(text: str) -> str:
@@ -81,7 +85,7 @@ def weather_line(text: str) -> str:
     if hit and time.time() - hit[0] < 600:
         return hit[1]
     try:
-        r = httpx.get(
+        r = private_mode.get(
             "https://api.open-meteo.com/v1/forecast",
             params={"latitude": LAT, "longitude": LON, "timezone": "Europe/London",
                     "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m",
@@ -93,7 +97,7 @@ def weather_line(text: str) -> str:
         j = r.json()
         c, d = j["current"], j["daily"]
         line = (
-            f"\nLive weather, London UK: now {c['temperature_2m']:.0f}C (feels {c['apparent_temperature']:.0f}C), "
+            f"\nLive weather, UK: now {c['temperature_2m']:.0f}C (feels {c['apparent_temperature']:.0f}C), "
             f"{_WMO.get(c['weather_code'], 'mixed')}, wind {c['wind_speed_10m']:.0f} km/h. "
             f"Today high {d['temperature_2m_max'][0]:.0f}C, low {d['temperature_2m_min'][0]:.0f}C, "
             f"{_WMO.get(d['weather_code'][0], 'mixed')}, rain chance {d['precipitation_probability_max'][0]}%. "

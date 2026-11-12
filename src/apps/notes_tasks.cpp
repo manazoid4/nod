@@ -190,6 +190,7 @@ private:
             invalidate();
             return;
         }
+        _field.remember();  // Ctrl+H in any field recalls this text
         const std::string path =
             _editPath.empty() ? store::newPath("notes", "txt") : _editPath;
         if (store::writeText(path, _field.text)) {
@@ -258,6 +259,7 @@ public:
         if (_adding) {
             if (e.code == KEY_ENTER) {
                 if (!_field.text.empty()) {
+                    _field.remember();
                     store::Task t;
                     t.text    = _field.text;
                     t.bucket  = _bucket;
@@ -411,6 +413,7 @@ public:
 
         if (_adding) {
             if (e.code == KEY_ENTER) {
+                if (!_field.text.empty()) _field.remember();
                 if (_stage == 0) {
                     _name  = _field.text;
                     _stage = 1;

@@ -1,0 +1,82 @@
+name: Windows app release
+
+# Push a tag app-vX.Y.Z (matching app/package.json "version") to publish an update.
+# Installed Piblo apps find it on GitHub Releases, download it quietly and offer "Restart to update".
+
+on:
+  push:
+    tags: ["app-v*"]
+
+permissions:
+  contents: write
+
+# Releases finish in tag order, so an older build never overwrites a newer app-latest.
+concurrency:
+  group: app-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Tag matches app version
+        shell: pwsh
+        run: |
+          $v = (Get-Content package.json | ConvertFrom-Json).version
+          if ("app-v$v" -ne "${{ github.ref_name }}") { throw "Tag ${{ github.ref_name }} does not match app version $v" }
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+      - name: Electron UI checks
+        run: npm run build:main && npm run build:renderer && npm run verify:ui
+
+      - name: Build installer and update files
+        run: npm run build:main && npm run build:renderer && npx electron-builder --win nsis --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      # The app reads its channel metadata from app-latest, independently of firmware releases.
+      - name: Publish versioned release and move app-latest
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $v = (Get-Content package.json | ConvertFrom-Json).version
+          $beta = $v -match '-'
+          $files = @(Get-ChildItem release -File | Where-Object { $_.Name -match '(\.exe|\.blockmap|\.yml)$' -and $_.Name -ne 'builder-debug.yml' } | ForEach-Object FullName)
+          if (-not ($files | Where-Object { $_ -match '\.exe$' })) { throw 'Installer missing' }
+          $channel = if ($beta) { ($v -split '-')[1] -replace '\..*$', '' } else { 'latest' }
+          if (-not (Test-Path "release/$channel.yml")) { throw 'Update metadata missing' }
+          $files | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower(), (Split-Path $_ -Leaf) } | Set-Content release/SHA256SUMS.txt -Encoding utf8
+          $files += (Resolve-Path release/SHA256SUMS.txt).Path
+          $warning = if ($beta) { 'Unsigned beta: Windows SmartScreen will warn; click More info, Run anyway' } else { 'Unsigned: Windows SmartScreen will warn; click More info, Run anyway' }
+          $notes = "$warning`n`nWindows 10/11 x64. Physical device pairing, install/rollback and update installation are pending. See https://github.com/manazoid4/piblo/blob/${{ github.ref_name }}/releases/README.md for requirements and rollback."
+          $notes | Set-Content release/NOTES.md -Encoding utf8
+          $title = if ($beta) { "Piblo for Windows $v BETA" } else { "Piblo for Windows $v" }
+          $releaseArgs = @('--title', $title, '--notes-file', 'release/NOTES.md', '--latest=false')
+          if ($beta) { $releaseArgs += '--prerelease' }
+          gh release create "${{ github.ref_name }}" @files @releaseArgs
+          if ($LASTEXITCODE -ne 0) { throw 'Versioned release failed' }
+          gh release view app-latest *> $null
+          if ($LASTEXITCODE -ne 0) {
+            $feedArgs = @('--title', 'Piblo for Windows update feed', '--notes', 'Update metadata for Piblo for Windows. Choose a versioned release to install.', '--latest=false')
+            if ($beta) { $feedArgs += '--prerelease' }
+            gh release create app-latest @feedArgs
+            if ($LASTEXITCODE -ne 0) { throw 'Update feed creation failed' }
+          }
+          gh release upload app-latest $files --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Update feed upload failed' }

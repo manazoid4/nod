@@ -81,6 +81,12 @@ struct AgentEvent {
     std::string kind;
     std::string text;
     std::string source;  // free-text agent name, may be empty
+    // kind == "alert" (generic notification, see docs/ALERTS.md); otherwise unused.
+    std::string alertId, alertKind, title, body, priority;
+    uint8_t     alertActions = 0;  // alert_policy::ACT_* bits offered by Core
+    // kind == "text_input" (phone keyboard, see docs/protocol/PHONE-KEYBOARD.md).
+    std::string textInputId, textInputMode;
+    int64_t     eventTs = 0;  // Core wall-clock seconds for the 2-minute TTL
 };
 
 struct BeamMessage {
@@ -226,6 +232,8 @@ TeachStatus teachStatus(const std::string& sessionId);
 Reply beamSend(const std::string& text);
 BeamMessage beamPull();
 bool haltNow(bool on);    // immediate authenticated POST; never stops running processes
+// Phone-keyboard ack: POST /buddy/text/{id}/ack {"status": inserted|no_field|too_long}.
+bool textAck(const std::string& id, const std::string& status);
 SystemStatus systemStatus();
 TodayStatus todayStatus();
 WorkSummary workSummary();
@@ -236,7 +244,8 @@ CoreStatus coreStatus();
 struct CoreInfo { bool ok = false; std::string version, fwVersion, fwSha, remoteUrl; };
 CoreInfo fetchCoreInfo();
 // Core /buddy: Claude Code approvals waiting for a thumb (see docs/APPROVALS.md).
-struct BuddyItem { std::string id, tool, summary, project, session; int left = 0; };
+// The Nod: a detailed approval has summary = "THE NOD  PAYMENT" / amount / "to recipient" on three lines; nod = hold-to-approve.
+struct BuddyItem { std::string id, tool, summary, project, session; int left = 0; bool nod = false; };
 struct BuddyPoll { bool ok = false; std::string agent; int count = 0; std::vector<BuddyItem> items; };
 BuddyPoll buddyPoll();                                              // GET /buddy/summary (tiny)
 bool buddyDecide(const std::string& id, const std::string& decision, std::string& applied);  // allow|deny|allow_all

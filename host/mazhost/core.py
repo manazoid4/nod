@@ -14,9 +14,11 @@ import platform
 import re
 import shutil
 import socket
+import struct
 import subprocess
 import threading
 import time
+import zlib
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +26,7 @@ import httpx
 
 from .config import Settings
 from .security import is_lan_ip
+from . import private_mode
 
 
 PROJECT_MARKERS = (
@@ -58,7 +61,7 @@ class CoreError(RuntimeError):
 class MazCore:
     def __init__(self, settings: Settings, client: httpx.Client | None = None) -> None:
         self.settings = settings
-        self.client = client or httpx.Client(timeout=12)
+        self.client = client or private_mode.client(timeout=12)
         self.device_ip: str | None = None
         self._cache_lock = threading.Lock()
         self._summary_cache: list[dict[str, Any]] = []
@@ -364,6 +367,8 @@ class MazCore:
         }
         if action not in allowed:
             raise CoreError("action_not_allowed")
+        if private_mode.enabled() and action in ("git_fetch", "git_pull_ff"):
+            raise CoreError("blocked_private_mode")
         path = self._find_project(project)
         if action == "git_status":
             result = {"action": action, "project": project, **self._git(path, "status", "--short", "--branch")}
@@ -417,6 +422,16 @@ class MazCore:
         return None
 
     def _run(self, command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
+        # Builds/tests may download dependencies or execute project-defined code.
+        private_mode.guard_subprocess("project command", local=command in (
+            ["git", "branch", "--show-current"], ["git", "status", "--porcelain"],
+            ["git", "status", "--short", "--branch"], ["git", "log", "-1", "--pretty=%h %s"],
+            ["git", "log", "-5", "--pretty=%h %ad %s", "--date=short"],
+            ["git", "rev-parse", "--is-inside-work-tree"],
+        ))
+        if private_mode.enabled():
+            # Even status can invoke an arbitrary repository fsmonitor hook.
+            command = ["git", "--no-pager", "-c", "core.fsmonitor=false", *command[1:]]
         try:
             completed = subprocess.run(
                 command,
@@ -485,6 +500,57 @@ class MazCore:
         """Forward one portal action (update, key:..., open:...). Returns the device's own reply."""
         response = self._cardputer("POST", "/api/action", timeout=4, data={"action": action})
         return {"ok": response.status_code < 300, "status": response.status_code, "text": response.text[:300]}
+
+    def cardputer_key(self, keys: str) -> dict[str, Any]:
+        response = self._cardputer("POST", "/api/key", timeout=4, data={"keys": keys})
+        if response.status_code != 200:
+            raise CoreError(f"cardputer_http_{response.status_code}")
+        return response.json()
+
+    def cardputer_config(self, volume: int | None = None, brightness: int | None = None) -> dict[str, Any]:
+        data: dict[str, Any] = {}
+        if volume is not None:
+            data["volume"] = str(volume)
+        if brightness is not None:
+            data["brightness"] = str(brightness)
+        if not data:
+            raise CoreError("no_config_fields")
+        response = self._cardputer("POST", "/api/config", timeout=4, data=data)
+        if response.status_code != 200:
+            raise CoreError(f"cardputer_http_{response.status_code}")
+        return response.json()
+
+    @staticmethod
+    def rgb565_to_png(frame: bytes, width: int = 240, height: int = 135) -> bytes:
+        if len(frame) != width * height * 2:
+            raise CoreError("invalid_cardputer_frame")
+        # Expand RGB565 little-endian pairs to 8-bit RGB scanlines (no Pillow),
+        # matching the web view's conversion (R=v>>11, G=v>>5, B=v&31).
+        pixels = bytearray(width * height * 3)
+        index = 0
+        for i in range(0, len(frame), 2):
+            value = frame[i] | (frame[i + 1] << 8)
+            r5 = (value >> 11) & 0x1F
+            g6 = (value >> 5) & 0x3F
+            b5 = value & 0x1F
+            pixels[index] = (r5 << 3) | (r5 >> 2)        # *255/31
+            pixels[index + 1] = (g6 << 2) | (g6 >> 4)    # *255/63
+            pixels[index + 2] = (b5 << 3) | (b5 >> 2)    # *255/31
+            index += 3
+        raw = b"".join(b"\x00" + bytes(pixels[y * width * 3:(y + 1) * width * 3])
+                       for y in range(height))
+
+        def chunk(kind: bytes, data: bytes) -> bytes:
+            return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+
+        ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+        return (b"\x89PNG\r\n\x1a\n"
+                + chunk(b"IHDR", ihdr)
+                + chunk(b"IDAT", zlib.compress(raw, 9))
+                + chunk(b"IEND", b""))
+
+    def cardputer_png(self) -> bytes:
+        return self.rgb565_to_png(self.cardputer_screen())
 
     # --------------------------------------------------------------- grounding
     def context_for_prompt(self, text: str) -> str:

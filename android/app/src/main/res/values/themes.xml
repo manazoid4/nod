@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light theme (base) -->
+    <style name="Theme.Piblo" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/piblo_cream</item>
+        <item name="android:textColorPrimary">@color/piblo_navy</item>
+        <item name="android:textColorSecondary">@color/piblo_navy</item>
+    </style>
+
+    <!-- Dark theme (values-night will override) -->
+    <style name="Theme.Piblo.Dark" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/piblo_dark_bg</item>
+        <item name="android:windowBackground">@color/piblo_dark_bg</item>
+        <item name="android:textColorPrimary">@color/piblo_dark_on_bg</item>
+        <item name="android:textColorSecondary">@color/piblo_dark_on_surface</item>
+        <item name="android:colorBackground">@color/piblo_dark_bg</item>
+    </style>
+</resources>

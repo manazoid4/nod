@@ -4,11 +4,14 @@
 // without looking at the screen: you hold SPACE in your pocket, hear the
 // capture chirp, talk, hear the save chirp. All of it respects Cfg.uiSounds.
 #pragma once
+#include <alert_policy.h>
+
 #include "../core/notify.h"
 
 namespace maz {
 namespace sfx {
 
+void update();     // call every loop(): steps the queued multi-note chirps (non-blocking)
 void boot();       // device ready
 void select();     // menu move
 void confirm();    // enter / open
@@ -22,6 +25,7 @@ void agentDone();  // agent turn finished (2-note rising chirp, replaces the toa
 void timerDone();  // Focus complete — the one sound allowed to be insistent
 void error();
 void approval();   // Claude Code needs a decision: rising double chirp, plays even when UI sounds are muted
+void alertPattern(const alert_policy::Rule& r, bool force);  // priority-table tone sequence (original tones)
 
 void forNote(Note kind);
 

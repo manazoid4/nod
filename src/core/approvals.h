@@ -20,6 +20,8 @@ bool update(bool screenOff);
 bool active();
 // Consume a key press while active; returns true when swallowed.
 bool handleKey(const KeyEvent& e);
+// True while Y/ENTER is being held on a nod approval (the shell repaints faster for the filling bar).
+bool holding();
 void render(M5Canvas& g);
 
 }  // namespace approvals

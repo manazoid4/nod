@@ -149,7 +149,7 @@ update into the one it is not running from, so a failed transfer cannot leave
 you with half a firmware.
 
 ```
-$env:MAZ_POCKET_IP    = "192.168.1.47"     # MAZPING reports this
+$env:MAZ_POCKET_IP    = "192.168.1.20"     # MAZPING reports this
 $env:MAZ_POCKET_TOKEN = "<your MAZ_TOKEN>" # the same token host/.env holds
 pio run -e cardputer-adv-ota -t upload
 ```

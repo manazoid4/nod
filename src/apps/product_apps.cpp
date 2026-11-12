@@ -79,8 +79,9 @@ public:
     bool onKey(const KeyEvent& e) override {
         if (!e.down) return false;
         if (e.code == KEY_ENTER) {
-            if (!_why && !_what.text.empty()) { _why = true; invalidate(); return true; }
+            if (!_why && !_what.text.empty()) { _what.remember(); _why = true; invalidate(); return true; }
             if (_why && !_reason.text.empty()) {
+                _reason.remember();
                 store::Record r; r.kind="decision"; r.status="open"; r.title=_what.text; r.body=_reason.text; r.source="device";
                 if (store::addRecord(r)) { notify::post(Note::Success, "Decision saved", "what + why"); onEnter(); }
                 return true;
@@ -126,6 +127,7 @@ public:
         }
         if (e.code == KEY_B && _debriefReady) { shell::pushById("braindump"); return true; }
         if (e.code == KEY_ENTER && !_goal.text.empty()) {
+            _goal.remember();
             _current.kind="sprint"; _current.status="running"; _current.title=_goal.text; _current.source="device";
             store::addRecord(_current); shell::focus::start(25 * 60, _goal.text); _wasRunning=true; invalidate(); return true;
         }
@@ -189,6 +191,7 @@ private:
     void save() {
         const size_t split=_field.text.find(' '); if (split==std::string::npos) return;
         const int minutes=atoi(_field.text.substr(0,split).c_str()); if (minutes<1) return;
+        _field.remember();
         store::Record r; r.kind="reminder"; r.status="open"; r.title=_field.text.substr(split+1); r.source="human";
         scheduleReminder(r, minutes * 60);
         if (store::addRecord(r)) { notify::post(Note::Success,"Reminder set",std::to_string(minutes)+" minutes"); reload(); }

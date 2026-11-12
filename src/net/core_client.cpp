@@ -127,6 +127,7 @@ BuddyPoll buddyPoll() {
         b.project = it["project"] | "";
         b.session = it["session_id"] | "";
         b.left = it["left"] | 0;
+        b.nod = it["nod"] | false;
         if (!b.id.empty()) out.items.push_back(std::move(b));
     }
     return out;
@@ -134,8 +135,11 @@ BuddyPoll buddyPoll() {
 
 bool buddyDecide(const std::string& id, const std::string& decision, std::string& applied) {
     applied.clear();
+    // Generic alert answers ("al-" ids) share this worker job: POST /buddy/alert/{id}/{ack|snooze}.
+    const bool alert = id.rfind("al-", 0) == 0;
+    if (alert && id.find('/') != std::string::npos) return false;  // id goes into the URL path
     NodHttp http;
-    if (!coreBegin(http, "/buddy/decide")) return false;
+    if (!coreBegin(http, alert ? "/buddy/alert/" + id + "/" + decision : "/buddy/decide")) return false;
     http.addHeader("Content-Type", "application/json");
     JsonDocument req;
     req["id"] = id;
@@ -146,6 +150,7 @@ bool buddyDecide(const std::string& id, const std::string& decision, std::string
     const String body = status > 0 ? http.getString() : String();
     http.end();
     if (status == 404) { applied = "gone"; return true; }  // expired or cancelled at the terminal
+    if (alert) { applied = decision; return status == 200; }
     JsonDocument doc;
     if (status != 200 || deserializeJson(doc, body)) return false;
     applied = doc["decision"] | "";

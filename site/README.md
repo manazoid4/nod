@@ -23,7 +23,7 @@ The sender is `signups@mazworks.uk` for now. The form works without JavaScript (
 
 ## Before a Kickstarter campaign
 1. Replace concept renders and films with a real photographed prototype and test video. Kickstarter design-tech rules require a clear real prototype demonstration, not CGI of missing functions.
-2. Resolve the go/no-go gates in `docs/audits/` and update `/readiness/`.
+2. Resolve the go/no-go gates (kept privately) and update `/readiness/`.
 3. Set funding target, rewards, dates and shipping only after BOM, supplier quotes, taxes and delivery validation.
 4. Check page content for claims before copying sections into Kickstarter's editor.
 
@@ -38,3 +38,7 @@ The sender is `signups@mazworks.uk` for now. The form works without JavaScript (
 - Do not copy other products' designs or claim NFC/RFID functionality.
 - Claims about capabilities must be grounded in `NOD_STATUS.md` and physical test evidence.
 - Test at 360px / 390px / 768px / 1280px, with keyboard and reduced motion.
+
+## Analytics and referral
+- Vercel Web Analytics (cookie-free) loads from `/_vercel/insights/script.js` on every page; enable it in the Vercel project dashboard. Custom events: `waitlist_signup`, `cta_click`, `referral_copy`, `referral_share`.
+- Each signup gets a stable 8-char referral code (HMAC of the email, keyed with the Resend key) returned as `ref`. It is stored on the Resend contact as properties `referral_code` and `referred_by`; create both as text contact properties in Resend. Until they exist, signups still save without them.
