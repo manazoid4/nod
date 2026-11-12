@@ -437,6 +437,69 @@ def test_no_local_engine_is_a_clear_error():
 # -------------------------------------------------------------- privacy routes
 
 
+@pytest.mark.parametrize("injected", [False, True])
+@pytest.mark.parametrize("url", ["http://127.0.0.1:5000", "http://192.168.1.50", "http://printer.local"])
+def test_maker_http_rechecks_private_mode(tmp_path, monkeypatch, injected, url):
+    from mazhost.maker import OctoPrintSource
+
+    key = tmp_path / "printer-key"
+    key.write_text("test-printer-key")
+    requests = []
+
+    def handle(request):
+        requests.append(request)
+        return httpx.Response(200, json={})
+
+    transport = httpx.MockTransport(handle)
+    monkeypatch.setattr(httpx, "HTTPTransport", lambda: transport)
+    client = httpx.Client(transport=transport) if injected else None
+    source = OctoPrintSource(url, str(key), client)
+    private_mode.set_enabled(True)
+    assert source._request("GET", "/api/printer").status_code == 200
+    source.send("pause")
+    assert len(requests) == 2
+
+    source.url = "https://example.com"
+    for method in ("GET", "POST"):
+        with pytest.raises(private_mode.PrivateModeError):
+            source._request(method, "/api/job")
+    assert len(requests) == 2
+
+    private_mode.set_enabled(False)
+    assert source._request("GET", "/api/job").status_code == 200
+    private_mode.set_enabled(True)
+    with pytest.raises(private_mode.PrivateModeError):
+        source.send("cancel")
+    assert len(requests) == 3
+    if client:
+        client.close()
+
+
+def test_maker_local_tools_work_in_private_mode(tmp_path, monkeypatch):
+    import json
+    from mazhost.accessories import Accessories
+    from mazhost.maker import EnderForgeSource
+
+    calls = []
+
+    def run(args, **kwargs):
+        calls.append(args)
+        if args[0] == "openscad":
+            Path(args[2]).write_text("solid fixture\nendsolid fixture\n")
+            return subprocess.CompletedProcess(args, 0)
+        assert args in (["ef", "status", "--json"], ["ef", "next", "--json"])
+        return subprocess.CompletedProcess(args, 0, json.dumps({"connection": "Operational", "next": None}))
+
+    monkeypatch.setattr(subprocess, "run", run)
+    monkeypatch.setattr("shutil.which", lambda _: "openscad")
+    private_mode.set_enabled(True)
+    source = EnderForgeSource("ef")
+    assert source.status()["state"] == "idle"
+    assert source.next_step()["next"] is None
+    assert Accessories(tmp_path).make("desk stand")["format"] == "stl"
+    assert len(calls) == 3
+
+
 def test_privacy_endpoint_flips_and_reports(tmp_path, monkeypatch):
     import hashlib
     import hmac

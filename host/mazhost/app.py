@@ -45,6 +45,7 @@ from . import fw
 from . import private_mode
 from .errors import ErrorCode, RouteError
 from .focus import Focus, install_focus_routes
+from .maker import install_maker_routes
 from .where import build_where_router
 from .memory_notes import MemoryNotes, build_memory_router
 from .learning import Learning
@@ -1059,6 +1060,7 @@ def create_app(
     api.include_router(webui_router)
     api.include_router(build_library_router(cfg, model_router))
     api.include_router(build_needs_router(cfg, buddy))
+    install_maker_routes(api, cfg, buddy)
     install_focus_routes(api, focus, buddy.sync_focus)
     api.include_router(build_where_router(cfg, buddy, focus))
     api.include_router(build_memory_router(MemoryNotes(resolve_data_dir(cfg))))
