@@ -81,7 +81,7 @@ export function DevTodayView({
         <section className="card stack" aria-labelledby="today-content-h">
           <div className="row">
             <h2 id="today-content-h" className="grow">Content drafts</h2>
-            <span className={`pill ${overview.drafts_awaiting_approval > 0 ? 'warn' : 'ok'}`}>
+            <span className={`pill ${overview.drafts_awaiting_approval > 0 ? '' : 'ok'}`}>
               <span className="dot" />
               {overview.drafts_awaiting_approval} waiting
             </span>
@@ -143,9 +143,7 @@ export function DevTodayView({
                   className="tick-btn"
                   aria-label={`Tick ${item.text}`}
                   onClick={() => onTick?.('founder-today', item.id, true)}
-                >
-                  <Icon name="check" size={16} />
-                </button>
+                />
                 <span className="grow title">{item.text}</span>
                 <span className="tag">founder-today</span>
               </div>
@@ -391,7 +389,7 @@ export function DevContentStudioView({
                   >
                     <span className="grow title">{d.title}</span>
                   </button>
-                  <span className={`pill ${d.status === 'posted' ? 'ok' : d.status === 'approved' ? 'warn' : ''}`}>
+                  <span className={`pill ${d.status === 'posted' ? 'ok' : ''}`}>
                     <span className="dot" />
                     {d.status}
                   </span>
