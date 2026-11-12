@@ -41,19 +41,42 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+      - name: Electron UI checks
+        run: npm run build:main && npm run build:renderer && npm run verify:ui
+
       - name: Build installer and update files
         run: npm run build:main && npm run build:renderer && npx electron-builder --win nsis --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
-      # The app reads releases/download/app-latest/latest.yml, so firmware releases in this repo never confuse it.
+      # The app reads its channel metadata from app-latest, independently of firmware releases.
       - name: Publish versioned release and move app-latest
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $files = @(Get-ChildItem release -File | Where-Object { $_.Name -match '(\.exe|\.blockmap|^latest\.yml)$' } | ForEach-Object FullName)
-          gh release create "${{ github.ref_name }}" $files --title "Piblo for Windows ${{ github.ref_name }}" --notes "Piblo for Windows update." --latest=false
+          $v = (Get-Content package.json | ConvertFrom-Json).version
+          $beta = $v -match '-'
+          $files = @(Get-ChildItem release -File | Where-Object { $_.Name -match '(\.exe|\.blockmap|\.yml)$' -and $_.Name -ne 'builder-debug.yml' } | ForEach-Object FullName)
+          if (-not ($files | Where-Object { $_ -match '\.exe$' })) { throw 'Installer missing' }
+          $channel = if ($beta) { ($v -split '-')[1] -replace '\..*$', '' } else { 'latest' }
+          if (-not (Test-Path "release/$channel.yml")) { throw 'Update metadata missing' }
+          $files | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower(), (Split-Path $_ -Leaf) } | Set-Content release/SHA256SUMS.txt -Encoding utf8
+          $files += (Resolve-Path release/SHA256SUMS.txt).Path
+          $warning = if ($beta) { 'Unsigned beta: Windows SmartScreen will warn; click More info, Run anyway' } else { 'Unsigned: Windows SmartScreen will warn; click More info, Run anyway' }
+          $notes = "$warning`n`nWindows 10/11 x64. Physical device pairing, install/rollback and update installation are pending. See https://github.com/manazoid4/piblo/blob/${{ github.ref_name }}/releases/README.md for requirements and rollback."
+          $notes | Set-Content release/NOTES.md -Encoding utf8
+          $title = if ($beta) { "Piblo for Windows $v BETA" } else { "Piblo for Windows $v" }
+          $releaseArgs = @('--title', $title, '--notes-file', 'release/NOTES.md', '--latest=false')
+          if ($beta) { $releaseArgs += '--prerelease' }
+          gh release create "${{ github.ref_name }}" @files @releaseArgs
+          if ($LASTEXITCODE -ne 0) { throw 'Versioned release failed' }
           gh release view app-latest *> $null
-          if ($LASTEXITCODE -ne 0) { gh release create app-latest --title "Piblo for Windows (latest)" --notes "Always the newest Piblo for Windows. The app updates itself from here." --latest=false }
+          if ($LASTEXITCODE -ne 0) {
+            $feedArgs = @('--title', 'Piblo for Windows update feed', '--notes', 'Update metadata for Piblo for Windows. Choose a versioned release to install.', '--latest=false')
+            if ($beta) { $feedArgs += '--prerelease' }
+            gh release create app-latest @feedArgs
+            if ($LASTEXITCODE -ne 0) { throw 'Update feed creation failed' }
+          }
           gh release upload app-latest $files --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Update feed upload failed' }

@@ -18,7 +18,8 @@ const check = (name, ok, detail = '') => {
 async function launch(env, onboardingDone) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'piblo-verify-'));
   fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ closeToTray: true, startWithWindows: false, onboardingDone }));
-  const app = await electron.launch({ args: [root, `--user-data-dir=${dir}`], env: { ...process.env, ...env } });
+  // Keep actionability checks running when Windows considers the test window occluded.
+  const app = await electron.launch({ args: [root, `--user-data-dir=${dir}`, '--disable-features=CalculateNativeWinOcclusion', '--disable-renderer-backgrounding'], env: { ...process.env, ...env }, timeout: 60_000 });
   const page = await app.firstWindow();
   await page.waitForLoadState('domcontentloaded');
   return { app, page };
