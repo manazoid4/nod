@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
+import tempfile
+import threading
 import time
 import uuid
 from datetime import datetime, timezone
@@ -19,6 +22,28 @@ from . import private_mode
 
 TASK = re.compile(r'^(\s*- \[)([ xX])(\] )(.*?)(\r?\n)?$')
 SUBS = ['esp32', 'M5Stack', '3Dprinting', 'arduino', 'functionalprint', 'ClaudeAI', 'LocalLLaMA', 'ChatGPTCoding']
+_FILE_LOCKS = {}
+_FILE_LOCKS_LOCK = threading.Lock()
+
+
+def file_lock(path):
+    # Resolving the file itself can briefly block os.replace on Windows.
+    path = path.parent.resolve() / path.name
+    with _FILE_LOCKS_LOCK:
+        return _FILE_LOCKS.setdefault(path, threading.Lock())
+
+
+def atomic_write(path, text):
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', newline='', dir=path.parent,
+                                         prefix='.' + path.name + '-', suffix='.tmp', delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(text)
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def now():
@@ -106,27 +131,29 @@ def build_dev_router(data_dir: Path, repo_dir: Path) -> APIRouter:
     cache = {'at': 0, 'value': None}
 
     def seed():
-        checklists.mkdir(parents=True, exist_ok=True)
-        if not any(checklists.iterdir()):
-            for template in (Path(__file__).parent / 'data' / 'dev_checklists').glob('*.md'):
-                shutil.copyfile(template, checklists / template.name)
+        with file_lock(checklists):
+            checklists.mkdir(parents=True, exist_ok=True)
+            if not any(checklists.iterdir()):
+                for template in (Path(__file__).parent / 'data' / 'dev_checklists').glob('*.md'):
+                    shutil.copyfile(template, checklists / template.name)
 
     def lists():
         seed()
         rows = []
         proof = base / 'feature-test-proof.json'
-        records = json.loads(proof.read_text(encoding='utf-8')) if proof.exists() else {}
         for path in sorted(checklists.glob('*.md')):
-            items = []
-            for line in path.read_text(encoding='utf-8').splitlines(keepends=True):
-                match = TASK.match(line)
-                if match:
-                    text = match.group(4)
-                    ident = item_id(text)
-                    item = {'id': ident, 'text': text, 'done': match.group(2).lower() == 'x'}
-                    if path.stem == 'feature-tests' and item['done']:
-                        item.update(records.get(ident, {}))
-                    items.append(item)
+            with file_lock(path):
+                records = json.loads(proof.read_text(encoding='utf-8')) if path.stem == 'feature-tests' and proof.exists() else {}
+                items = []
+                for line in path.read_text(encoding='utf-8').splitlines(keepends=True):
+                    match = TASK.match(line)
+                    if match:
+                        text = match.group(4)
+                        ident = item_id(text)
+                        item = {'id': ident, 'text': text, 'done': match.group(2).lower() == 'x'}
+                        if path.stem == 'feature-tests' and item['done']:
+                            item.update(records.get(ident, {}))
+                        items.append(item)
             rows.append({'id': path.stem, 'items': items})
         return rows
 
@@ -144,14 +171,14 @@ def build_dev_router(data_dir: Path, repo_dir: Path) -> APIRouter:
     def save(row):
         content.mkdir(parents=True, exist_ok=True)
         path = content_path(row['id'])
-        tmp = path.with_suffix('.tmp')
-        tmp.write_text(json.dumps(row, ensure_ascii=False, indent=2), encoding='utf-8')
-        tmp.replace(path)
+        atomic_write(path, json.dumps(row, ensure_ascii=False, indent=2))
         return row
 
     def create(draft):
-        return save({**draft.model_dump(), 'id': uuid.uuid4().hex, 'status': 'draft', 'created': now(),
-                     'approved_at': None, 'posted_at': None})
+        row = {**draft.model_dump(), 'id': uuid.uuid4().hex, 'status': 'draft', 'created': now(),
+               'approved_at': None, 'posted_at': None}
+        with file_lock(content_path(row['id'])):
+            return save(row)
 
     @router.get('/checklists')
     def get_checklists():
@@ -163,33 +190,38 @@ def build_dev_router(data_dir: Path, repo_dir: Path) -> APIRouter:
         if not re.fullmatch(r'[\w-]+', list_id):
             raise HTTPException(404, 'list_not_found')
         path = checklists / (list_id + '.md')
-        if not path.is_file():
-            raise HTTPException(404, 'list_not_found')
-        with path.open(encoding='utf-8', newline='') as stream:
-            lines = stream.readlines()
-        matches = [i for i, line in enumerate(lines) if (m := TASK.match(line)) and item_id(m.group(4)) == ident]
-        if not matches:
-            raise HTTPException(404, 'item_not_found')
-        if len(matches) != 1:
-            raise HTTPException(409, 'duplicate_item_text')
-        index = matches[0]
-        match = TASK.match(lines[index])
-        lines[index] = match.group(1) + ('x' if body.done else ' ') + match.group(3) + match.group(4) + (match.group(5) or '')
-        with path.open('w', encoding='utf-8', newline='') as stream:
-            stream.writelines(lines)
-        if list_id == 'feature-tests':
-            proof = base / 'feature-test-proof.json'
-            records = json.loads(proof.read_text(encoding='utf-8')) if proof.exists() else {}
-            if body.done:
-                records[ident] = {'when': now(), 'note': body.note}
-            else:
-                records.pop(ident, None)
-            proof.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding='utf-8')
+        with file_lock(path):
+            if not path.is_file():
+                raise HTTPException(404, 'list_not_found')
+            with path.open(encoding='utf-8', newline='') as stream:
+                lines = stream.readlines()
+            matches = [i for i, line in enumerate(lines) if (m := TASK.match(line)) and item_id(m.group(4)) == ident]
+            if not matches:
+                raise HTTPException(404, 'item_not_found')
+            if len(matches) != 1:
+                raise HTTPException(409, 'duplicate_item_text')
+            index = matches[0]
+            match = TASK.match(lines[index])
+            lines[index] = match.group(1) + ('x' if body.done else ' ') + match.group(3) + match.group(4) + (match.group(5) or '')
+            atomic_write(path, ''.join(lines))
+            if list_id == 'feature-tests':
+                proof = base / 'feature-test-proof.json'
+                records = json.loads(proof.read_text(encoding='utf-8')) if proof.exists() else {}
+                if body.done:
+                    records[ident] = {'when': now(), 'note': body.note}
+                else:
+                    records.pop(ident, None)
+                atomic_write(proof, json.dumps(records, ensure_ascii=False, indent=2))
         return {'id': ident, 'done': body.done}
 
     @router.get('/content')
     def get_content():
-        return {'drafts': [json.loads(p.read_text(encoding='utf-8')) for p in sorted(content.glob('*.json'))]}
+        drafts = []
+        for path in sorted(content.glob('*.json')):
+            with file_lock(path):
+                if path.is_file():
+                    drafts.append(json.loads(path.read_text(encoding='utf-8')))
+        return {'drafts': drafts}
 
     @router.post('/content')
     def create_content(body: Draft):
@@ -214,10 +246,11 @@ def build_dev_router(data_dir: Path, repo_dir: Path) -> APIRouter:
 
     @router.put('/content/{ident}')
     def update_content(ident: str, body: Draft):
-        row = read(ident)
-        row.update(body.model_dump())
-        row.update(status='draft', approved_at=None, posted_at=None)
-        return save(row)
+        with file_lock(content_path(ident)):
+            row = read(ident)
+            row.update(body.model_dump())
+            row.update(status='draft', approved_at=None, posted_at=None)
+            return save(row)
 
     def shares(row):
         if row['status'] not in ('approved', 'posted'):
@@ -250,30 +283,34 @@ def build_dev_router(data_dir: Path, repo_dir: Path) -> APIRouter:
 
     @router.get('/content/{ident}/share')
     def share(ident: str):
-        return {'shares': shares(read(ident))}
+        with file_lock(content_path(ident)):
+            return {'shares': shares(read(ident))}
 
     @router.post('/content/{ident}/approve')
     def approve(ident: str):
-        row = read(ident)
-        if row['status'] == 'posted':
-            raise HTTPException(409, 'already_posted')
-        row.update(status='approved', approved_at=now())
-        urls = shares(row)
-        save(row)
-        return {'draft': row, 'shares': urls}
+        with file_lock(content_path(ident)):
+            row = read(ident)
+            if row['status'] == 'posted':
+                raise HTTPException(409, 'already_posted')
+            row.update(status='approved', approved_at=now())
+            urls = shares(row)
+            save(row)
+            return {'draft': row, 'shares': urls}
 
     @router.post('/content/{ident}/posted')
     def posted(ident: str):
-        row = read(ident)
-        if row['status'] != 'approved':
-            raise HTTPException(409, 'approval_required')
-        row.update(status='posted', posted_at=now())
-        return save(row)
+        with file_lock(content_path(ident)):
+            row = read(ident)
+            if row['status'] != 'approved':
+                raise HTTPException(409, 'approval_required')
+            row.update(status='posted', posted_at=now())
+            return save(row)
 
     @router.delete('/content/{ident}')
     def delete(ident: str):
-        read(ident)
-        content_path(ident).unlink()
+        with file_lock(content_path(ident)):
+            read(ident)
+            content_path(ident).unlink()
         return {'deleted': True}
 
     @router.get('/usage')

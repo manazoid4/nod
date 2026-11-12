@@ -1,3 +1,8 @@
+import json
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier, Event
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -24,6 +29,101 @@ def make_client(tmp_path):
     app = FastAPI()
     app.include_router(build_dev_router(tmp_path, tmp_path))
     return TestClient(app)
+
+
+def test_parallel_checklist_ticks_preserve_all_items_and_proof(tmp_path):
+    folder = tmp_path / 'dev' / 'checklists'
+    folder.mkdir(parents=True)
+    path = folder / 'feature-tests.md'
+    original = '# Tests\r\n\r\n' + ''.join(f'- [ ] Task {i}\r\n' for i in range(32))
+    path.write_bytes(original.encode('utf-8'))
+    clients = [make_client(tmp_path), make_client(tmp_path)]
+    items = clients[0].get('/dev/checklists').json()['lists'][0]['items']
+    barrier = Barrier(len(items))
+
+    def tick(index):
+        barrier.wait(timeout=10)
+        return clients[index % 2].post(
+            f"/dev/checklists/feature-tests/items/{items[index]['id']}",
+            json={'done': True, 'note': f'Proof {index}'},
+        ).status_code
+
+    with ThreadPoolExecutor(max_workers=len(items)) as pool:
+        assert list(pool.map(tick, range(len(items)))) == [200] * len(items)
+
+    assert path.read_bytes() == original.replace('- [ ]', '- [x]').encode('utf-8')
+    records = json.loads((tmp_path / 'dev' / 'feature-test-proof.json').read_text(encoding='utf-8'))
+    assert set(records) == {item['id'] for item in items}
+    for index, item in enumerate(items):
+        assert records[item['id']]['note'] == f'Proof {index}'
+        assert records[item['id']]['when']
+
+
+def test_parallel_draft_posts_allow_only_one_transition(tmp_path):
+    clients = [make_client(tmp_path), make_client(tmp_path)]
+    draft = clients[0].post('/dev/content', json={'title': 'Parallel', 'body': 'Text'}).json()
+    ident = draft['id']
+    assert clients[0].post(f'/dev/content/{ident}/approve').status_code == 200
+    barrier = Barrier(16)
+
+    def post(index):
+        barrier.wait(timeout=10)
+        return clients[index % 2].post(f'/dev/content/{ident}/posted').status_code
+
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        statuses = list(pool.map(post, range(16)))
+
+    assert sorted(statuses) == [200] + [409] * 15
+    saved = clients[0].get('/dev/content').json()['drafts'][0]
+    assert saved['status'] == 'posted'
+    assert saved['approved_at'] and saved['posted_at']
+
+
+@pytest.mark.parametrize('source', ['checklist', 'proof', 'draft_list', 'draft_share'])
+def test_file_readers_do_not_block_atomic_updates(tmp_path, monkeypatch, source):
+    from pathlib import Path
+
+    client = make_client(tmp_path)
+    if source in ('checklist', 'proof'):
+        lists = client.get('/dev/checklists').json()['lists']
+        item = next(row for row in lists if row['id'] == 'feature-tests')['items'][0]
+        write_url = f"/dev/checklists/feature-tests/items/{item['id']}"
+        body = {'done': True, 'note': 'Proof'}
+        assert client.post(write_url, json=body).status_code == 200
+        target = tmp_path / 'dev' / ('checklists/feature-tests.md' if source == 'checklist' else 'feature-test-proof.json')
+        read_url = '/dev/checklists'
+        write = lambda: client.post(write_url, json=body)
+    else:
+        draft = client.post('/dev/content', json={'title': 'Original', 'body': 'Text'}).json()
+        ident = draft['id']
+        assert client.post(f'/dev/content/{ident}/approve').status_code == 200
+        target = tmp_path / 'dev' / 'content' / f'{ident}.json'
+        read_url = '/dev/content' if source == 'draft_list' else f'/dev/content/{ident}/share'
+        write = lambda: client.put(f'/dev/content/{ident}', json={'title': 'Changed', 'body': 'Text'})
+
+    opened, release = Event(), Event()
+    read_text = Path.read_text
+
+    def hold_read(path, *args, **kwargs):
+        if path == target and not opened.is_set():
+            with path.open(encoding='utf-8') as stream:
+                opened.set()
+                assert release.wait(timeout=10)
+                return stream.read()
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'read_text', hold_read)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        reader = pool.submit(client.get, read_url)
+        try:
+            assert opened.wait(timeout=10)
+            writer = pool.submit(write)
+            with pytest.raises(TimeoutError):
+                writer.result(timeout=0.1)
+        finally:
+            release.set()
+        assert reader.result(timeout=10).status_code == 200
+        assert writer.result(timeout=10).status_code == 200
 
 
 def test_seed_only_if_empty_and_record_proof(tmp_path):
