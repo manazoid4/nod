@@ -71,6 +71,29 @@ const shot = (page, name) => page.screenshot({ path: path.join(out, name + '.png
       await size(app, page, 1280, 800);
     }
   }
+
+  // Piblo Dev tabs + Command Palette at 1280x800
+  await page.keyboard.press('Control+7');
+  await page.waitForSelector('h1:has-text("Piblo Dev")');
+  await page.waitForTimeout(800);
+  await shot(page, '10-piblo-dev-today-1280');
+
+  for (const [tabName, fileName] of [
+    ['Checklists', '11-piblo-dev-checklists-1280'],
+    ['Content Studio', '12-piblo-dev-content-1280'],
+    ['Agents', '13-piblo-dev-agents-1280'],
+    ['Builds', '14-piblo-dev-builds-1280'],
+  ]) {
+    await page.getByRole('tab', { name: tabName }).click();
+    await page.waitForTimeout(600);
+    await shot(page, fileName);
+  }
+
+  await page.keyboard.press('Control+k');
+  await page.waitForSelector('[role="dialog"][aria-label="Jump anywhere"]');
+  await page.waitForTimeout(400);
+  await shot(page, '15-command-palette-1280');
+
   await app.close();
   m.close();
 }

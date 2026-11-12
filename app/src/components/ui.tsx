@@ -15,6 +15,7 @@ const paths: Record<string, string> = {
   send: 'M4 12l16-8-6 16-3-7-7-1z',
   moon: 'M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm9 16l-4-4',
+  dev: 'M8 9l-4 3 4 3M16 9l4 3-4 3M13.5 6l-3 12',
 };
 
 export function Icon({ name, size = 18 }: { name: keyof typeof paths | string; size?: number }) {

@@ -75,7 +75,7 @@ export interface PibloBridge {
     openLogs(): Promise<void>;
     onState(cb: (s: CoreState) => void): () => void;
   };
-  api<T = unknown>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<ApiResult<T>>;
+  api<T = unknown>(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<ApiResult<T>>;
   screen(): Promise<ApiResult<Uint8Array>>;
   /** Live View frames: PNG from Core's /core/cardputer/screen.png. */
   screenPng(): Promise<ApiResult<Uint8Array>>;

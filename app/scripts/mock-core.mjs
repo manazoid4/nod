@@ -100,6 +100,76 @@ export function startMock({ port = 18787, token = 'mock-token-123', deviceOnline
     session: 0,
     // Pairing requests, exactly as Core lists them (120 s expiry, oldest first).
     pair: pairing ? [{ request_id: 'req-482913-opaque-id-01', code: '482913', name: 'Piblo', device_id: 'piblo-a1b2c3', ip: '192.168.1.42', created: now() - 8 }] : [],
+    devLists: [
+      {
+        id: 'founder-today',
+        items: [
+          { id: 'pair-device', text: 'Pair Piblo with the Windows app and check the Connected pill', done: true, when: new Date().toISOString(), note: 'Verified on desk' },
+          { id: 'film-demo', text: 'Record a 30-second clip of Ask on Piblo answering a question', done: false },
+          { id: 'review-draft', text: 'Approve one launch update in Content Studio', done: false },
+        ],
+      },
+      {
+        id: 'feature-tests',
+        items: [
+          { id: 'ask-on-piblo', text: 'Ask on Piblo answers a question and speaks the reply', done: true, when: new Date().toISOString(), note: 'Clear voice' },
+          { id: 'private-mode', text: 'Private mode blocks network tools until turned off', done: false },
+          { id: 'live-view', text: 'Live View mirrors the screen and sends keys cleanly', done: false },
+        ],
+      },
+      {
+        id: 'kickstarter-gates',
+        items: [
+          { id: 'hero-video', text: 'Hero video shows the real Piblo unit working end to end', done: false },
+          { id: 'reward-tiers', text: 'Reward tiers and UK shipping costs double-checked', done: false },
+          { id: 'page-preview', text: 'Campaign page preview shared with early testers', done: false },
+        ],
+      },
+    ],
+    devDrafts: [
+      {
+        id: 'draft-1',
+        title: 'Ask on Piblo: calm voice answers on your desk',
+        body: 'Ask on Piblo: calm voice answers on your desk.\n\nPress Ask, speak a quick question, and Piblo answers in plain words while keeping your notes on your own PC.',
+        media_path: null,
+        link: 'https://piblo.co.uk',
+        targets: [
+          {
+            platform: 'reddit',
+            subreddit: 'SideProject',
+            post_type: 'text',
+            title: 'I built Ask on Piblo — a small desk companion that answers in plain words',
+            body: 'Ask on Piblo: calm voice answers on your desk.\n\nHappy to answer questions about the hardware or Windows companion app.',
+          },
+          {
+            platform: 'reddit',
+            subreddit: 'LocalLLaMA',
+            post_type: 'text',
+            title: 'Piblo: running a local voice and note companion on a home PC',
+            body: 'Runs against a local model on your PC with a pocket screen over Wi-Fi.',
+          },
+          {
+            platform: 'x',
+            title: null,
+            body: 'Ask on Piblo: press one key on your desk, ask a question, and get a calm spoken answer from your own PC. https://piblo.co.uk',
+          },
+          {
+            platform: 'linkedin',
+            title: 'Ask on Piblo',
+            body: 'Building Piblo: a calm pocket companion that pairs with your Windows PC.\n\nToday we finished Ask on Piblo with local voice replies.',
+          },
+          {
+            platform: 'instagram',
+            title: null,
+            body: 'Ask on Piblo: calm voice answers on your desk.\n\n#piblo #buildinpublic #hardware #desksetup',
+          },
+        ],
+        status: 'draft',
+        created: new Date().toISOString(),
+        approved_at: null,
+        posted_at: null,
+      },
+    ],
   };
   const live = () => db.pair.filter((r) => now() - r.created < 120);
   const json = (res, code, body) => {
@@ -214,6 +284,126 @@ export function startMock({ port = 18787, token = 'mock-token-123', deviceOnline
     if (p === '/turn/text') return json(res, 200, { reply: 'Start with the follow-up to your first client, then clear the two items waiting on you.', provider: 'ollama' });
     if (p === '/pair/start') return json(res, 200, { code: 'K7Q2-M9XD', expires_in_seconds: 300 });
     if (p === '/diagnostics') return json(res, 200, { ok: true, cardputer: { connected: deviceOnline } });
+
+    // Piblo Dev routes (/dev/*)
+    if (p === '/dev/checklists' && req.method === 'GET') {
+      return json(res, 200, { lists: db.devLists });
+    }
+    const chkMatch = p.match(/^\/dev\/checklists\/([^/]+)\/items\/([^/]+)$/);
+    if (chkMatch && req.method === 'POST') {
+      const [, listId, itemId] = chkMatch.map(decodeURIComponent);
+      const list = db.devLists.find((l) => l.id === listId);
+      const item = list?.items.find((i) => i.id === itemId);
+      if (!item) return json(res, 404, { detail: 'checklist_item_not_found' });
+      item.done = data.done !== false;
+      item.when = new Date().toISOString();
+      item.note = data.note ?? null;
+      return json(res, 200, item);
+    }
+    if (p === '/dev/content' && req.method === 'GET') {
+      const status = url.searchParams.get('status');
+      const drafts = status ? db.devDrafts.filter((d) => d.status === status) : db.devDrafts;
+      return json(res, 200, { drafts });
+    }
+    if (p === '/dev/content/from-feature' && req.method === 'POST') {
+      const feature = String(data.feature ?? '').trim();
+      const summary = String(data.summary ?? '').trim();
+      if (!feature || !summary) return json(res, 400, { detail: 'feature and summary required' });
+      const base = `${feature}: ${summary}`;
+      const draft = {
+        id: 'draft-' + (db.devDrafts.length + 1),
+        title: `${feature} working on Piblo`,
+        body: base,
+        media_path: data.clip_path ?? null,
+        link: 'https://piblo.co.uk',
+        targets: [
+          { platform: 'reddit', subreddit: 'SideProject', post_type: 'text', title: `${feature} on Piblo`, body: base },
+          { platform: 'x', title: null, body: base.slice(0, 280) },
+          { platform: 'linkedin', title: feature, body: base },
+          { platform: 'instagram', title: null, body: `${base}\n\n#piblo #buildinpublic` },
+        ],
+        status: 'draft',
+        created: new Date().toISOString(),
+        approved_at: null,
+        posted_at: null,
+      };
+      db.devDrafts.unshift(draft);
+      return json(res, 200, draft);
+    }
+    const approveMatch = p.match(/^\/dev\/content\/([^/]+)\/approve$/);
+    if (approveMatch && req.method === 'POST') {
+      const id = decodeURIComponent(approveMatch[1]);
+      const draft = db.devDrafts.find((d) => d.id === id);
+      if (!draft) return json(res, 404, { detail: 'draft_not_found' });
+      draft.status = 'approved';
+      draft.approved_at = new Date().toISOString();
+      const shares = [
+        { platform: 'reddit', subreddit: 'SideProject', url: 'https://www.reddit.com/r/SideProject/submit?title=' + encodeURIComponent(draft.title) },
+        { platform: 'x', url: 'https://x.com/intent/tweet?text=' + encodeURIComponent(draft.body.slice(0, 280)) },
+        { platform: 'linkedin', url: 'https://www.linkedin.com/feed/?shareActive=true&text=' + encodeURIComponent(draft.body) },
+        { platform: 'instagram', caption: draft.body, media_path: draft.media_path },
+      ];
+      return json(res, 200, { draft, shares });
+    }
+    const postedMatch = p.match(/^\/dev\/content\/([^/]+)\/posted$/);
+    if (postedMatch && req.method === 'POST') {
+      const id = decodeURIComponent(postedMatch[1]);
+      const draft = db.devDrafts.find((d) => d.id === id);
+      if (!draft) return json(res, 404, { detail: 'draft_not_found' });
+      draft.status = 'posted';
+      draft.posted_at = new Date().toISOString();
+      return json(res, 200, draft);
+    }
+    if (p === '/dev/usage' && req.method === 'GET') {
+      return json(res, 200, {
+        claude: {
+          available: true,
+          accounts: [
+            {
+              number: 1,
+              five_hour: { used_percent: 42, resets_at: '18:00' },
+              seven_day: { used_percent: 58, resets_at: 'Mon 09:00' },
+            },
+          ],
+        },
+        codex: {
+          available: true,
+          primary: { used_percent: 25, resets_at: '19:30' },
+          secondary: { used_percent: 84, resets_at: 'Thu 12:00' },
+        },
+        opencode: { available: false },
+        hermes: { available: true },
+      });
+    }
+    if (p === '/dev/github' && req.method === 'GET') {
+      return json(res, 200, {
+        available: true,
+        prs: [
+          {
+            number: 95,
+            title: 'Piblo Dev section in the Windows app',
+            headRefName: 'feat/piblo-dev-hermes',
+            url: 'https://github.com/manazoid4/piblo/pull/95',
+            statusCheckRollup: [
+              { name: 'typecheck', state: 'SUCCESS', conclusion: 'SUCCESS' },
+              { name: 'vitest', state: 'SUCCESS', conclusion: 'SUCCESS' },
+            ],
+          },
+        ],
+      });
+    }
+    if (p === '/dev/overview' && req.method === 'GET') {
+      const founder = db.devLists.find((l) => l.id === 'founder-today');
+      const founderUnticked = (founder?.items ?? []).filter((i) => !i.done).length;
+      const draftsWaiting = db.devDrafts.filter((d) => d.status === 'draft').length;
+      return json(res, 200, {
+        founder_unticked: founderUnticked,
+        failing_pr_checks: 0,
+        drafts_awaiting_approval: draftsWaiting,
+        usage_warnings: 1,
+      });
+    }
+
     json(res, 404, { detail: 'not_found' });
   });
   return new Promise((resolve) => server.listen(port, '127.0.0.1', () => resolve({ dir, port, token, close: () => server.close() })));
