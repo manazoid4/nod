@@ -10,11 +10,14 @@ def client(tmp_path):
 
 
 def test_every_feature_starts_simulated_without_claiming_confirmation(tmp_path):
-    rows = client(tmp_path).get('/features').json()['features']
+    api = client(tmp_path)
+    rows = api.get('/features?dev_mode=true').json()['features']
     ids = {row['id'] for row in rows}
     assert {'ask-on-piblo', 'private-mode', 'where-was-i-park-it', 'catch-me-up', 'maker'} <= ids
     assert all(row['status'] in ('simulated', 'implemented') and row['steps'] and row['summary'] for row in rows)
     assert all(row['category'] and row['source'] and row['dependencies'] and not row['evidence']['when'] for row in rows)
+    assert 'piblo-dev' in ids
+    assert all(row['category'] not in ('dev', 'electronics') for row in api.get('/features').json()['features'])
 
 
 def test_confirm_then_unconfirm_round_trip(tmp_path):

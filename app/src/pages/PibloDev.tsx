@@ -819,7 +819,7 @@ export function PibloDev({
   const content = usePoll<{ drafts: DevDraft[] }>('/dev/content', 8000);
   const usage = usePoll<DevUsage>('/dev/usage', 15000);
   const github = usePoll<DevGithub>('/dev/github', 20000);
-  const features = usePoll<{ features: DevFeature[] }>('/features', 20000);
+  const features = usePoll<{ features: DevFeature[] }>('/features?dev_mode=true', 20000);
   const templates = usePoll<{ templates: WorkflowTemplate[] }>('/dev/workflow-templates', 0);
   const memory = usePoll<DevMemory>(`/dev/memory?q=${encodeURIComponent(memoryQuery)}`, 0);
   const providers = usePoll<{ providers: Record<string, { available: boolean }> }>('/agents/providers', 15000);

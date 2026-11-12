@@ -136,10 +136,10 @@ def build_features_router(data_dir: Path) -> APIRouter:
         return view(feature, state)
 
     @router.get('')
-    def list_features():
+    def list_features(dev_mode: bool = False):
         with file_lock(store):
             state = load()
-        return {'features': [view(row, state) for row in catalogue()]}
+        return {'features': [view(row, state) for row in catalogue() if dev_mode or row['category'] not in ('dev', 'electronics')]}
 
     @router.post('/{feature_id}/confirm')
     def confirm(feature_id: str, body: ConfirmBody | None = None):
