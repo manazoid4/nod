@@ -31,8 +31,9 @@ AHEAD_S = 0.4  # never run further than this ahead of real-time playback
 MIN_SPEECH_MS = 250
 PREROLL_MS = 300
 FIRST_AUDIO_LIMIT_S = 4.0
-INSTRUCTIONS = ("You are Piblo, a friendly voice assistant on a tiny pocket device. Keep replies short "
-                "and spoken. Respond with interleaved text and audio.")
+INSTRUCTIONS = ("You are Piblo, a friendly, warm and calm voice assistant on a tiny pocket device. "
+                "Never name or reveal your model. Keep replies short and spoken. "
+                "Respond with interleaved text and audio.")
 
 
 def boost(pcm: bytes, gain: float) -> bytes:
