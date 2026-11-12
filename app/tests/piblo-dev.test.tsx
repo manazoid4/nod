@@ -281,6 +281,11 @@ describe('DevAgentsView and DevBuildsView', () => {
     expect(html).toContain('1 passing');
     expect(html).toContain('Open PR');
 
+    const failingHtml = renderToStaticMarkup(<DevBuildsView github={{ available: true, prs: [{ number: 2, title: 'Fix', headRefName: 'fix', url: 'https://example.com/pr', statusCheckRollup: [{ name: 'CI', conclusion: '', state: 'FAILURE', detailsUrl: 'https://example.com/run' }] }] }} onOpenExternal={() => {}} onCreateTask={() => {}} />);
+    expect(failingHtml).toContain('CI failed');
+    expect(failingHtml).toContain('Open check');
+    expect(failingHtml).toContain('Make a task from this failure');
+
     expect(renderToStaticMarkup(<DevBuildsView github={{ available: false }} />)).toContain('Builds unavailable');
     expect(renderToStaticMarkup(<DevBuildsView github={{ available: true, prs: [] }} />)).toContain('No open pull requests');
     expect(renderToStaticMarkup(<DevBuildsView github={null} error="GitHub error" />)).toContain('Could not load builds');

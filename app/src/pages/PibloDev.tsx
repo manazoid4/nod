@@ -779,7 +779,7 @@ export function DevBuildsView({
                   Open PR
                 </button>
               )}
-              {(pr.statusCheckRollup ?? []).filter((check) => ['FAILURE', 'TIMED_OUT', 'CANCELLED', 'ACTION_REQUIRED', 'ERROR'].includes(check.conclusion ?? check.state ?? '')).map((check, index) => {
+              {(pr.statusCheckRollup ?? []).filter((check) => ['FAILURE', 'TIMED_OUT', 'CANCELLED', 'ACTION_REQUIRED'].includes(check.conclusion ?? '') || ['FAILURE', 'ERROR'].includes(check.state ?? '')).map((check, index) => {
                 const name = check.name || check.context || 'Check';
                 const url = check.detailsUrl || check.targetUrl;
                 return <div className="row wrap" style={{ width: '100%' }} key={`${name}-${index}`}>
