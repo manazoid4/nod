@@ -21,8 +21,14 @@ from websockets.asyncio.client import connect
 
 from .config import Settings
 from .live_brain import LiveBrain, is_noise, split_sentences, first_clause
+from . import private_mode
 
 log = logging.getLogger("mazhost.live")
+
+
+class _PrivateSafeConnect(connect):
+    def process_redirect(self, exc):
+        return exc if private_mode.enabled() else super().process_redirect(exc)
 
 IN_RATE, OUT_RATE = 16000, 24000
 BLOCK = 640  # 20 ms of 16 kHz PCM16 mono, in bytes (320 samples)
@@ -159,8 +165,9 @@ class LiveBridge:
         self._guard: asyncio.TimerHandle | None = None
         self._need_reset = False
         self._t: dict = {}
-        # cloud brain: LFM3 only hears (ASR over HTTP) and speaks (TTS on the realtime socket)
-        self.cloud = cfg.live_brain == "cloud"
+        # cloud brain: LFM3 only hears (ASR over HTTP) and speaks (TTS on the realtime socket).
+        # Private mode forces the local LFM3 speech-to-speech path (no cloud model).
+        self.cloud = cfg.live_brain == "cloud" and not private_mode.enabled()
         self.brain = LiveBrain(cfg) if self.cloud else None
         self._turn: list[bytes] = []
         self._cloud: asyncio.Task | None = None
@@ -352,7 +359,10 @@ class LiveBridge:
 
     # ---- model side ------------------------------------------------------
     async def _connect(self) -> None:
-        self.up = await connect(self.url, max_size=None, open_timeout=5)
+        private_mode.guard(self.url)
+        self.cloud = self.cfg.live_brain == "cloud" and not private_mode.enabled()
+        self.brain = LiveBrain(self.cfg) if self.cloud else None
+        self.up = await _PrivateSafeConnect(self.url, max_size=None, open_timeout=5, proxy=None if private_mode.enabled() else True)
         json.loads(await self.up.recv())  # session.created
         await self.up.send(json.dumps({"type": "session.update", "session": {
             "type": "realtime", "instructions": TTS_INSTRUCTIONS if self.cloud else INSTRUCTIONS,

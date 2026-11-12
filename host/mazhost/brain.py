@@ -11,6 +11,8 @@ from pathlib import Path
 
 import httpx
 
+from . import private_mode
+
 REFUSAL = re.compile(
     r"(i (do not|don't|do n't) have (access|the ability|real-?time|a way)|"
     r"as an ai\b|as a language model|i('m| am) (not able|unable) to|"
@@ -83,7 +85,7 @@ def weather_line(text: str) -> str:
     if hit and time.time() - hit[0] < 600:
         return hit[1]
     try:
-        r = httpx.get(
+        r = private_mode.get(
             "https://api.open-meteo.com/v1/forecast",
             params={"latitude": LAT, "longitude": LON, "timezone": "Europe/London",
                     "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m",

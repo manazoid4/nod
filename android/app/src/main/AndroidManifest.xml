@@ -38,6 +38,14 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ShareActivity" android:exported="true" android:label="Piblo">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+            </intent-filter>
+        </activity>
+
         <receiver android:name=".system.ReminderReceiver" android:exported="false" />
         <receiver android:name=".system.StopFindReceiver" android:exported="false" />
         <receiver android:name=".system.BootReceiver" android:exported="true">

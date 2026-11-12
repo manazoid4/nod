@@ -13,6 +13,7 @@ from typing import Any, Literal
 
 from .authority import AuthorityBroker, AuthorityError
 from .config import Settings
+from . import private_mode
 
 
 Provider = Literal["claude", "codex", "hermes"]
@@ -76,6 +77,7 @@ class AgentRunner:
         }
 
     def _help(self, exe: str) -> str:
+        private_mode.guard_subprocess("agent CLI help")
         if exe in self._help_cache:
             return self._help_cache[exe]
         try:
@@ -139,6 +141,7 @@ class AgentRunner:
         grant_token: str,
         timeout_seconds: int | None = None,
     ) -> dict[str, Any]:
+        private_mode.guard_subprocess("agent CLI")
         root = Path(project).expanduser().resolve()
         if not root.exists() or not root.is_dir():
             raise AgentRunError("project_not_found")
@@ -159,6 +162,7 @@ class AgentRunner:
         })
         started = time.time()
         try:
+            private_mode.guard_subprocess("agent CLI")
             result = subprocess.run(
                 argv,
                 cwd=str(root),
@@ -204,6 +208,7 @@ class AgentRunner:
         project: str,
         grant_token: str,
     ) -> dict[str, Any]:
+        private_mode.guard_subprocess("agent CLI")
         root = Path(project).expanduser().resolve()
         grant = self._verify(grant_token, root, provider)
         job = AgentJob(
@@ -236,7 +241,7 @@ class AgentRunner:
                 job.exit_code = int(result["exit_code"])
                 job.output = str(result["output"])
                 job.state = "done" if result["ok"] else "failed"
-        except AgentRunError as error:
+        except (AgentRunError, private_mode.PrivateModeError) as error:
             with self._lock:
                 job.state = "failed"
                 job.error = str(error)
@@ -265,6 +270,7 @@ class AgentRunner:
         project: str,
         grant_token: str,
     ) -> dict[str, Any]:
+        private_mode.guard_subprocess("agent crew")
         root = Path(project).expanduser().resolve()
         grant = self._verify(grant_token, root, "crew")
         job = CrewJob(
@@ -338,7 +344,7 @@ class AgentRunner:
                 completed.append(str(package_id))
             with self._lock:
                 job.state = "done"
-        except AgentRunError as error:
+        except (AgentRunError, private_mode.PrivateModeError) as error:
             with self._lock:
                 job.state = "failed"
                 job.error = str(error)

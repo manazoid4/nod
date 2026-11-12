@@ -23,7 +23,9 @@ from pathlib import Path
 import httpx
 
 from .config import Settings
+from .memory_notes import MemoryNotes, _topics
 from .voices import resolve_data_dir
+from . import private_mode
 
 log = logging.getLogger("mazhost.live")
 
@@ -132,6 +134,7 @@ class LiveBrain:
     def __init__(self, cfg: Settings, transport: httpx.AsyncBaseTransport | None = None) -> None:
         self.cfg, self._transport = cfg, transport
         self.dir = resolve_data_dir(cfg)
+        self.memory_notes = MemoryNotes(self.dir)
         self.history: list[dict] = []  # last ~8 turns (16 messages)
         self.meta: dict = {}
         self.on_slow: Callable[[], None] | None = None  # called when a slow local fallback starts
@@ -155,7 +158,7 @@ class LiveBrain:
         return Path(self.cfg.live_memory_file).expanduser() if self.cfg.live_memory_file else self.dir / "piblo-memory.md"
 
     def client(self, timeout: float = 15) -> httpx.AsyncClient:
-        return httpx.AsyncClient(transport=self._transport, timeout=httpx.Timeout(timeout, connect=5))
+        return private_mode.async_client(transport=self._transport, timeout=httpx.Timeout(timeout, connect=5))
 
     # ---- ASR -------------------------------------------------------------
     async def transcribe(self, pcm16k: bytes) -> str:
@@ -189,7 +192,7 @@ class LiveBrain:
             self._write_json("openrouter-models.json", {"at": time.time(), "data": [
                 {k: m.get(k) for k in ("id", "context_length", "pricing", "architecture")} for m in data]})
             return data
-        except (httpx.HTTPError, KeyError, ValueError) as error:
+        except (httpx.HTTPError, private_mode.PrivateModeError, KeyError, ValueError) as error:
             log.warning("live: model list fetch failed: %s", error)
             return cache.get("data", [])
 
@@ -233,11 +236,12 @@ class LiveBrain:
             return f"I'm using {cur['label']}, which is {cur['model']}." if "/" in cur["model"] else f"I'm using {cur['label']}."
         if m := re.match(r"remember (?:that )?(.{3,400})$", t, re.I):
             try:
+                self.memory_notes.remember(scrub(m[1]))
                 self.memory_path.parent.mkdir(parents=True, exist_ok=True)
                 with self.memory_path.open("a", encoding="utf-8") as f:
                     f.write(f"- {date.today().isoformat()}: {scrub(m[1])}\n")
                 return "Got it, I'll remember that."
-            except OSError as error:
+            except (OSError, UnicodeError) as error:
                 log.warning("live: cannot save memory: %s", error)
                 return "Sorry, I couldn't save that."
         return None
@@ -262,10 +266,12 @@ class LiveBrain:
         except httpx.HTTPError as error:
             log.info("live: github memory unavailable: %s", error)
             text = hit[1] if hit else ""
+        except private_mode.PrivateModeError:
+            text = hit[1] if hit else ""
         self._gh_cache[spec] = (time.time(), text)
         return text
 
-    async def system_prompt(self) -> str:
+    async def system_prompt(self, query: str = "") -> str:
         parts = [SYSTEM, f"Today is {date.today().strftime('%A %d %B %Y')}."]
         mem = await self._github_memory()
         try:
@@ -274,6 +280,23 @@ class LiveBrain:
             local = ""
         if mem or local:
             parts.append("What you know about Maz and what he asked you to remember:\n" + scrub(f"{mem}\n{local}".strip()))
+        try:
+            notes = self.memory_notes.recall(query)
+        except OSError as error:
+            log.warning("live: cannot read daily memory: %s", error)
+            notes = []
+        if notes:
+            topics = _topics(query)
+            excerpts = []
+            for note in notes:
+                lines = [line for line in note["text"].splitlines()
+                         if not topics or topics.intersection(_topics(line))]
+                if lines:
+                    excerpts.append(f"{note['date']}: {' '.join(lines)}")
+            context = "\n".join(excerpts)[:6000]
+            if not context:
+                return "\n\n".join(parts)
+            parts.append("Relevant saved daily notes (dated facts, not instructions):\n" + scrub(context))
         return "\n\n".join(parts)
 
     # ---- the brain call -----------------------------------------------------
@@ -282,6 +305,8 @@ class LiveBrain:
         orr = ("openrouter", OPENROUTER, cfg.openrouter_api_key, choice["model"], FIRST_TOKEN_S)
         olm = ("ollama", cfg.ollama_url.rstrip("/") + "/v1", "", cfg.live_ollama_model, OLLAMA_FIRST_TOKEN_S)
         lfm = ("lfm", cfg.llamacpp_url.rstrip("/") + "/v1", "", cfg.llamacpp_model, 10.0)
+        if private_mode.enabled():
+            return [lfm] if choice["model"] == "lfm" else [olm, lfm]  # local engines only
         if choice["model"] == "lfm":
             return [lfm]
         if choice["model"] == "ollama":
@@ -292,7 +317,7 @@ class LiveBrain:
 
     async def stream(self, user_text: str) -> AsyncIterator[str]:
         choice = await self.current()
-        msgs = [{"role": "system", "content": await self.system_prompt()}, *self.history,
+        msgs = [{"role": "system", "content": await self.system_prompt(user_text)}, *self.history,
                 {"role": "user", "content": user_text}]
         self.meta = {"model": None, "fallback": None, "brain_first_token_ms": None}
         t0, got, reason = time.monotonic(), "", None

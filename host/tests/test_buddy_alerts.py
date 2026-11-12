@@ -1,11 +1,19 @@
 """Generic alerts: webhook / reminder intake, ack+snooze outcomes, approval routing."""
 from __future__ import annotations
 
+import pytest
+
 from fastapi.testclient import TestClient
 
 from mazhost import buddy as buddy_mod
 from mazhost.app import create_app
 from mazhost.config import Settings
+
+
+@pytest.fixture(autouse=True)
+def legacy_unsigned_device(monkeypatch):
+    # These existing tests exercise the current unsigned simulator/firmware path.
+    monkeypatch.setenv("MAZ_ASK_LEGACY_DEVICE_DECIDE", "1")
 
 TOKEN = "test-token-that-is-not-default"
 H = {"Authorization": f"Bearer {TOKEN}"}
@@ -163,10 +171,11 @@ def test_nod_fields_reach_the_device_summary():
     assert item["id"] == r["id"] and item["amount"] == "£42.00" and item["recipient"] == "Acme Ltd"
     assert item["category"] == "payment" and item["nod"] is True
     # the firmware reads one text field: head / amount / recipient on three lines
-    assert item["summary"] == "THE NOD  PAYMENT" + chr(10) + "£42.00" + chr(10) + "to Acme Ltd"
+    assert item["summary"] == "ASK ON PIBLO  PAYMENT" + chr(10) + "£42.00" + chr(10) + "to Acme Ltd"
 
 
-def test_nod_fields_are_truncated_and_category_normalised():
+def test_nod_fields_are_truncated_and_category_normalised(monkeypatch):
+    monkeypatch.setenv("MAZ_ASK_UNLOCK_DELETE", "1")
     c = api()
     _nod(c, amount="£" + "9" * 40, recipient="R" * 90, category="Wire-Transfer")
     item = c.get("/buddy/summary", headers=H).json()["items"][0]

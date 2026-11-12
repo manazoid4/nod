@@ -27,5 +27,7 @@ def install_validation_exception_handler(app: FastAPI) -> None:
     async def validation_exception_handler(
         _request: Request, error: RequestValidationError
     ) -> JSONResponse:
-        detail = _json_safe(jsonable_encoder(error.errors()))
+        errors = [{key: value for key, value in item.items() if key != "input"}
+                  for item in error.errors()]
+        detail = _json_safe(jsonable_encoder(errors))
         return JSONResponse(status_code=422, content={"detail": detail})
