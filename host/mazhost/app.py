@@ -39,6 +39,7 @@ from .discovery import DiscoveryResponder
 from . import fw
 from .errors import ErrorCode, RouteError
 from .focus import Focus, install_focus_routes
+from .maker import install_maker_routes
 from .executor import ElevatedExecutor
 from .jobs import CoreJobs
 from .live_voice import install_live_voice
@@ -970,6 +971,7 @@ def create_app(
     api.include_router(build_library_router(cfg, model_router))
     api.include_router(build_needs_router(cfg, buddy))
     install_focus_routes(api, focus)
+    install_maker_routes(api, cfg, buddy)
     install_live_voice(api, cfg, security, turn_timings)
     # ------------------------------------------------------------ SUBTITLES
     install_subtitle_routes(api, subtitle_jobs)
