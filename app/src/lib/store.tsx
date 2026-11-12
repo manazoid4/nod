@@ -118,11 +118,11 @@ export function usePoll<T>(path: string | null, ms = 5000): { data: T | null; er
   return { data, error, loading, reload: () => setN((x) => x + 1) };
 }
 
-/** Run an action with toast feedback. */
+  /**Run an action with toast feedback. */
 export function useAct() {
   const { toast } = useStore();
   return useCallback(
-    async <T,>(method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown, ok?: string): Promise<ApiResult<T>> => {
+    async <T,>(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', path: string, body?: unknown, ok?: string): Promise<ApiResult<T>> => {
       const r = await window.piblo.api<T>(method, path, body);
       if (r.ok) {
         if (ok) toast(ok);

@@ -1,8 +1,10 @@
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import iconUrl from './assets/piblo-icon.svg';
 import { PairingList } from './components/PairingCard';
+import { CommandPalette } from './components/CommandPalette';
 import { CoreGate } from './components/CoreGate';
 import { Icon } from './components/ui';
+import type { PaletteCommand } from './lib/dev';
 import { usePairing } from './lib/usePairing';
 import { Actions } from './pages/Actions';
 import { Ask } from './pages/Ask';
@@ -10,6 +12,7 @@ import { Home } from './pages/Home';
 import { LiveView } from './pages/LiveView';
 import { Memory } from './pages/Memory';
 import { Onboarding } from './pages/Onboarding';
+import { PibloDev, type DevTab } from './pages/PibloDev';
 import { Settings } from './pages/Settings';
 import { StoreProvider, usePoll, useStore } from './lib/store';
 
@@ -67,7 +70,7 @@ function useTheme() {
 
 export { useTheme };
 
-type Section = 'home' | 'live' | 'ask' | 'memory' | 'actions' | 'settings';
+type Section = 'home' | 'live' | 'ask' | 'memory' | 'actions' | 'settings' | 'dev';
 const NAV: { id: Section; label: string; icon: string }[] = [
   { id: 'home', label: 'Home', icon: 'device' },
   { id: 'live', label: 'Live View', icon: 'screen' },
@@ -75,6 +78,7 @@ const NAV: { id: Section; label: string; icon: string }[] = [
   { id: 'memory', label: 'Memory', icon: 'memory' },
   { id: 'actions', label: 'Actions', icon: 'actions' },
   { id: 'settings', label: 'Settings', icon: 'settings' },
+  { id: 'dev', label: 'Piblo Dev', icon: 'dev' },
 ];
 
 function DevicePillView() {
@@ -93,6 +97,8 @@ function DevicePillView() {
 function Shell() {
   const { core, toastNow } = useStore();
   const [section, setSection] = useState<Section>('home');
+  const [devTab, setDevTab] = useState<DevTab>('today');
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [welcome, setWelcome] = useState<boolean | null>(null);
   const needs = usePoll<{ items: { tier: string }[] }>('/needs', 15000);
   const badge = (needs.data?.items ?? []).filter((n) => n.tier !== 'approvals').length;
@@ -119,6 +125,11 @@ function Shell() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+        return;
+      }
       if (!e.ctrlKey || e.altKey || e.shiftKey) return;
       const n = Number(e.key);
       if (n >= 1 && n <= NAV.length) {
@@ -131,6 +142,18 @@ function Shell() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  const runPaletteCommand = (cmd: PaletteCommand) => {
+    setWelcome(false);
+    if (cmd.id.startsWith('nav:')) {
+      const target = cmd.id.slice(4) as Section;
+      setSection(target);
+    } else if (cmd.id.startsWith('dev:')) {
+      const targetTab = cmd.id.slice(4) as DevTab;
+      setDevTab(targetTab);
+      setSection('dev');
+    }
+  };
+
   const decide = async (requestId: string, decision: 'allow' | 'deny') => {
     const out = await pairing.decide(requestId, decision);
     setNotice(out.message);
@@ -142,7 +165,7 @@ function Shell() {
   };
 
   const needsCore = section !== 'settings' && !running;
-  const Page = { home: Home, live: LiveView, ask: Ask, memory: Memory, actions: Actions, settings: Settings }[section];
+  const Page = { home: Home, live: LiveView, ask: Ask, memory: Memory, actions: Actions, settings: Settings, dev: () => <PibloDev initialTab={devTab} onOpenCommandPalette={() => setPaletteOpen(true)} /> }[section];
 
   return (
     <div className="shell">
@@ -152,6 +175,9 @@ function Shell() {
           Piblo
         </div>
         <span className="spacer" />
+        <button type="button" className="btn sm ghost" aria-label="Jump anywhere (Ctrl+K)" onClick={() => setPaletteOpen(true)}>
+          <Icon name="search" size={14} /> Jump <kbd style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>Ctrl+K</kbd>
+        </button>
         <DevicePillView />
       </header>
       <nav className="rail" aria-label="Sections">
@@ -184,6 +210,7 @@ function Shell() {
           </>
         )}
       </main>
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onSelect={runPaletteCommand} />
       {toastNow && <div className={`toast ${toastNow.bad ? 'bad' : ''}`} role="status">{toastNow.text}</div>}
     </div>
   );
