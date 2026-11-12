@@ -16,6 +16,7 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from . import private_mode
 from .accessories import Accessories
 from .buddy import AlertIn, Buddy
 from .config import Settings
@@ -60,6 +61,7 @@ class EnderForgeSource:
     def _read(self, operation: str) -> dict:
         if operation not in ("status", "next"):
             raise ValueError("Unsupported printer observation")
+        private_mode.guard_subprocess("EnderForge observation", local=True)
         result = subprocess.run([*self.command, operation, "--json"], capture_output=True,
                                 text=True, stdin=subprocess.DEVNULL, timeout=25, check=False)
         if result.returncode == 3:
@@ -112,10 +114,11 @@ class OctoPrintSource:
         if not key:
             raise ValueError("Missing printer key")
         headers = {"X-Api-Key": key}
+        private_mode.guard(self.url + path)
         if self.client is not None:
             result = self.client.request(method, self.url + path, headers=headers, **kwargs)
         else:
-            with httpx.Client(timeout=8, trust_env=False, follow_redirects=False) as client:
+            with private_mode.client(timeout=8, trust_env=False, follow_redirects=False) as client:
                 result = client.request(method, self.url + path, headers=headers, **kwargs)
         result.raise_for_status()
         return result

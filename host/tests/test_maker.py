@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import re
 import subprocess
@@ -13,6 +15,22 @@ from fastapi.testclient import TestClient
 from mazhost.buddy import Buddy
 from mazhost.config import Settings
 from mazhost.maker import EnderForgeSource, FakePrinterSource, Maker, OctoPrintSource, install_maker_routes
+
+
+@pytest.fixture
+def signed_decide(monkeypatch):
+    key = "maker-test-device-key"
+    monkeypatch.setenv("PIBLO_ASK_DEVICE_KEY", key)
+    monkeypatch.delenv("PIBLO_ASK_LEGACY_DEVICE_DECIDE", raising=False)
+    monkeypatch.delenv("MAZ_ASK_LEGACY_DEVICE_DECIDE", raising=False)
+
+    def decide(buddy, rid, decision="allow"):
+        item = next(item for item in buddy.pending() if item["id"] == rid)
+        message = f"{rid}:{item['digest']}:{decision}:{item['nonce']}".encode()
+        proof = hmac.new(key.encode(), message, hashlib.sha256).hexdigest()
+        return buddy.decide(rid, decision, proof=proof)
+
+    return decide
 
 
 def job(state="Printing", completion=42, name="bracket", elapsed=100):
@@ -98,7 +116,7 @@ def test_idle_is_not_proof_of_success():
 
 @pytest.mark.parametrize("action", ["pause", "cancel"])
 @pytest.mark.parametrize("decision", ["allow", "deny", "cancel"])
-def test_safe_actions_require_allow_and_are_not_replayed(tmp_path, action, decision):
+def test_safe_actions_require_allow_and_are_not_replayed(tmp_path, action, decision, signed_decide):
     source, sent, _ = octo(tmp_path)
     buddy = Buddy()
     maker = Maker(source, buddy, actions=source)
@@ -108,7 +126,12 @@ def test_safe_actions_require_allow_and_are_not_replayed(tmp_path, action, decis
     pending = buddy.pending()[0]
     assert pending["category"] == "other" and "bracket" in pending["summary"]
     assert maker.action(action, rid)["status"] == "pending" and sent == []
-    buddy.decide(rid, decision)
+    if decision == "allow":
+        for proof in ("", "invalid"):
+            with pytest.raises(PermissionError, match="device_proof_required"):
+                buddy.decide(rid, "allow", proof=proof)
+            assert maker.action(action, rid)["status"] == "pending" and sent == []
+    signed_decide(buddy, rid, decision)
     result = maker.action(action, rid)
     assert result["status"] == ("sent" if decision == "allow" else "denied")
     expected = {"command": action, **({"action": "pause"} if action == "pause" else {})}
@@ -117,12 +140,12 @@ def test_safe_actions_require_allow_and_are_not_replayed(tmp_path, action, decis
     assert len(sent) == int(decision == "allow")
 
 
-def test_wrong_action_unknown_request_and_changed_job_fail_closed(tmp_path):
+def test_wrong_action_unknown_request_and_changed_job_fail_closed(tmp_path, signed_decide):
     source, sent, current = octo(tmp_path)
     buddy = Buddy()
     maker = Maker(source, buddy, actions=source)
     rid = maker.action("cancel")["id"]
-    buddy.decide(rid, "allow")
+    signed_decide(buddy, rid)
     with pytest.raises(ValueError):
         maker.action("pause", rid)
     with pytest.raises(ValueError):
@@ -132,13 +155,13 @@ def test_wrong_action_unknown_request_and_changed_job_fail_closed(tmp_path):
     assert not sent
 
 
-def test_status_falls_back_and_poll_consumes_approval(tmp_path):
+def test_status_falls_back_and_poll_consumes_approval(tmp_path, signed_decide):
     source, sent, _ = octo(tmp_path)
     buddy = Buddy()
     maker = Maker(FakePrinterSource({"state": "offline"}), buddy, actions=source)
     assert maker.printer()["state"] == "printing"
     rid = maker.action("pause")["id"]
-    buddy.decide(rid, "allow")
+    signed_decide(buddy, rid)
     maker.poll()
     assert sent == [{"command": "pause", "action": "pause"}]
 
@@ -150,24 +173,24 @@ def test_malformed_enderforge_fields_fail_closed(monkeypatch, data):
     assert Maker(EnderForgeSource("ef"), Buddy()).printer()["state"] == "error"
 
 
-def test_expired_approval_cannot_send(tmp_path):
+def test_expired_approval_cannot_send(tmp_path, signed_decide):
     source, sent, _ = octo(tmp_path)
     buddy = Buddy()
     maker = Maker(source, buddy, actions=source)
     rid = maker.action("cancel")["id"]
-    buddy.decide(rid, "allow")
+    signed_decide(buddy, rid)
     buddy._items[rid]["deadline"] = 0
     assert maker.action("cancel", rid)["status"] == "denied"
     assert not sent
 
 
 @pytest.mark.parametrize("revoke", ["expiry", "halt"])
-def test_approval_revoked_during_status_check_cannot_send(tmp_path, monkeypatch, revoke):
+def test_approval_revoked_during_status_check_cannot_send(tmp_path, monkeypatch, revoke, signed_decide):
     source, sent, _ = octo(tmp_path)
     buddy = Buddy()
     maker = Maker(source, buddy, actions=source)
     rid = maker.action("cancel")["id"]
-    buddy.decide(rid, "allow")
+    signed_decide(buddy, rid)
     original = source.status
     def status():
         if revoke == "expiry":
@@ -180,7 +203,7 @@ def test_approval_revoked_during_status_check_cannot_send(tmp_path, monkeypatch,
     assert not sent
 
 
-def test_network_failure_after_send_is_never_retried(tmp_path, monkeypatch):
+def test_network_failure_after_send_is_never_retried(tmp_path, monkeypatch, signed_decide):
     source, sent, _ = octo(tmp_path)
     buddy = Buddy()
     maker = Maker(source, buddy, actions=source)
@@ -189,18 +212,18 @@ def test_network_failure_after_send_is_never_retried(tmp_path, monkeypatch):
         raise httpx.ReadTimeout("unknown outcome")
     monkeypatch.setattr(source, "send", uncertain)
     rid = maker.action("cancel")["id"]
-    buddy.decide(rid, "allow")
+    signed_decide(buddy, rid)
     assert maker.action("cancel", rid)["status"] == "uncertain"
     assert maker.action("cancel", rid)["status"] == "uncertain"
     assert sent == ["cancel"]
 
 
-def test_same_filename_new_print_and_unsafe_actions_are_rejected(tmp_path):
+def test_same_filename_new_print_and_unsafe_actions_are_rejected(tmp_path, signed_decide):
     source, sent, current = octo(tmp_path)
     buddy = Buddy()
     maker = Maker(source, buddy, actions=source)
     rid = maker.action("pause")["id"]
-    buddy.decide(rid, "allow")
+    signed_decide(buddy, rid)
     current["progress"]["printTime"] = 1
     assert maker.action("pause", rid)["status"] == "stale"
     for action in ("start", "connect", "home", "G28", "M104", "M140", "firmware"):
@@ -211,7 +234,7 @@ def test_same_filename_new_print_and_unsafe_actions_are_rejected(tmp_path):
     assert not sent
 
 
-def test_maker_routes_with_simulated_printer(tmp_path, monkeypatch):
+def test_maker_routes_with_simulated_printer(tmp_path, monkeypatch, signed_decide):
     cfg = Settings(maker_enderforge_cmd="ef", data_dir=str(tmp_path), _env_file=None)
     api = FastAPI()
     source, sent, _ = octo(tmp_path)
@@ -230,7 +253,7 @@ def test_maker_routes_with_simulated_printer(tmp_path, monkeypatch):
     for action in ("pause", "cancel"):
         pending = client.post(f"/maker/{action}").json()
         assert pending["status"] == "pending"
-        buddy.decide(pending["id"], "allow")
+        signed_decide(buddy, pending["id"])
         assert client.post(f"/maker/{action}", json={"request_id": pending["id"]}).json()["status"] == "sent"
     assert len(sent) == 2
     assert client.post("/maker/poll").status_code == 200

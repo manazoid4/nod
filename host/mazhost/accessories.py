@@ -8,6 +8,8 @@ import subprocess
 import uuid
 from pathlib import Path
 
+from . import private_mode
+
 HARDWARE = Path(__file__).resolve().parents[2] / "hardware"
 LIBRARY = {"stand": "Desk stand", "mount": "Wall or fridge mount", "loop": "Lanyard or keyring loop"}
 
@@ -55,6 +57,7 @@ class Accessories:
         if executable := shutil.which("openscad"):
             stl = scad.with_suffix(".stl")
             try:
+                private_mode.guard_subprocess("OpenSCAD render", local=True)
                 process = subprocess.run([executable, "-o", str(stl), str(scad)], capture_output=True,
                                          stdin=subprocess.DEVNULL, timeout=90, check=False)
                 if process.returncode == 0 and stl.is_file() and stl.stat().st_size > 0:

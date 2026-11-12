@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -40,8 +41,9 @@ def test_standalone_scad_uses_case_dimensions(tmp_path, monkeypatch):
 
 
 def test_fake_openscad_on_path(tmp_path, monkeypatch):
-    fake = tmp_path / "openscad.exe"
+    fake = tmp_path / ("openscad.exe" if os.name == "nt" else "openscad")
     fake.touch()
+    fake.chmod(0o755)
     monkeypatch.setenv("PATH", str(tmp_path))
     def render(args, **kwargs):
         assert Path(args[0]) == fake
