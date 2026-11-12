@@ -58,11 +58,11 @@ async function verifySelectedPackage(file) {
   go.disabled = true;
   packageState.className = "dim";
   packageState.textContent = "Checking package…";
-  logBox.textContent = "MAZ Pocket package verification started.";
+  logBox.textContent = "Piblo package verification started.";
   setStage(0, "Verifying package before USB access…");
 
   try {
-    if (file.size < 2_000_000 || file.size > 8_000_000) throw new Error("This does not look like the MAZ Pocket release ZIP.");
+    if (file.size < 2_000_000 || file.size > 8_000_000) throw new Error("This does not look like the Piblo release ZIP.");
     const { unzipSync } = await import(FFLATE_URL);
     const files = unzipSync(new Uint8Array(await file.arrayBuffer()));
     const manifestBytes = oneZipFile(files, "web-flasher/firmware/manifest.json");
@@ -70,7 +70,8 @@ async function verifySelectedPackage(file) {
     const recovery = oneZipFile(files, "web-flasher/firmware/maz-pocket-v0.02-recovery.bin");
     const manifest = JSON.parse(new TextDecoder().decode(manifestBytes).replace(/^\uFEFF/, ""));
 
-    if (manifest.product !== "MAZ Pocket" || manifest.version !== EXPECTED_VERSION) throw new Error("Package is not the approved MAZ Pocket v0.03 release.");
+    // Accept both the new "Piblo" product name and the legacy "MAZ Pocket" value in existing approved packages.
+    if (!["Piblo", "MAZ Pocket"].includes(manifest.product) || manifest.version !== EXPECTED_VERSION) throw new Error("Package is not the approved Piblo v0.03 release.");
     if (!validEspImage(firmware) || !validEspImage(recovery)) throw new Error("Package contains an invalid ESP32 application image.");
     if (Number(manifest.size) !== firmware.byteLength || Number(manifest.recovery_size) !== recovery.byteLength) throw new Error("Package image sizes do not match its manifest.");
     if (Number(manifest.launcher_slot_size) !== EXPECTED_SLOT_SIZE || firmware.byteLength > EXPECTED_SLOT_SIZE) throw new Error("Package does not match the physical v0.02 Launcher slot contract.");

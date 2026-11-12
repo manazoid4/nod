@@ -1,4 +1,4 @@
-/* Nod concept A, "Toy-shop warm". Reusable by the site, Nod Core (Windows) and device screens.
+/* Concept A, "Toy-shop warm". Reusable by the site, Piblo Core (Windows) and device screens.
    Contrast (WCAG AA) is checked by site/tests/site.test.mjs. Keep in sync: site/concepts/a/tokens.css. */
 :root {
   /* colour: paper + ink */
