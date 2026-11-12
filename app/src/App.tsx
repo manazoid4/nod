@@ -165,7 +165,7 @@ function Shell() {
   };
 
   const needsCore = section !== 'settings' && !running;
-  const Page = { home: Home, live: LiveView, ask: Ask, memory: Memory, actions: Actions, settings: Settings, dev: () => <PibloDev initialTab={devTab} onOpenCommandPalette={() => setPaletteOpen(true)} /> }[section];
+  const Page = { home: Home, live: LiveView, ask: Ask, memory: Memory, actions: Actions, settings: Settings }[section === 'dev' ? 'home' : section];
 
   return (
     <div className="shell">
@@ -206,7 +206,7 @@ function Shell() {
         ) : (
           <>
             {showPairing && <PairingList requests={pairing.requests} busy={pairing.busy} notice={notice} onDecide={(id, d) => void decide(id, d)} />}
-            <Page />
+            {section === 'dev' ? <PibloDev initialTab={devTab} onOpenCommandPalette={() => setPaletteOpen(true)} /> : <Page />}
           </>
         )}
       </main>

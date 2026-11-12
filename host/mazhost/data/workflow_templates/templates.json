@@ -1,0 +1,8 @@
+[
+  {"id":"audit-prs","title":"Audit PRs","agent_kind":"codex","steps":["List open pull requests and their checks.","Review the changes and report actionable findings."],"checks":["Relevant tests pass","Review findings are resolved"]},
+  {"id":"fix-ci","title":"Fix CI","agent_kind":"codex","steps":["Inspect the failing check.","Reproduce and fix the cause."],"checks":["The failing check passes","Relevant tests pass"]},
+  {"id":"research-implement","title":"Research and implement","agent_kind":"claude","steps":["Research the request using reliable sources.","Implement the smallest useful change."],"checks":["Relevant tests pass","Sources are recorded"]},
+  {"id":"release-candidate","title":"Release candidate","agent_kind":"codex","steps":["Review release changes and blockers.","Prepare a release candidate for review."],"checks":["Release checks pass","Release evidence is recorded"]},
+  {"id":"maker-task","title":"Maker task","agent_kind":"codex","steps":["Inspect the requested maker task.","Prepare the change for review."],"checks":["Relevant tests pass","Hardware actions are approved"]},
+  {"id":"hardware-verification","title":"Hardware verification","agent_kind":"claude","steps":["List the hardware and test steps.","Record the observed result and evidence."],"checks":["Device test evidence is recorded","Any hardware action is approved"]}
+]

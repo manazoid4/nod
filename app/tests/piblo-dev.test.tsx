@@ -17,6 +17,9 @@ import {
   DevChecklistsView,
   DevContentStudioView,
   DevTodayView,
+  DevFeaturesView,
+  DevTemplatesView,
+  DevMemoryView,
 } from '../src/pages/PibloDev';
 
 const SAMPLE_LISTS: DevChecklist[] = [
@@ -97,6 +100,38 @@ describe('Piblo Dev pure helpers', () => {
   it('filters command palette entries by query words', () => {
     expect(filterCommands(PALETTE_COMMANDS, 'content studio').map((c) => c.id)).toEqual(['dev:content']);
     expect(filterCommands(PALETTE_COMMANDS, 'zzzznotfound')).toEqual([]);
+  });
+});
+
+describe('DevFeaturesView', () => {
+  it('shows catalogue details and handles empty and error states', () => {
+    const html = renderToStaticMarkup(<DevFeaturesView features={[{ id: 'maker', name: 'Maker', summary: 'Printer status', category: 'maker', source: 'host/mazhost/maker.py', dependencies: 'Printer', status: 'simulated', steps: ['Check status'], evidence: { who: null, when: null, note: '' } }]} />);
+    expect(html).toContain('Printer status');
+    expect(html).toContain('simulated');
+    expect(html).toContain('Check status');
+    expect(renderToStaticMarkup(<DevFeaturesView features={[]} />)).toContain('No features found');
+    expect(renderToStaticMarkup(<DevFeaturesView features={[]} error="Offline" />)).toContain('Could not load features');
+  });
+});
+
+describe('DevTemplatesView', () => {
+  it('shows templates and handles empty and error states', () => {
+    const html = renderToStaticMarkup(<DevTemplatesView templates={[{ id: 'audit', title: 'Audit PRs', agent_kind: 'codex', steps: ['Review PRs'], checks: ['Tests pass'] }]} onSave={() => {}} />);
+    expect(html).toContain('Audit PRs');
+    expect(html).toContain('Use template');
+    expect(html).toContain('Tests pass');
+    expect(renderToStaticMarkup(<DevTemplatesView templates={[]} onSave={() => {}} />)).toContain('No templates found');
+    expect(renderToStaticMarkup(<DevTemplatesView templates={[]} error="Offline" onSave={() => {}} />)).toContain('Could not load templates');
+  });
+});
+
+describe('DevMemoryView', () => {
+  it('shows headings, handover and search results, with empty and error states', () => {
+    const html = renderToStaticMarkup(<DevMemoryView memory={{ configured: true, headings: ['# Index'], handoff: 'Latest work', updated: '2026-11-12', results: [{ path: 'notes.md', line: 'Useful note' }] }} query="note" onQuery={() => {}} />);
+    expect(html).toContain('Latest work');
+    expect(html).toContain('Useful note');
+    expect(renderToStaticMarkup(<DevMemoryView memory={null} query="" onQuery={() => {}} />)).toContain('No memory folder');
+    expect(renderToStaticMarkup(<DevMemoryView memory={null} error="Offline" query="" onQuery={() => {}} />)).toContain('Could not load memory');
   });
 });
 
@@ -245,6 +280,11 @@ describe('DevAgentsView and DevBuildsView', () => {
     expect(html).toContain('Add Piblo Dev section');
     expect(html).toContain('1 passing');
     expect(html).toContain('Open PR');
+
+    const failingHtml = renderToStaticMarkup(<DevBuildsView github={{ available: true, prs: [{ number: 2, title: 'Fix', headRefName: 'fix', url: 'https://example.com/pr', statusCheckRollup: [{ name: 'CI', conclusion: '', state: 'FAILURE', detailsUrl: 'https://example.com/run' }] }] }} onOpenExternal={() => {}} onCreateTask={() => {}} />);
+    expect(failingHtml).toContain('CI failed');
+    expect(failingHtml).toContain('Open check');
+    expect(failingHtml).toContain('Make a task from this failure');
 
     expect(renderToStaticMarkup(<DevBuildsView github={{ available: false }} />)).toContain('Builds unavailable');
     expect(renderToStaticMarkup(<DevBuildsView github={{ available: true, prs: [] }} />)).toContain('No open pull requests');

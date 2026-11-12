@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import secrets
+import signal
 import shutil
 import subprocess
 import threading
@@ -68,6 +69,7 @@ class AgentRunner:
         self._jobs: dict[str, AgentJob] = {}
         self._crew_jobs: dict[str, CrewJob] = {}
         self._lock = threading.RLock()
+        self._processes: dict[str, subprocess.Popen] = {}
         self._help_cache: dict[str, str] = {}
 
     def providers(self) -> dict[str, Any]:
@@ -140,6 +142,7 @@ class AgentRunner:
         project: str,
         grant_token: str,
         timeout_seconds: int | None = None,
+        _job_id: str = "",
     ) -> dict[str, Any]:
         private_mode.guard_subprocess("agent CLI")
         root = Path(project).expanduser().resolve()
@@ -163,16 +166,37 @@ class AgentRunner:
         started = time.time()
         try:
             private_mode.guard_subprocess("agent CLI")
-            result = subprocess.run(
-                argv,
-                cwd=str(root),
-                capture_output=True,
-                text=True,
-                errors="replace",
-                timeout=timeout,
-                env=os.environ.copy(),
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-            )
+            if not _job_id:
+                result = subprocess.run(
+                    argv, cwd=str(root), capture_output=True, text=True, errors="replace",
+                    timeout=timeout, env=os.environ.copy(),
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                )
+            else:
+                with self._lock:
+                    if self._jobs[_job_id].state == "cancelled":
+                        raise AgentRunError("agent_cancelled")
+                    process = subprocess.Popen(
+                        argv, cwd=str(root), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                        text=True, errors="replace", env=os.environ.copy(),
+                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0),
+                        start_new_session=os.name != "nt",
+                    )
+                    self._processes[_job_id] = process
+                try:
+                    stdout, stderr = process.communicate(timeout=timeout)
+                except subprocess.TimeoutExpired:
+                    try:
+                        self._terminate(process)
+                    except (OSError, subprocess.SubprocessError):
+                        if process.poll() is None:
+                            process.kill()
+                    process.communicate()
+                    raise
+                finally:
+                    with self._lock:
+                        self._processes.pop(_job_id, None)
+                result = subprocess.CompletedProcess(argv, process.returncode, stdout, stderr)
         except subprocess.TimeoutExpired as error:
             self.broker.audit_action("agent_timeout", {
                 "grant_id": grant.grant_id, "provider": provider, "project": str(root)
@@ -230,24 +254,57 @@ class AgentRunner:
     def _run_job(self, job_id: str, prompt: str, grant_token: str) -> None:
         with self._lock:
             job = self._jobs[job_id]
+            if job.state == "cancelled":
+                return
             job.state = "running"
             job.started_at = time.time()
         try:
             result = self.run_sync(
                 provider=job.provider, prompt=prompt, project=job.project,
-                grant_token=grant_token,
+                grant_token=grant_token, _job_id=job_id,
             )
             with self._lock:
                 job.exit_code = int(result["exit_code"])
                 job.output = str(result["output"])
-                job.state = "done" if result["ok"] else "failed"
+                if job.state != "cancelled":
+                    job.state = "done" if result["ok"] else "failed"
         except (AgentRunError, private_mode.PrivateModeError) as error:
             with self._lock:
-                job.state = "failed"
-                job.error = str(error)
+                if job.state != "cancelled":
+                    job.state = "failed"
+                    job.error = str(error)
         finally:
             with self._lock:
                 job.finished_at = time.time()
+
+    @staticmethod
+    def _terminate(process: subprocess.Popen) -> None:
+        private_mode.guard_subprocess("local process cancellation", local=True)
+        if os.name == "nt":
+            taskkill = Path(os.environ["SystemRoot"]) / "System32" / "taskkill.exe"
+            subprocess.run([str(taskkill), "/PID", str(process.pid), "/T", "/F"],
+                           capture_output=True, check=True, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        else:
+            os.killpg(process.pid, signal.SIGKILL)
+
+    def cancel(self, job_id: str) -> dict[str, Any]:
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if not job:
+                raise AgentRunError("agent_job_not_found")
+            if job.state not in ("queued", "running"):
+                raise AgentRunError("agent_job_not_running")
+            process = self._processes.get(job_id)
+            if process:
+                if process.poll() is not None:
+                    raise AgentRunError("agent_job_finished")
+                try:
+                    self._terminate(process)
+                except (OSError, subprocess.SubprocessError) as error:
+                    raise AgentRunError("agent_cancel_failed") from error
+            job.state = "cancelled"
+            job.finished_at = time.time()
+            return asdict(job)
 
     def job(self, job_id: str) -> dict[str, Any]:
         with self._lock:

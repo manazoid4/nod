@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { AppSettings, CoreEnvView, EnvKey } from '../../shared/types';
 import { PageHead, Setting, Switch } from '../components/ui';
-import { useAct, useStore } from '../lib/store';
+import { useAct, usePoll, useStore } from '../lib/store';
 import { useTheme } from '../App';
 
 function KeyField({ label, envKey, isSet, onSaved }: { label: string; envKey: EnvKey; isSet: boolean; onSaved(msg: string): void }) {
@@ -26,6 +26,8 @@ export function Settings() {
   const [env, setEnv] = useState<CoreEnvView | null>(null);
   const [code, setCode] = useState<{ code: string; ttl: number } | null>(null);
   const [diag, setDiag] = useState('');
+  const memorySettings = usePoll<{ memory_repo_path: string }>('/dev/memory-settings', 0);
+  const [memoryPath, setMemoryPath] = useState<string | null>(null);
 
   const loadEnv = () => void window.piblo.env.get().then(setEnv);
   useEffect(() => {
@@ -131,6 +133,10 @@ export function Settings() {
 
       <section className="card" aria-labelledby="adv-h">
         <h2 id="adv-h">Advanced</h2>
+        <Setting title="Read-only memory folder" sub="Optional. Leave empty to hide the Piblo Dev memory view.">
+          <input className="input" aria-label="Memory folder" value={memoryPath ?? memorySettings.data?.memory_repo_path ?? ''} onChange={(event) => setMemoryPath(event.target.value)} />
+          <button className="btn" disabled={!running || memoryPath === null} onClick={() => void act('PUT', '/dev/memory-settings', { memory_repo_path: memoryPath }).then((r) => { if (r.ok) { setMemoryPath(null); memorySettings.reload(); } })}>Save</button>
+        </Setting>
         <Setting title="Piblo on this PC" sub={running ? `Running${health?.version ? ` v${health.version}` : ''} on port ${core?.port}${core?.managed ? ' (started by this app)' : ' (already running)'}` : core?.message ?? ''}>
           <button className="btn" onClick={restart}>Restart</button>
           <button className="btn" onClick={() => void window.piblo.core.openLogs()}>Open log</button>

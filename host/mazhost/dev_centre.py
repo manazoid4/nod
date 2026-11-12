@@ -81,6 +81,15 @@ class Feature(BaseModel):
     clip_path: str | None = None
 
 
+class TaskDraft(BaseModel):
+    title: str = Field(min_length=1, max_length=500)
+    task: str = Field(min_length=1, max_length=8000)
+
+
+class MemorySettings(BaseModel):
+    memory_repo_path: str = Field(default='', max_length=2048)
+
+
 def run_cli(args, *, local=False, cwd=None):
     private_mode.guard_subprocess(args[0], local=local)
     return subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=10, check=True).stdout
@@ -316,6 +325,92 @@ def build_dev_router(data_dir: Path, repo_dir: Path) -> APIRouter:
     @router.get('/usage')
     def get_usage():
         return usage()
+
+    @router.get('/workflow-templates')
+    def workflow_templates():
+        path = Path(__file__).parent / 'data' / 'workflow_templates' / 'templates.json'
+        return {'templates': json.loads(path.read_text(encoding='utf-8'))}
+
+    @router.get('/memory-settings')
+    def memory_settings():
+        path = base / 'memory-settings.json'
+        with file_lock(path):
+            return json.loads(path.read_text(encoding='utf-8')) if path.exists() else {'memory_repo_path': ''}
+
+    @router.put('/memory-settings')
+    def set_memory_settings(body: MemorySettings):
+        value = body.memory_repo_path.strip()
+        if value and not Path(value).expanduser().is_dir():
+            raise HTTPException(422, 'memory_folder_not_found')
+        base.mkdir(parents=True, exist_ok=True)
+        path = base / 'memory-settings.json'
+        with file_lock(path):
+            atomic_write(path, json.dumps({'memory_repo_path': value}))
+        return {'memory_repo_path': value}
+
+    @router.get('/memory')
+    def memory(q: str = ''):
+        configured = memory_settings()['memory_repo_path']
+        if not configured:
+            return {'configured': False}
+        root = Path(configured).expanduser().resolve()
+        if not root.is_dir():
+            raise HTTPException(503, 'memory_folder_unavailable')
+
+        def read(path):
+            try:
+                resolved = path.resolve()
+                if not resolved.is_relative_to(root) or not path.is_file() or path.stat().st_size > 1_000_000:
+                    return ''
+                return path.read_text(encoding='utf-8', errors='replace')
+            except OSError:
+                return ''
+
+        index = read(root / 'INDEX.md')
+        handoff = root / 'handoffs' / 'LATEST.md'
+        latest = read(handoff)
+        results = []
+        query = q.strip().casefold()[:200]
+        if query:
+            for folder, dirs, files in os.walk(root, followlinks=False):
+                dirs[:] = [d for d in dirs if d != '.git' and not (Path(folder) / d).is_symlink()]
+                for name in files:
+                    if not name.lower().endswith('.md'):
+                        continue
+                    path = Path(folder) / name
+                    try:
+                        if not path.resolve().is_relative_to(root):
+                            continue
+                        with path.open(encoding='utf-8', errors='replace') as stream:
+                            for line in stream:
+                                if query in line.casefold():
+                                    results.append({'path': path.relative_to(root).as_posix(), 'line': line.strip()[:500]})
+                                    break
+                    except OSError:
+                        continue
+                    if len(results) >= 20:
+                        break
+                if len(results) >= 20:
+                    break
+        try:
+            updated = datetime.fromtimestamp(handoff.stat().st_mtime, timezone.utc).isoformat() if latest else None
+        except OSError:
+            updated = None
+        return {'configured': True, 'headings': [line for line in index.splitlines() if re.match(r'^#{1,6}\s', line)][:100],
+                'handoff': '\n'.join(latest.splitlines()[:20]), 'updated': updated, 'results': results}
+
+    @router.post('/task-drafts')
+    def create_task_draft(body: TaskDraft):
+        folder = base / 'task-drafts'
+        folder.mkdir(parents=True, exist_ok=True)
+        row = {**body.model_dump(), 'id': uuid.uuid4().hex, 'status': 'draft', 'created': now()}
+        atomic_write(folder / (row['id'] + '.json'), json.dumps(row, ensure_ascii=False, indent=2))
+        return row
+
+    @router.get('/task-drafts')
+    def task_drafts():
+        folder = base / 'task-drafts'
+        return {'drafts': [json.loads(path.read_text(encoding='utf-8')) for path in sorted(folder.glob('*.json'))]}
 
     @router.get('/github')
     def github():

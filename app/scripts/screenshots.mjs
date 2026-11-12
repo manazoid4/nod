@@ -83,11 +83,29 @@ const shot = (page, name) => page.screenshot({ path: path.join(out, name + '.png
     ['Content Studio', '12-piblo-dev-content-1280'],
     ['Agents', '13-piblo-dev-agents-1280'],
     ['Builds', '14-piblo-dev-builds-1280'],
+    ['Features', '16-piblo-dev-features-1280'],
+    ['Templates', '17-piblo-dev-templates-1280'],
+    ['Memory', '18-piblo-dev-memory-1280'],
   ]) {
     await page.getByRole('tab', { name: tabName }).click();
     await page.waitForTimeout(600);
     await shot(page, fileName);
   }
+
+  // Pending phone approval must never start an agent.
+  await page.getByRole('tab', { name: 'Agents' }).click();
+  await page.getByLabel('Project').selectOption('example');
+  await page.getByLabel('Task', { exact: true }).fill('Review the change');
+  await page.getByRole('button', { name: 'Request approval' }).click();
+  await page.getByText('Approve on your phone, then check here.', { exact: false }).waitFor();
+  await page.getByRole('button', { name: 'Check approval and run' }).click();
+  const runs = await fetch(`http://localhost:${m.port}/mock/agent-runs`, { headers: { Authorization: `Bearer ${m.token}` } }).then((r) => r.json());
+  if (runs.count !== 0 || runs.request?.scope !== 'pc_full' || runs.request?.task !== 'Review the change') throw new Error('Approval request was not safely prepared');
+  await fetch(`http://localhost:${m.port}/mock/approve`, { method: 'POST', headers: { Authorization: `Bearer ${m.token}` } });
+  await page.getByRole('button', { name: 'Check approval and run' }).click();
+  await page.getByRole('button', { name: 'Request approval' }).waitFor();
+  const launched = await fetch(`http://localhost:${m.port}/mock/agent-runs`, { headers: { Authorization: `Bearer ${m.token}` } }).then((r) => r.json());
+  if (launched.count !== 1 || launched.run?.prompt !== runs.request.task || launched.run?.project !== 'example' || launched.run?.provider !== 'codex') throw new Error('Approved agent task did not match the request');
 
   await page.keyboard.press('Control+k');
   await page.waitForSelector('[role="dialog"][aria-label="Jump anywhere"]');

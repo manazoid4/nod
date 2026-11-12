@@ -7,6 +7,21 @@ export interface DevOverview {
   usage_warnings: number;
 }
 
+export interface DevFeature {
+  id: string; name: string; summary: string; category: string; source: string;
+  dependencies: string; status: string; steps: string[];
+  evidence: { who: string | null; when: string | null; note: string };
+}
+
+export interface WorkflowTemplate {
+  id: string; title: string; agent_kind: string; steps: string[]; checks: string[];
+}
+
+export interface DevMemory {
+  configured: boolean; headings?: string[]; handoff?: string; updated?: string | null;
+  results?: { path: string; line: string }[];
+}
+
 export interface DevChecklistItem {
   id: string;
   text: string;
@@ -77,6 +92,8 @@ export interface DevPrCheck {
   context?: string;
   state?: string;
   conclusion?: string;
+  detailsUrl?: string;
+  targetUrl?: string;
 }
 
 export interface DevPr {
@@ -169,6 +186,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   { id: 'dev:content', label: 'Piblo Dev: Content Studio', group: 'Piblo Dev', keywords: 'dev content studio drafts reddit x twitter linkedin instagram share approve' },
   { id: 'dev:agents', label: 'Piblo Dev: Agents', group: 'Piblo Dev', keywords: 'dev agents usage meters claude codex opencode hermes' },
   { id: 'dev:builds', label: 'Piblo Dev: Builds', group: 'Piblo Dev', keywords: 'dev builds github pull requests checks ci' },
+  { id: 'dev:features', label: 'Piblo Dev: Features', group: 'Piblo Dev', keywords: 'feature catalogue categories tests evidence' },
+  { id: 'dev:templates', label: 'Piblo Dev: Templates', group: 'Piblo Dev', keywords: 'workflow template task draft' },
 ];
 
 export function filterCommands(commands: PaletteCommand[], query: string): PaletteCommand[] {

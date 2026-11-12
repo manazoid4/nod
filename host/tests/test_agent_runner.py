@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
+import time
+from types import SimpleNamespace
 
 import pytest
 
@@ -93,3 +96,21 @@ def test_explicit_pc_full_grant_still_validates_for_agent(tmp_path):
     )["request_id"])
     grant = runner._verify(approval["grant_token"], project, "claude")
     assert grant.scope == "pc_full"
+
+
+def test_cancel_stops_a_running_agent_process(tmp_path, monkeypatch):
+    cfg, broker = make(tmp_path)
+    runner = AgentRunner(cfg, broker)
+    monkeypatch.setattr(runner, '_verify', lambda *args: SimpleNamespace(grant_id='test'))
+    monkeypatch.setattr(runner, '_argv', lambda *args: [sys.executable, '-c', 'import time; time.sleep(60)'])
+    job = runner.start(provider='codex', prompt='wait', project=str(tmp_path), grant_token='test')
+    deadline = time.monotonic() + 10
+    while job['job_id'] not in runner._processes and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert job['job_id'] in runner._processes
+    process = runner._processes[job['job_id']]
+    assert runner.cancel(job['job_id'])['state'] == 'cancelled'
+    process.wait(timeout=10)
+    assert runner.job(job['job_id'])['state'] == 'cancelled'
+    with pytest.raises(AgentRunError, match='not_running'):
+        runner.cancel(job['job_id'])

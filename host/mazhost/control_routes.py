@@ -214,6 +214,13 @@ def install_control_routes(
     def agent_jobs(limit: int = 20):
         return {"ok": True, "jobs": agents.jobs(limit)}
 
+    @api.post("/agents/job/{job_id}/cancel")
+    def agent_cancel(job_id: str):
+        try:
+            return {"ok": True, "job": agents.cancel(job_id)}
+        except AgentRunError as error:
+            raise HTTPException(409, str(error)) from error
+
     # CREW planning is available without elevation. Execution is a separate
     # endpoint and requires a signed PROJECT FULL-or-broader phone grant.
     @api.post("/work/crew/execute")
