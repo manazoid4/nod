@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "channel": "beta",
+  "components": {
+    "windows_app": {
+      "version": "0.2.0-beta.1",
+      "release_url": "https://github.com/manazoid4/piblo/releases/tag/app-v0.2.0-beta.1",
+      "signing": "unsigned",
+      "update_feed": "https://github.com/manazoid4/piblo/releases/download/app-latest/beta.yml",
+      "artifacts": [
+        {
+          "name": "beta.yml",
+          "sha256": "903df3a215d6eef08adfec9204d3fc50e9b5537722b0e13a64a4662782bfd11a",
+          "bytes": 359,
+          "url": "https://github.com/manazoid4/piblo/releases/download/app-v0.2.0-beta.1/beta.yml"
+        },
+        {
+          "name": "Piblo-Setup-0.2.0-beta.1.exe",
+          "sha256": "89f948482e25ebe23b1e0995d516d5afbce52e4121ab06274525ae469c4a030d",
+          "bytes": 83327546,
+          "url": "https://github.com/manazoid4/piblo/releases/download/app-v0.2.0-beta.1/Piblo-Setup-0.2.0-beta.1.exe"
+        },
+        {
+          "name": "Piblo-Setup-0.2.0-beta.1.exe.blockmap",
+          "sha256": "6ddc53439d795839b227d68deca2b88d1d62aa8be85340bc41e6d5c817d74b37",
+          "bytes": 87248,
+          "url": "https://github.com/manazoid4/piblo/releases/download/app-v0.2.0-beta.1/Piblo-Setup-0.2.0-beta.1.exe.blockmap"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "sha256": "5342c4322c1b3e26b4e90f54cf0c6364d6209d83325881d1e68801920c2b293f",
+          "bytes": 277,
+          "url": "https://github.com/manazoid4/piblo/releases/download/app-v0.2.0-beta.1/SHA256SUMS.txt"
+        }
+      ],
+      "minimum_requirements": [
+        "Windows 10/11 x64",
+        "Python 3.10+ with pip for Core",
+        "Internet for initial Core dependencies; same network as Piblo for device pairing"
+      ]
+    },
+    "android_app": {
+      "version": "0.1.1-beta",
+      "version_code": 2,
+      "release_url": "https://github.com/manazoid4/piblo/releases/tag/android-v0.1.1-beta",
+      "signing": "Dedicated local Piblo beta key; RSA 3072; APK v2/v3 signatures verified",
+      "signing_certificate_sha256": "d03305c21ab6450e1437941960f5da7bab33b0b302e59a9241baa45661ca6807",
+      "artifacts": [
+        {
+          "name": "Piblo-Android-0.1.1-beta.apk",
+          "sha256": "75b395173d58d428b97239af0d42f5a0a6efdf20c88207291ccc6aa569e4f548",
+          "bytes": 1405448,
+          "url": "https://github.com/manazoid4/piblo/releases/download/android-v0.1.1-beta/Piblo-Android-0.1.1-beta.apk"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "sha256": "058759834763923886fb69727824e6c53c4d47a0839644b7ede0acb6833db3ac",
+          "bytes": 96,
+          "url": "https://github.com/manazoid4/piblo/releases/download/android-v0.1.1-beta/SHA256SUMS.txt"
+        }
+      ],
+      "minimum_requirements": [
+        "Android 8.0+ (API 26+; target API 36)",
+        "Allow installation from the browser/file manager used to open the APK",
+        "Network access to Core"
+      ]
+    },
+    "core": {
+      "version": "1.5.1",
+      "distribution": "Source bundled with Windows installer; Python dependencies installed during Core setup"
+    },
+    "firmware": {
+      "version": "1.5.1",
+      "distribution": "Current source version; unchanged and not included in these beta releases; no device flashing performed"
+    }
+  },
+  "tested_platforms": [
+    {
+      "platform": "Windows 11 x64 (10.0.26200)",
+      "checks": [
+        "npm ci completed",
+        "TypeScript typecheck passed",
+        "170 app unit tests passed",
+        "12 Electron UI checks passed using mock Core/device",
+        "Unsigned NSIS installer built",
+        "beta.yml version, size and SHA-512 verified against installer",
+        "Android Gradle testDebugUnitTest and assembleRelease passed; 17 unit tests",
+        "APK version code/name/minimum SDK inspected; signature and zip alignment verified"
+      ]
+    },
+    {
+      "platform": "Ubuntu GitHub Actions",
+      "checks": [
+        "Full Core suite passed",
+        "Android debug assembly and unit tests passed",
+        "MCP and firmware logic/build/size checks passed"
+      ]
+    },
+    {
+      "platform": "Windows GitHub Actions",
+      "checks": [
+        "Full Core suite passed",
+        "Windows app typecheck, 170 tests and NSIS packaging passed",
+        "Firmware build and installer/package checks passed"
+      ]
+    }
+  ],
+  "test_caveats": [
+    "Local full Core run had one timing failure during concurrent builds; first focused retry also exceeded 30 seconds on initial import. Final unchanged test passed: first import 25.95s, warm re-import 10.21s. No threshold or production code changed."
+  ],
+  "physical_hardware_pending": [
+    "Windows installer execution on a fresh PC, uninstall and rollback",
+    "Installing an automatic Windows update and restarting into it",
+    "Real Piblo pairing, live screen and remote keys with these beta apps",
+    "Android APK install/upgrade/rollback on a physical phone",
+    "Android notification forwarding, permissions and background-service behavior on a physical phone"
+  ],
+  "not_distributed": [
+    "Google Play release",
+    "Windows code-signing certificate",
+    "New firmware image"
+  ],
+  "source_commit": "b15083688b35487838a732298b2deaadcc9eecc3",
+  "validation_evidence": {
+    "pull_request": "https://github.com/manazoid4/piblo/pull/103",
+    "linux_ci": "https://github.com/manazoid4/piblo/actions/runs/43284166999",
+    "windows_app_ci": "https://github.com/manazoid4/piblo/actions/runs/43284166893",
+    "android_ci": "https://github.com/manazoid4/piblo/actions/runs/43284166903",
+    "windows_core_ci": "https://github.com/manazoid4/piblo/actions/runs/43284166867",
+    "windows_release_ci": "https://github.com/manazoid4/piblo/actions/runs/43286022218"
+  },
+  "published_artifacts_downloaded_and_sha256_verified": true,
+  "windows_update_metadata_sha512_and_feed_assets_verified": true,
+  "verified_at": "2026-11-12T19:05:43.506Z"
+}
