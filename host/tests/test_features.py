@@ -9,20 +9,22 @@ def client(tmp_path):
     return TestClient(app)
 
 
-def test_every_feature_starts_in_testing_with_steps(tmp_path):
+def test_every_feature_starts_simulated_without_claiming_confirmation(tmp_path):
     rows = client(tmp_path).get('/features').json()['features']
     ids = {row['id'] for row in rows}
     assert {'ask-on-piblo', 'private-mode', 'where-was-i-park-it', 'catch-me-up', 'maker'} <= ids
-    assert all(row['status'] == 'testing' and row['steps'] and row['summary'] for row in rows)
+    assert all(row['status'] in ('simulated', 'implemented') and row['steps'] and row['summary'] for row in rows)
+    assert all(row['category'] and row['source'] and row['dependencies'] and not row['evidence']['when'] for row in rows)
 
 
 def test_confirm_then_unconfirm_round_trip(tmp_path):
     api = client(tmp_path)
-    row = api.post('/features/private-mode/confirm', json={'note': 'blocked cloud ok'}).json()
+    row = api.post('/features/private-mode/confirm', json={'note': 'blocked cloud ok', 'who': 'Tester'}).json()
     assert row['status'] == 'confirmed' and row['confirmed_at'] and row['note'] == 'blocked cloud ok'
+    assert row['evidence']['who'] == 'Tester'
     # survives a new router instance (persisted)
     assert next(r for r in client(tmp_path).get('/features').json()['features'] if r['id'] == 'private-mode')['status'] == 'confirmed'
-    assert api.post('/features/private-mode/unconfirm').json()['status'] == 'testing'
+    assert api.post('/features/private-mode/unconfirm').json()['status'] == 'simulated'
 
 
 def test_unknown_feature_and_bad_body_rejected(tmp_path):

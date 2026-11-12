@@ -286,6 +286,19 @@ export function startMock({ port = 18787, token = 'mock-token-123', deviceOnline
     if (p === '/diagnostics') return json(res, 200, { ok: true, cardputer: { connected: deviceOnline } });
 
     // Piblo Dev routes (/dev/*)
+    if (p === '/features') return json(res, 200, { features: [{ id: 'maker', name: 'Maker', summary: 'Printer status and safe actions.', category: 'maker', source: 'host/mazhost/maker.py', dependencies: 'Supported printer connection', status: 'simulated', steps: ['Open Maker on Piblo', 'Check printer status'], evidence: { who: null, when: null, note: '' } }, { id: 'private-mode', name: 'Private mode', summary: 'Keep work on your own computers.', category: 'secure', source: 'host/mazhost/private_mode.py', dependencies: 'None', status: 'simulated', steps: ['Enable private mode', 'Check a cloud action is blocked'], evidence: { who: null, when: null, note: '' } }] });
+    if (p === '/dev/workflow-templates') return json(res, 200, { templates: [{ id: 'audit-prs', title: 'Audit PRs', agent_kind: 'codex', steps: ['List open pull requests and their checks.', 'Review the changes and report actionable findings.'], checks: ['Relevant tests pass', 'Review findings are resolved'] }, { id: 'fix-ci', title: 'Fix CI', agent_kind: 'codex', steps: ['Inspect the failing check.', 'Reproduce and fix the cause.'], checks: ['The failing check passes'] }] });
+    if (p === '/dev/memory-settings') return json(res, 200, { memory_repo_path: '' });
+    if (p === '/dev/task-drafts' && req.method === 'GET') return json(res, 200, { drafts: [] });
+    if (p === '/dev/memory') return json(res, 200, { configured: true, headings: ['# Memory index', '## Projects'], handoff: '# Latest handover\nReview the next Piblo task.', updated: '2026-11-12T12:00:00Z', results: [] });
+    if (p === '/agents/providers') return json(res, 200, { providers: { claude: { available: true }, codex: { available: true }, hermes: { available: false } } });
+    if (p === '/agents/jobs') return json(res, 200, { jobs: [{ job_id: 'example', provider: 'codex', task: 'Review the latest changes', state: 'done' }] });
+    if (p === '/core/projects') return json(res, 200, { projects: [{ name: 'example' }] });
+    if (p === '/authority/request' && req.method === 'POST') { db.agentRequest = data; return json(res, 200, { request_id: 'mock-request', status: 'pending' }); }
+    if (p === '/authority/request/mock-request') return json(res, 200, db.agentApproved ? { status: 'approved', grant_token: 'mock-approved-grant' } : { status: 'pending' });
+    if (p === '/agents/run') { db.agentRuns = (db.agentRuns || 0) + 1; db.agentRun = data; return json(res, db.agentApproved ? 200 : 403, { ok: !!db.agentApproved }); }
+    if (p === '/mock/approve' && req.method === 'POST') { db.agentApproved = true; return json(res, 200, { ok: true }); }
+    if (p === '/mock/agent-runs') return json(res, 200, { count: db.agentRuns || 0, request: db.agentRequest, run: db.agentRun });
     if (p === '/dev/checklists' && req.method === 'GET') {
       return json(res, 200, { lists: db.devLists });
     }

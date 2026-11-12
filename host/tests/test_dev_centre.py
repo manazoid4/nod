@@ -31,6 +31,33 @@ def make_client(tmp_path):
     return TestClient(app)
 
 
+def test_workflow_templates_create_only_a_persistent_draft(tmp_path):
+    api = make_client(tmp_path)
+    templates = api.get('/dev/workflow-templates').json()['templates']
+    assert len(templates) == 6
+    assert all(row['steps'] and row['agent_kind'] and row['checks'] for row in templates)
+    draft = api.post('/dev/task-drafts', json={'title': templates[0]['title'], 'task': '\n'.join(templates[0]['steps'])}).json()
+    assert draft['status'] == 'draft'
+    assert make_client(tmp_path).get('/dev/task-drafts').json()['drafts'] == [draft]
+    assert api.post('/dev/task-drafts', json={'title': '', 'task': ''}).status_code == 422
+
+
+def test_memory_is_opt_in_and_search_is_bounded(tmp_path):
+    api = make_client(tmp_path)
+    assert api.get('/dev/memory').json() == {'configured': False}
+    memory = tmp_path / 'notes'
+    (memory / 'handoffs').mkdir(parents=True)
+    (memory / 'INDEX.md').write_text('# Index\n## Projects\n', encoding='utf-8')
+    (memory / 'handoffs' / 'LATEST.md').write_text('# Latest\nA handover', encoding='utf-8')
+    for i in range(25):
+        (memory / f'{i}.md').write_text('Find this phrase', encoding='utf-8')
+    assert api.put('/dev/memory-settings', json={'memory_repo_path': str(memory)}).status_code == 200
+    result = api.get('/dev/memory', params={'q': 'find THIS'}).json()
+    assert result['headings'] == ['# Index', '## Projects']
+    assert 'A handover' in result['handoff'] and result['updated']
+    assert len(result['results']) == 20
+
+
 def test_parallel_checklist_ticks_preserve_all_items_and_proof(tmp_path):
     folder = tmp_path / 'dev' / 'checklists'
     folder.mkdir(parents=True)

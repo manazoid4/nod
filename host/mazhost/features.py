@@ -1,7 +1,7 @@
 """Feature graduation: every feature starts in Dev mode and reaches the main app once Maz confirms it works.
 
 Features and their test steps come from the feature-tests checklist (one `## Heading` per feature).
-Confirmations live in `<data>/dev/features.json`; the app shows only confirmed features outside Dev mode.
+Confirmations live in `<data>/dev/features.json`.
 """
 from __future__ import annotations
 
@@ -30,6 +30,33 @@ SUMMARIES = {
     'maker': 'Printer status and safe pause or cancel.',
 }
 
+# These references describe the implementation, not proof of a device test.
+CATALOGUE = {
+    'ask-on-piblo': ('secure', 'host/mazhost/buddy.py', 'Piblo'),
+    'private-mode': ('secure', 'host/mazhost/private_mode.py', 'None'),
+    'where-was-i-park-it': ('everyday', 'host/mazhost/where.py', 'Piblo'),
+    'memory': ('everyday', 'host/mazhost/memory_notes.py', 'None'),
+    'rescue': ('everyday', 'host/mazhost/rescue.py', 'Piblo'),
+    'agent-builder': ('workflows', 'host/mazhost/agent_builder.py', 'An available agent'),
+    'speaks-first': ('buddy', 'host/mazhost/speaks_first.py', 'Audio output'),
+    'catch-me-up': ('everyday', 'host/mazhost/catchup.py', 'None'),
+    'buddy-forms': ('buddy', 'host/mazhost/buddy_forms.py', 'Piblo'),
+    'onboarding': ('everyday', 'host/mazhost/onboarding.py', 'Piblo'),
+    'maker': ('maker', 'host/mazhost/maker.py', 'Supported printer connection'),
+    'device-pairing': ('connect', 'host/mazhost/pairing.py', 'Piblo and a computer on the same network'),
+    'piblo-dev': ('dev', 'app/src/pages/PibloDev.tsx', 'Piblo Core and the Windows app'),
+    'workflow-templates': ('workflows', 'host/mazhost/data/workflow_templates/templates.json', 'Piblo Core and the Windows app'),
+}
+
+EXTRA_FEATURES = [
+    {'id': 'device-pairing', 'name': 'Connect Piblo', 'summary': 'Approve a connection between Piblo and this PC.',
+     'steps': ['Start Connect to computer on Piblo.', 'Review the request on the PC.', 'Allow it and check the connection.']},
+    {'id': 'piblo-dev', 'name': 'Piblo Dev', 'summary': 'Review development work, checks and agent usage.',
+     'steps': ['Open Piblo Dev in the Windows app.', 'Review Today, Agents and Builds.']},
+    {'id': 'workflow-templates', 'name': 'Workflow templates', 'summary': 'Prepare a task from a reusable workflow.',
+     'steps': ['Open Templates in Piblo Dev.', 'Use a template and save a task draft.']},
+]
+
 
 def slug(text: str) -> str:
     return re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
@@ -38,6 +65,7 @@ def slug(text: str) -> str:
 class ConfirmBody(BaseModel):
     model_config = ConfigDict(extra='forbid')
     note: str = Field(default='', max_length=500)
+    who: str = Field(default='', max_length=100)
 
 
 def build_features_router(data_dir: Path) -> APIRouter:
@@ -52,10 +80,18 @@ def build_features_router(data_dir: Path) -> APIRouter:
         for line in text.splitlines():
             if line.startswith('## '):
                 name = line[3:].strip()
-                current = {'id': slug(name), 'name': name, 'summary': SUMMARIES.get(slug(name), ''), 'steps': []}
+                ident = slug(name)
+                category, source, dependencies = CATALOGUE.get(ident, ('dev', '', 'Unknown'))
+                current = {'id': ident, 'name': name, 'summary': SUMMARIES.get(ident, name), 'steps': [],
+                           'category': category, 'source': source, 'dependencies': dependencies}
                 rows.append(current)
             elif current and (match := re.match(r'^\s*- \[[ xX]\] (.+)$', line)):
                 current['steps'].append(match.group(1).strip())
+        for extra in EXTRA_FEATURES:
+            if any(row['id'] == extra['id'] for row in rows):
+                continue
+            category, source, dependencies = CATALOGUE[extra['id']]
+            rows.append({**extra, 'category': category, 'source': source, 'dependencies': dependencies})
         return rows
 
     def load() -> dict:
@@ -74,8 +110,12 @@ def build_features_router(data_dir: Path) -> APIRouter:
 
     def view(feature: dict, state: dict) -> dict:
         record = state.get(feature['id'], {})
-        return {**feature, 'status': 'confirmed' if record.get('confirmed_at') else 'testing',
-                'confirmed_at': record.get('confirmed_at'), 'note': record.get('note', '')}
+        confirmed_at = record.get('confirmed_at')
+        simulated = feature['id'] in {'private-mode', 'where-was-i-park-it', 'memory', 'rescue', 'agent-builder', 'speaks-first', 'catch-me-up', 'buddy-forms', 'maker', 'device-pairing', 'piblo-dev', 'workflow-templates'}
+        status = 'simulated' if simulated else ('implemented' if feature['source'] else 'proposed')
+        return {**feature, 'status': 'confirmed' if confirmed_at else status,
+                'confirmed_at': confirmed_at, 'note': record.get('note', ''),
+                'evidence': {'who': record.get('who') or None, 'when': confirmed_at, 'note': record.get('note', '')}}
 
     def find(feature_id: str) -> dict:
         feature = next((row for row in catalogue() if row['id'] == feature_id), None)
@@ -104,7 +144,7 @@ def build_features_router(data_dir: Path) -> APIRouter:
     @router.post('/{feature_id}/confirm')
     def confirm(feature_id: str, body: ConfirmBody | None = None):
         body = body or ConfirmBody()
-        return write(feature_id, {'confirmed_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'note': body.note.strip()})
+        return write(feature_id, {'confirmed_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'note': body.note.strip(), 'who': body.who.strip()})
 
     @router.post('/{feature_id}/unconfirm')
     def unconfirm(feature_id: str):
