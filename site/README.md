@@ -23,7 +23,7 @@ The sender is `signups@mazworks.uk` for now. The form works without JavaScript (
 
 ## Before a Kickstarter campaign
 1. Replace concept renders and films with a real photographed prototype and test video. Kickstarter design-tech rules require a clear real prototype demonstration, not CGI of missing functions.
-2. Resolve the go/no-go gates in `docs/audits/` and update `/readiness/`.
+2. Resolve the go/no-go gates (kept privately) and update `/readiness/`.
 3. Set funding target, rewards, dates and shipping only after BOM, supplier quotes, taxes and delivery validation.
 4. Check page content for claims before copying sections into Kickstarter's editor.
 

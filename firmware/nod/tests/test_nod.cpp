@@ -4,6 +4,7 @@
 #include "../include/alert_policy.h"
 #include "../include/charge_monitor.h"
 #include "../include/poll_backoff.h"
+#include "../include/nod_hold.h"
 #include "../include/tone_seq.h"
 #include "../include/easy_keys.h"
 #include "../include/home_layout.h"
@@ -11,6 +12,7 @@
 #include "../include/talk_home.h"
 #include "../include/nod_theme.h"
 #include "../include/safe_file.h"
+#include "../include/pair_connect.h"
 #include <map>
 #include <string>
 using namespace nod;
@@ -57,6 +59,11 @@ int main() {
     // full detection with VBUS, plateau at 4.17V
     { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 4170, 0.0f, 5, 1);
       CHECK(m.state() == PowerState::Full); CHECK(m.percent() == 100); }
+    // load-recovery bump then a slow light-load decline must not stay "charging" (live bug, 10 Nov)
+    { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 3800, 8.0f, 4); CHECK(m.state() == PowerState::Charging);
+      feedRun(m, t, 3832, -0.5f, 5); CHECK(m.state() == PowerState::OnBattery); }
+    // a real charge keeps rising, so it stays Charging
+    { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 3700, 4.0f, 10); CHECK(m.state() == PowerState::Charging); }
     // VBUS removed => immediately OnBattery
     { ChargeMonitor m; uint32_t t = 0; feedRun(m, t, 3700, 6.0f, 5, 1); CHECK(m.state() == PowerState::Charging);
       t += 10000; m.feed(t, 3900, 0); CHECK(m.state() == PowerState::OnBattery); }
@@ -186,6 +193,12 @@ int main() {
       CHECK(!shouldSound(2, Priority::High) && shouldSound(2, Priority::Urgent));
       CHECK(forced(Priority::Urgent) && !forced(Priority::High));
       CHECK(moodFor(Priority::Low, true) == Mood::Celebrating && moodFor(Priority::Urgent, false) == Mood::NeedsAttention); }
+    { using namespace maz::nod;  // The Nod: hold-to-approve timing
+      CHECK(!holdDone(0) && !holdDone(HOLD_MS - 1) && holdDone(HOLD_MS) && holdDone(HOLD_MS + 5000));
+      CHECK(holdPercent(0) == 0 && holdPercent(HOLD_MS / 2) == 50 && holdPercent(HOLD_MS) == 100 && holdPercent(60000) == 100);
+      for (uint32_t ms = 0; ms < HOLD_MS + 50; ms += 7) CHECK(holdPercent(ms) <= holdPercent(ms + 7));  // monotonic
+      CHECK(HOLD_MS >= 500 && HOLD_MS <= 1200);  // deliberate, not tedious
+      CHECK(holdPercent(HOLD_MS - 1) == 99); }
     // tone sequencer: notes start on schedule, never early, never skipped, and nothing blocks
     { ToneSeq q; ToneStep s{};
       CHECK(!q.poll(0, s) && !q.playing(0));  // empty queue is silent
@@ -295,6 +308,38 @@ int main() {
       seen.add("id-1"); CHECK(seen.count == 1);  // re-adding a repeat is a no-op
       for (int i = 2; i <= 10; ++i) { char id[16]; snprintf(id, sizeof(id), "id-%d", i); seen.add(id); }
       CHECK(seen.count == kMaxSeenIds && !seen.seen("id-1") && seen.seen("id-10")); }
+
+    // pair_connect.h: discovery reply, code format, device id, poll states
+    { using namespace nod::pair;
+      Discovery d;
+      CHECK(parseDiscovery("{\"piblo\":1,\"port\":8787,\"name\":\"MAZPC\",\"version\":\"1.2\"}", d));
+      CHECK(d.port == 8787 && d.name == "MAZPC");
+      CHECK(parseDiscovery("{ \"piblo\" : 1 , \"port\" : 9000 }", d) && d.port == 9000 && d.name.empty());
+      CHECK(!parseDiscovery("{\"piblo\":2,\"port\":8787}", d));
+      CHECK(!parseDiscovery("{\"port\":8787}", d));
+      CHECK(!parseDiscovery("{\"piblo\":1,\"port\":0}", d));
+      CHECK(!parseDiscovery("{\"piblo\":1,\"port\":70000}", d));
+      CHECK(!parseDiscovery("not json", d));
+      CHECK(printableName(std::string("ab\x01\x7f" "c"), 32) == "abc");
+      CHECK(printableName(std::string(50, 'x'), 32).size() == 32);
+      CHECK(formatCode("482913") == "482 913");
+      CHECK(formatCode("48291").empty() && formatCode("4829133").empty() && formatCode("48a913").empty());
+      const uint8_t mac[6] = {0x12, 0x34, 0x56, 0xAB, 0xCD, 0x0F};
+      CHECK(deviceIdFromMac(mac) == "piblo-abcd0f");
+      CHECK(requestBody("piblo-abcd0f", "Piblo") == "{\"device_id\":\"piblo-abcd0f\",\"name\":\"Piblo\"}");
+      std::string tok;
+      CHECK(jsonString("{\"status\": \"approved\", \"token\": \"t\\\"k\"}", "token", tok) && tok == "t\"k");
+      CHECK(nextPhase(Phase::Waiting, 200, "pending") == Phase::Waiting);
+      CHECK(nextPhase(Phase::Waiting, 200, "approved") == Phase::Approved);
+      CHECK(nextPhase(Phase::Waiting, 200, "denied") == Phase::Denied);
+      CHECK(nextPhase(Phase::Waiting, 200, "expired") == Phase::TimedOut);
+      CHECK(nextPhase(Phase::Waiting, 404, "") == Phase::TimedOut);
+      CHECK(nextPhase(Phase::Waiting, -1, "") == Phase::Waiting);
+      CHECK(nextPhase(Phase::Waiting, 500, "") == Phase::Waiting);
+      CHECK(nextPhase(Phase::Denied, 200, "approved") == Phase::Denied);
+      CHECK(afterElapsed(Phase::Waiting, 119999) == Phase::Waiting);
+      CHECK(afterElapsed(Phase::Waiting, 120000) == Phase::TimedOut);
+      CHECK(afterElapsed(Phase::Approved, 999999) == Phase::Approved); }
 
     printf("%d checks, %d failed\n", checks, fails);
     return fails ? 1 : 0;

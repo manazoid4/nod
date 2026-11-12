@@ -9,7 +9,6 @@ if not re.fullmatch(r"\d+\.\d+(?:\.\d+)?", version):
     raise SystemExit(f"invalid VERSION: {version!r}")
 
 checks = {
-    "docs/pocket/MAZ-POCKET-README.md": f"Current release candidate: v{version}",
     "QUICKSTART.txt": f"PIBLO v{version}",
     "RELEASE_NOTES.md": f"v{version}",
     "CHANGELOG.md": f"## v{version}",

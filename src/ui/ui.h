@@ -21,6 +21,8 @@ void header(M5Canvas& g, const char* title, const char* right = nullptr);
 void panel(M5Canvas& g, int x, int y, int w, int h, uint16_t fill = theme::PANEL);
 void listRow(M5Canvas& g, int visibleIndex, bool selected, const char* label,
              const char* right = nullptr);
+// Rounded pill row in the Talk-circle button look; y is absolute, right = dim key hint.
+void pillRow(M5Canvas& g, int y, int h, bool selected, const char* label, const char* right = nullptr);
 void scrollBar(M5Canvas& g, int total, int firstVisible, int visible);
 void emptyState(M5Canvas& g, const char* line1, const char* line2 = nullptr);
 void bigValue(M5Canvas& g, const char* value, const char* caption,

@@ -5,12 +5,13 @@ from pathlib import Path
 import httpx
 
 from .config import Settings
+from . import private_mode
 
 
 class NudgeClient:
     def __init__(self, settings: Settings, client: httpx.Client | None = None) -> None:
         self.settings = settings
-        self.client = client or httpx.Client(timeout=5)
+        self.client = client or private_mode.client(timeout=5)
 
     @property
     def token(self) -> str:

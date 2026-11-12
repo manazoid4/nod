@@ -16,7 +16,7 @@
     "build": "tsc -p .",
     "test": "npm run build && node --test \"test/*.test.mjs\""
   },
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@modelcontextprotocol/client": "^2.4.0",
     "@modelcontextprotocol/server": "^2.4.0",

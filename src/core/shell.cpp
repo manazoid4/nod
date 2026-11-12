@@ -79,11 +79,12 @@ void pollPower() {
     static bool wasCharging = false;
     Sys.batteryPct = M5.Power.getBatteryLevel();
     Sys.batteryMv  = (int)M5.Power.getBatteryVoltage();
-    chargeMon.feed(millis(), Sys.batteryMv, -1);
-    const bool m5Says = M5.Power.isCharging() == m5::Power_Class::is_charging;
-    Sys.charging     = m5Says || chargeMon.charging();
-    Sys.powerState   = (uint8_t)(m5Says && chargeMon.state() != nod::PowerState::Full
-                                     ? nod::PowerState::Charging : chargeMon.state());
+    // A computer's USB host is certain power (1). Not plugged into a host is unknown (-1), not
+    // "absent": a wall charger has no USB host. M5.Power.isCharging() is no longer trusted: it
+    // reported charging while unplugged and kept the device stuck in charging mode.
+    chargeMon.feed(millis(), Sys.batteryMv, Serial.isPlugged() ? 1 : -1);
+    Sys.charging     = chargeMon.charging();
+    Sys.powerState   = (uint8_t)chargeMon.state();
     Sys.chargeEtaMin = chargeMon.etaMinutes();
     if (Sys.charging && !wasCharging && !Sys.recording && !host_worker::busy() &&
         strcmp(currentId(), "home") == 0) {
@@ -556,7 +557,7 @@ void loop() {
     top->update();
 
     static uint32_t lastPaint = 0;
-    const bool due = millis() - lastPaint > 250;
+    const bool due = millis() - lastPaint > (approvals::holding() ? 50u : 250u);
     if (!top->dirty() && !due) return;
     if (gScreenOff) return;
 

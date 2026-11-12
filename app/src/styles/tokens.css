@@ -68,14 +68,14 @@
   /* primary: tomato fill takes ink text per brand contrast rule */
             --accent: var(--tomato);
             --accent-hover: #e85a30;
-            --accent-soft: #f0d0b8;
+            --accent-soft: #f7d7c0;
             --on-accent: var(--ink);
 
   /* status: mint = connected/success, sun = highlight only */
           --ok: var(--mint-deep);
-          --ok-soft: var(--mint-soft);
-          --warn: var(--sun);
-          --warn-soft: #be8e18;
+          --ok-soft: #def4e7;
+          --warn: var(--ink);
+          --warn-soft: #b78918;
           --danger: var(--tomato-deep);
           --danger-soft: #ffd1c4;
 
@@ -120,9 +120,9 @@
           --on-accent: var(--ink);
 
           --ok: var(--mint);
-                    --ok-soft: var(--mint);
-                    --warn: var(--ink);
-                    --warn-soft: #a87018;
+                    --ok-soft: #163f30;
+                    --warn: var(--text);
+                    --warn-soft: #986610;
                     --danger: var(--tomato);
                     --danger-soft: #ffd1c4;
 
@@ -158,9 +158,9 @@
           --accent-soft: #ffd9c9;
           --on-accent: var(--ink);
           --ok: var(--mint);
-                    --ok-soft: var(--mint);
-                    --warn: var(--ink);
-                    --warn-soft: #a87018;
+                    --ok-soft: #163f30;
+                    --warn: var(--text);
+                    --warn-soft: #986610;
                     --danger: var(--tomato);
                     --danger-soft: #ffd1c4;
           --btn-stroke: 2px solid #fff4e0;

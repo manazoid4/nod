@@ -2,9 +2,14 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import hmac
 import logging
+import os
+import secrets
 import sqlite3
 import threading
+import textwrap
 import time
 import uuid
 from datetime import datetime, timezone
@@ -13,7 +18,7 @@ from datetime import date
 from typing import Callable, Literal
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .buddy_store import BuddyStore
 
@@ -50,15 +55,49 @@ AlertKind = Literal["reminder", "meeting", "deadline", "sla", "computer", "task_
 Priority = Literal["low", "normal", "high", "urgent"]
 AlertAction = Literal["ack", "snooze", "approve", "reject"]
 OTHER = "other"
+NOD_CATEGORIES = ("payment", "send", "delete", "post", "share", "other", "email", "calendar", "purchase", "deploy")
+MAX_AMOUNT, MAX_RECIPIENT = 16, 40
+MAX_NODS = 50
 TaskStatus = Literal["waiting", "running", "done", "failed"]
 CONNECTED_S = 20      # a client that polled this recently counts as connected
 KIND_KEY = {"done": "done", "needs": "needs", "error": "errors", "usage": "usage"}
+
+def _ask_env(name: str, default: str = "") -> str:
+    return os.environ.get("PIBLO_ASK_" + name, os.environ.get("MAZ_ASK_" + name, default))
+
+
+def _nod_summary(i: dict) -> str:
+    """Device text for a detailed approval, in the existing `summary` field so the firmware parses nothing new:
+    head, amount, recipient on three lines."""
+    to = "to " + i["recipient"] if i["recipient"] else ""
+    return f"ASK ON PIBLO  {i['category'].upper()}\n{i['amount']}\n{to}"
+
 
 def _local_today() -> str:
     return date.today().isoformat()
 
 
-class BuddyRequest(BaseModel):
+class NodFields(BaseModel):
+    """The Nod: optional details shown on the device, truncated (not rejected) at the boundary.
+    `nod: true` makes the device require a deliberate long-press to approve."""
+    amount: str = ""
+    recipient: str = ""
+    category: str = ""
+    nod: bool = False
+
+    @field_validator("amount", "recipient", mode="before")
+    @classmethod
+    def _clip(cls, v, info):
+        return str(v or "").strip()[:MAX_AMOUNT if info.field_name == "amount" else MAX_RECIPIENT]
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def _category(cls, v):
+        v = str(v or "").strip().lower()
+        return v if v in NOD_CATEGORIES else (OTHER if v else "")
+
+
+class BuddyRequest(NodFields):
     tool: str = Field(min_length=1, max_length=120)
     summary: str = Field(default="", max_length=200)
     session_id: str = Field(default="", max_length=120)
@@ -66,11 +105,15 @@ class BuddyRequest(BaseModel):
     agent: str = Field(default="", max_length=60)             # piblo-proto v1 additions (all optional)
     idempotency_key: str = Field(default="", max_length=80)
     sensitive: bool = False
+    urgent: bool = False
+    undo: str = Field(default="", max_length=200)
 
 
 class BuddyDecision(BaseModel):
     id: str
-    decision: Literal["allow", "deny", "allow_all", "cancel"]
+    decision: Literal["allow", "deny", "allow_all", "cancel", "edit", "undo"]
+    proof: str = ""
+    instruction: str = Field(default="", max_length=500)
 
 
 class BuddyEvent(BaseModel):
@@ -83,7 +126,7 @@ class BuddyEvent(BaseModel):
     idempotency_key: str = Field(default="", max_length=80)
 
 
-class AlertIn(BaseModel):
+class AlertIn(NodFields):
     """Generic notification (reminder, webhook, ...). kind=approval is routed into the
     existing approval queue, never into the notify ring."""
     source: str = Field(default="webhook", max_length=40)
@@ -131,8 +174,11 @@ class HaltBody(BaseModel):
 
 
 class Buddy:
-    def __init__(self, today: Callable[[], str] | None = None, store: BuddyStore | None = None) -> None:
+    def __init__(self, today: Callable[[], str] | None = None, store: BuddyStore | None = None,
+                 focus=None, device_keys: dict[str, str] | None = None) -> None:
         self.store = store
+        self.focus = focus
+        self.device_keys = device_keys if device_keys is not None else {}
         self._today = today or _local_today
         self._idem: dict[str, str] = {}     # idempotency key -> approval id (this process)
         self._clients: dict[str, dict] = {}
@@ -200,6 +246,7 @@ class Buddy:
                         if item["decision"] is None:
                             self._bump("denied")
                         item["decision"], item["reason"] = "deny", HALT_REASON
+                        item["decided_t"] = time.time()
                         self._db("set_approval_decision", item["id"], "deny", "halt", HALT_REASON)
                 self._cv.notify_all()
             else:
@@ -251,8 +298,9 @@ class Buddy:
             if a.delay_seconds:
                 raise ValueError("approval_cannot_be_delayed")
             # Same queue, same authority/halt/timeout rules as the Claude Code hook.
-            item = self.request(a.title, a.body, project=a.source[:60], agent=a.agent,
-                                idem=a.idempotency_key, sensitive=a.sensitive)
+            item = self.request(a.title, a.body, project=a.source[:60], amount=a.amount,
+                                recipient=a.recipient, category=a.category, nod=a.nod,
+                                agent=a.agent, idem=a.idempotency_key, sensitive=a.sensitive)
             return {"ok": True, "routed": "approval", "id": item["id"], "decision": item["decision"]}
         if any(x in ("approve", "reject") for x in a.actions):
             raise ValueError("approve_reject_only_for_approval_kind")
@@ -399,109 +447,230 @@ class Buddy:
         expired = row["decision"] in (None, "expired")
         return {"id": row["id"], "tool": row["tool"], "summary": row["summary"], "agent": row["agent"],
                 "decision": "cancel" if expired else row["decision"], "known": True,
+                "digest": row.get("digest", ""), **({"instruction": row["instruction"]} if row.get("instruction") else {}),
                 **({"expired": True} if expired else {}), **({"reason": row["reason"]} if row["reason"] else {})}
 
     def request(self, tool: str, summary: str, session_id: str = "", project: str = "",
-                agent: str = "", idem: str = "", sensitive: bool = False) -> dict:
+                amount: str = "", recipient: str = "", category: str = "", nod: bool = False,
+                agent: str = "", idem: str = "", sensitive: bool = False, urgent: bool = False,
+                undo: str = "") -> dict:
         with self._cv:
+            digest = self._digest({"tool": tool, "summary": summary, "agent": agent or project,
+                                   "amount": amount, "recipient": recipient,
+                                   "category": (category or OTHER) if amount or recipient or category or nod else "",
+                                   "nod": nod, "sensitive": sensitive, "urgent": urgent, "undo": undo,
+                                   "session_id": session_id, "project": project})
             if idem:
                 known = self._idem.get(idem)
                 if known in self._items:
+                    if self._items[known]["digest"] != digest:
+                        raise HTTPException(status_code=409, detail="idempotency key already used for a different request")
                     return {**self._items[known], "duplicate": True}
                 row = self._db("find_approval_by_idem", idem)
                 if row:
+                    if row.get("digest") != digest:
+                        raise HTTPException(status_code=409, detail="idempotency key already used for a different request")
                     return {**self._stored_view(row), "duplicate": True}
             rid = uuid.uuid4().hex[:8]
-            auto = "deny" if self._halted_locked() else None
+            locked = category in ("purchase", "delete") and _ask_env("UNLOCK_" + category.upper()) != "1"
+            auto = "deny" if self._halted_locked() or locked else None
             if auto:
                 self._roll()
                 self._bump("denied")
             self._items[rid] = {"id": rid, "tool": tool, "summary": summary,
                                 "session_id": session_id, "project": project, "t": time.time(),
                                 "deadline": time.monotonic() + TIMEOUT_S,
-                                "decision": auto, "agent": agent or project, "sensitive": sensitive}
+                                "decision": auto, "agent": agent or project, "sensitive": sensitive,
+                                "urgent": urgent, "undo": undo}
+            if amount or recipient or category or nod:
+                self._items[rid].update(amount=amount, recipient=recipient,
+                                        category=category or OTHER, nod=nod)
+            item = self._items[rid]
+            fields = [f"From: {item['agent'] or 'Helper'}"]
+            if recipient:
+                fields.append(f"To: {recipient}")
+            fields.append(f"What: {tool}")
+            if summary and summary != tool:
+                fields.append(summary)
+            if amount:
+                fields.append(f"How much: {amount}")
+            if category and category != OTHER:
+                fields.append(f"Category: {category}")
+            item["card"] = [line for field in fields for line in textwrap.wrap(field, width=24)]
+            item["digest"] = self._digest(item)
+            item["nonce"] = secrets.token_hex(32)
             if auto:
-                self._items[rid]["reason"] = HALT_REASON
+                self._items[rid]["reason"] = "category_locked" if locked else HALT_REASON
+                self._items[rid]["decided_t"] = time.time()
             if idem:
                 self._idem[idem] = rid
             self._db("add_approval", self._items[rid], idem or None)
+            self._focus_locked()
             if agent or project:
                 self._db("touch_agent", agent or project)
             while len(self._items) > MAX_ITEMS:
                 self._items.pop(next(iter(self._items)))  # dicts keep insertion order
             return dict(self._items[rid])
 
+    @staticmethod
+    def _digest(item: dict) -> str:
+        fields = {k: item.get(k, "") for k in ("agent", "tool", "summary", "amount", "recipient", "category",
+                                                "session_id", "project", "undo")}
+        fields.update({k: bool(item.get(k, False)) for k in ("nod", "sensitive", "urgent")})
+        return hashlib.sha256(json.dumps(fields, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+
+    def _focus_locked(self) -> None:
+        muted = bool(self.focus and self.focus.muted)
+        now = time.monotonic()
+        for item in self._items.values():
+            if item["decision"] is not None or item.get("urgent"):
+                continue
+            if muted:
+                if "held_since" in item or now < item["deadline"]:
+                    item.setdefault("held_since", now)
+            elif "held_since" in item:
+                item["deadline"] += now - item.pop("held_since")
+
+    def sync_focus(self) -> None:
+        with self._cv:
+            self._focus_locked()
+            self._cv.notify_all()
+
     def state(self, rid: str, wait: float = 0) -> dict:
         end = time.monotonic() + wait
         with self._cv:
             while True:
+                self._focus_locked()
                 item = self._items.get(rid)
                 if item is None:
                     row = self._db("approval_row", rid)
                     return self._stored_view(row) if row else {"id": rid, "decision": None, "known": False}
-                if time.monotonic() >= item["deadline"]:
+                if item["decision"] != "undone" and "held_since" not in item and time.monotonic() >= item["deadline"]:
                     if not item["decision"]:
-                        item["decision"] = "cancel"
+                        item["decision"], item["decided_t"] = "cancel", time.time()
                         self._db("set_approval_decision", rid, "expired", "timeout")
                         self._cv.notify_all()
                     # A grant consumed after its deadline is never safe, even if
                     # somebody approved it while the hook was temporarily offline.
                     return {"id": rid, "decision": "cancel", "known": True, "expired": True}
                 if item["decision"] or time.monotonic() >= end:
-                    result = {"id": rid, "decision": item["decision"], "known": True}
+                    result = {"id": rid, "decision": item["decision"], "known": True, "digest": item["digest"]}
+                    if item.get("instruction"):
+                        result["instruction"] = item["instruction"]
                     if item.get("reason"):
                         result["reason"] = item["reason"]
                     return result
-                self._cv.wait(end - time.monotonic())
+                self._cv.wait(min(1, end - time.monotonic()))
 
     def pending(self) -> list[dict]:
         with self._cv:
+            self._focus_locked()
             now = time.monotonic()
             return [dict(i) for i in self._items.values()
-                    if not i["decision"] and now < i["deadline"]]
+                    if not i["decision"] and "held_since" not in i and now < i["deadline"]]
 
     def summary(self, limit: int = 3) -> dict:
         """Cheap device poll: oldest-first live pending items + idle/working/needs_you."""
         now = time.time()
         monotonic_now = time.monotonic()
         with self._cv:
+            self._focus_locked()
             live = [i for i in self._items.values()
-                    if not i["decision"] and monotonic_now < i["deadline"]]
+                    if not i["decision"] and "held_since" not in i and monotonic_now < i["deadline"]]
             recent = any(now - i["t"] < WORKING_S for i in self._items.values())
-            items = [{"id": i["id"], "tool": i["tool"], "summary": i["summary"],
+            items = [{"id": i["id"], "tool": i["tool"],
+                      "summary": _nod_summary(i) if "category" in i and i["category"] != "message" else i["summary"],
                       "project": i.get("project", ""), "agent": i.get("agent", ""),
                       "sensitive": bool(i.get("sensitive")), "session_id": i["session_id"],
-                      "left": max(0, int(i["deadline"] - monotonic_now))} for i in live[:limit]]
+                      "left": max(0, int(i["deadline"] - monotonic_now)),
+                      **{k: i[k] for k in ("amount", "recipient", "category", "nod", "digest", "nonce", "card") if k in i}}
+                     for i in live[:limit]]
             return {"ok": True, "agent": "needs_you" if live else "working" if recent else "idle",
                     "count": len(live), "items": items}
 
-    def decide(self, rid: str, decision: str, by: str = "") -> dict:
+    def decide(self, rid: str, decision: str, by: str = "", proof: str = "", instruction: str = "",
+               device_id: str = "") -> dict:
         with self._cv:
+            self._focus_locked()
             item = self._items.get(rid)
             if item is None:
                 raise KeyError(rid)
             if decision == "allow_all":
                 raise ValueError("session_wide_approval_disabled")
-            if time.monotonic() >= item["deadline"]:
+            if decision != "undo" and "held_since" not in item and time.monotonic() >= item["deadline"]:
                 if not item["decision"]:
-                    item["decision"] = "cancel"
+                    item["decision"], item["decided_t"] = "cancel", time.time()
                     self._db("set_approval_decision", rid, "expired", "timeout")
                     self._cv.notify_all()
                 raise TimeoutError("approval_expired")
-            if item["decision"]:
+            if decision == "undo" and item["decision"] == "allow":
+                if time.time() > item.get("undo_until", 0):
+                    raise RuntimeError("undo_window_closed")
+                key = self.device_keys.get(device_id) or _ask_env("DEVICE_KEY")
+                message = f"{rid}:{item['digest']}:undo:{item['nonce']}".encode()
+                expected = hmac.new(key.encode(), message, hashlib.sha256).hexdigest() if key else ""
+                if not expected or not hmac.compare_digest(expected, proof):
+                    raise PermissionError("device_proof_required")
+                item["decision"], item["decided_t"] = "undone", time.time()
+                self._db("undo_approval", rid, by)
+                self._cv.notify_all()
                 return dict(item)
-            if decision not in ("allow", "deny", "cancel"):
+            if item["decision"]:
+                if decision in ("allow", "edit") and item["decision"] != "deny":
+                    raise RuntimeError("already_decided")
+                return dict(item)
+            if decision not in ("allow", "deny", "cancel", "edit"):
                 raise ValueError("unsupported_decision")
+            if decision == "edit":
+                if not instruction.strip():
+                    raise ValueError("instruction_required")
+                item["instruction"] = instruction.strip()
+            if decision == "allow" and "held_since" in item:
+                raise PermissionError("held_for_focus")
+            if decision == "allow" and not self._halted_locked():
+                key = self.device_keys.get(device_id) or _ask_env("DEVICE_KEY")
+                message = f"{rid}:{item['digest']}:{decision}:{item['nonce']}".encode()
+                expected = hmac.new(key.encode(), message, hashlib.sha256).hexdigest() if key else ""
+                legacy = _ask_env("LEGACY_DEVICE_DECIDE") == "1"
+                if self._digest(item) != item["digest"] or not (legacy or (expected and hmac.compare_digest(expected, proof))):
+                    raise PermissionError("device_proof_required")
             if self._halted_locked() and decision == "allow":
                 decision = "deny"
                 item["reason"] = HALT_REASON
-            item["decision"] = decision
-            self._db("set_approval_decision", rid, decision, by, item.get("reason"))
+            item["decision"], item["decided_t"] = decision, time.time()
+            item["result_digest"] = item["digest"]
+            if decision == "allow" and item.get("undo"):
+                item["undo_until"] = time.time() + 30
+            self._db("set_approval_decision", rid, decision, by, item.get("reason"), item.get("instruction", ""))
             if decision != "cancel":
                 self._roll()
                 self._bump("approved" if decision == "allow" else "denied")
             self._cv.notify_all()
             return dict(item)
+
+    def nods(self, limit: int = 20) -> dict:
+        """Nod log: recent approval outcomes, newest first, from the in-memory queue (last MAX_ITEMS)."""
+        iso = lambda t: datetime.fromtimestamp(t, timezone.utc).isoformat()  # noqa: E731
+        out, now = [], time.monotonic()
+        with self._cv:
+            for i in reversed(list(self._items.values())):
+                expired = now >= i["deadline"]
+                d = i["decision"]
+                if d == "allow":
+                    outcome = "approved"
+                elif d == "deny" or (d == "cancel" and not expired):
+                    outcome = "stopped"
+                elif expired:
+                    outcome = "expired"
+                else:
+                    continue   # still pending
+                out.append({"id": i["id"], "title": i["tool"], "amount": i.get("amount", ""),
+                            "recipient": i.get("recipient", ""), "category": i.get("category", ""),
+                            "nod": i.get("nod", False), "outcome": outcome, "requested_at": iso(i["t"]),
+                            "decided_at": iso(i.get("decided_t") or i["t"] + TIMEOUT_S)})
+                if len(out) >= limit:
+                    break
+        return {"ok": True, "nods": out}
 
     # ---- who is connected, tasks, device state
     def touch_client(self, client: str) -> None:
@@ -563,10 +732,20 @@ def client_id(request: Request) -> str:
 def install_buddy_routes(api: FastAPI, buddy: Buddy | None = None) -> Buddy:
     buddy = buddy or Buddy()
 
+    @api.post("/ask/pause")
+    def ask_pause(body: HaltBody):
+        return buddy.set_halt(body.on, body.minutes)
+
     @api.post("/buddy/request")
     def buddy_request(body: BuddyRequest):
         return buddy.request(body.tool, body.summary, body.session_id, body.project,
-                             agent=body.agent, idem=body.idempotency_key, sensitive=body.sensitive)
+                             body.amount, body.recipient, body.category, body.nod,
+                             agent=body.agent, idem=body.idempotency_key, sensitive=body.sensitive,
+                             urgent=body.urgent, undo=body.undo)
+
+    @api.get("/buddy/nods")
+    def buddy_nods(limit: int = 20):
+        return buddy.nods(min(max(limit, 1), MAX_NODS))
 
     @api.get("/buddy/state")
     def buddy_state(id: str, wait: float = 0):
@@ -584,11 +763,16 @@ def install_buddy_routes(api: FastAPI, buddy: Buddy | None = None) -> Buddy:
     @api.post("/buddy/decide")
     def buddy_decide(body: BuddyDecision, request: Request):
         try:
-            return buddy.decide(body.id, body.decision, client_id(request))
+            return buddy.decide(body.id, body.decision, client_id(request), body.proof,
+                                body.instruction, request.headers.get("x-piblo-device-id", ""))
         except KeyError:
             raise HTTPException(404, "request_not_found")
         except TimeoutError:
             raise HTTPException(409, "approval_expired")
+        except PermissionError as error:
+            raise HTTPException(403, str(error))
+        except RuntimeError as error:
+            raise HTTPException(409, str(error))
         except ValueError as error:
             raise HTTPException(400, str(error))
 

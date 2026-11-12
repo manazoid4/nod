@@ -109,6 +109,18 @@ describe("piblo-mcp", () => {
     assert.equal((await call(client, "piblo_request_approval", { action: "Delete build" })).decision, "rejected");
   });
 
+  test("approval passes card fields and returns edit instruction and digest", async () => {
+    core.script.states = [{ id: "r1", decision: "edit", instruction: "Revise it", digest: "abc" }];
+    const result = await call(client, "piblo_request_approval", { action: "Send", category: "email", recipient: "Team", amount: "10 credits", undo: "Recall" });
+    const sent = core.seen.filter((s) => s.url === "/buddy/request").at(-1).body;
+    assert.equal(sent.category, "email");
+    assert.equal(sent.recipient, "Team");
+    assert.equal(sent.undo, "Recall");
+    assert.equal(result.decision, "edit");
+    assert.equal(result.instruction, "Revise it");
+    assert.equal(result.digest, "abc");
+  });
+
   test("approval: Core-side expiry and cancel both read as expired", async () => {
     core.script.states = [{ id: "r1", decision: "cancel", expired: true }];
     assert.equal((await call(client, "piblo_request_approval", { action: "Deploy" })).decision, "expired");

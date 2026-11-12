@@ -91,6 +91,10 @@ const textBgPairs = [
   ['--tomato-deep', '--accent-soft'],
   // pair notice: text on warn-soft (inherits body text color)
   ['--text', '--warn-soft'],
+  // warning pill label and status dot
+  ['--warn', '--warn-soft'],
+  // connected pill label and status dot
+  ['--ok', '--ok-soft'],
   // toast: bg on text (dark text on light)
   ['--bg', '--text'],
   // toast.bad: bg on danger
@@ -105,8 +109,8 @@ const focusPairs = {
   dark: [['--text', '--bg']],
 };
 
-// Accent colors used as UI component backgrounds (buttons, badges, marks)
-// These need >= 3:1 against their container background (surface/bg)
+// Controls and status indicators that convey meaning need >= 3:1 against their container.
+// The pair mark's decorative accent fill is covered by its icon contrast above.
 // Checked in BOTH themes
 const accentBgPairs = [
   // primary button (accent) on surface
@@ -116,13 +120,15 @@ const accentBgPairs = [
   ['--danger', '--surface'],
   // ok background (mint-deep/mint) on surface
   ['--ok', '--surface'],
-  // warn-soft (sun/amber) on surface (pair notice)
+  // warning banner fill conveys status against its container
   ['--warn-soft', '--surface'],
-  // accent-soft on surface (pair mark)
-  ['--accent-soft', '--surface'],
 ];
 
 describe('WCAG contrast', () => {
+  it('uses the same dark tokens for system and explicit dark mode', () => {
+    expect(parseTokens(css, ':root:not([data-theme="light"])')).toEqual(darkTokens);
+  });
+
   for (const [themeName, tokens] of Object.entries({ light: lightTokens, dark: darkTokens })) {
     describe(`${themeName} theme`, () => {
       const allTokens = { ...lightTokens, ...tokens };

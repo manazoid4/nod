@@ -19,10 +19,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
+from .agent_builder import AgentBuilder, build_agent_router
 from .authority import AuthorityBroker
 from .beam import BeamStore
 from .braindump import structure_braindump
-from .dump_routes import build_dump_router, save_safely
+from .dump_routes import build_dump_router, inbox_dir, save_safely
+from .catchup import Catchup, build_catchup_router
+from .share_in import build_share_router
+from .buddy_forms import build_buddy_forms_router
+from .onboarding import Onboarding, build_onboarding_router
 from .library_routes import build_library_router
 from .bridge import BridgeWorker
 from .buddy import AlertIn, Buddy, install_buddy_routes
@@ -35,9 +40,16 @@ from .control_routes import install_control_routes
 from .core import CoreError, MazCore
 from .debug_capsule import DebugCapsules
 from .device import DeviceMonitor
+from .discovery import DiscoveryResponder
 from . import fw
+from . import private_mode
 from .errors import ErrorCode, RouteError
 from .focus import Focus, install_focus_routes
+from .where import build_where_router
+from .memory_notes import MemoryNotes, build_memory_router
+from .learning import Learning
+from .speaks_first import SpeaksFirst
+from .rescue import install_rescue_routes
 from .executor import ElevatedExecutor
 from .jobs import CoreJobs
 from .live_voice import install_live_voice
@@ -52,6 +64,7 @@ from .remote import RemoteInfo
 from .security import RemoteGuardMiddleware, Security
 from .selfupdate import SelfUpdater
 from .sessions import SessionStore
+from .skill_vault import SkillVault
 from starlette.concurrency import run_in_threadpool
 from .flow import Flow, paste as paste_text
 from .stt import SpeechToText
@@ -90,6 +103,18 @@ class TextTurn(BaseModel):
     context: str = Field(default="", max_length=1_200)
 
 
+class SpeaksFirstCheck(BaseModel):
+    events: list[dict] = Field(default_factory=list, max_length=100)
+    deadlines: list[dict] = Field(default_factory=list, max_length=100)
+    now: float | None = None
+
+
+class LearningEvent(BaseModel):
+    feature: str = Field(min_length=1, max_length=100)
+    kind: Literal["shown", "acted", "skipped", "corrected"]
+    text: str = Field(default="", max_length=1000)
+
+
 class DeviceAction(BaseModel):
     action: str
 
@@ -114,6 +139,10 @@ class ExtractRequest(BaseModel):
 
 class SpeakRequest(BaseModel):
     text: str = Field(min_length=1, max_length=1_400)
+
+
+class PrivacyRequest(BaseModel):
+    private_mode: bool
 
 
 class BeamRequest(BaseModel):
@@ -157,6 +186,7 @@ def create_app(
     subtitles: SubtitleJobs | None = None,
 ) -> FastAPI:
     cfg = settings or Settings()
+    private_mode.init(cfg)
     security = Security(cfg)
     speech = stt or SpeechToText(cfg)
     speech_out = SpeechOut(cfg)
@@ -202,12 +232,16 @@ def create_app(
         CORSMiddleware,
         allow_origins=cfg.web_origin_list,
         allow_credentials=False,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-MAZ-Token", "X-MAZ-Context"],
         expose_headers=["X-MAZ-Width", "X-MAZ-Height", "X-MAZ-Format"],
     )
     install_validation_exception_handler(api)
     api.add_middleware(RemoteGuardMiddleware)
+
+    @api.exception_handler(private_mode.PrivateModeError)
+    async def private_error_handler(_request: Request, error: private_mode.PrivateModeError):
+        return JSONResponse(status_code=403, content={"ok": False, "error": "PRIVATE_MODE", "detail": str(error)})
 
     @api.exception_handler(RouteError)
     async def route_error_handler(_request: Request, error: RouteError) -> JSONResponse:
@@ -244,9 +278,21 @@ def create_app(
     def stop_selfupdate() -> None:
         updates.stop()
 
+    discovery = DiscoveryResponder(cfg.discovery_port, cfg.port)
+
+    @api.on_event("startup")
+    def start_discovery() -> None:
+        discovery.start()
+
+    @api.on_event("shutdown")
+    def stop_discovery() -> None:
+        discovery.stop()
+
     @api.on_event("startup")
     def start_bridge() -> None:
         logging.getLogger("uvicorn.error").info("Piblo Core v%s starting", CORE_VERSION)
+        if private_mode.enabled():
+            return  # no GitHub bridge in private mode
         bridge_worker.start()
         threading.Thread(target=getattr(speech, "warm", lambda: None), daemon=True).start()
 
@@ -425,6 +471,7 @@ def create_app(
             "ok": True,
             "name": "nod Core",
             "version": CORE_VERSION,
+            "private_mode": private_mode.enabled(),
             "git_sha": updates.running_sha,
             "update": updates.brief(),
             "fw_latest": (lambda m: m and {"version": m["version"], "sha": m.get("sha", "")})(fw.manifest()),
@@ -473,6 +520,29 @@ def create_app(
     @api.get("/models")
     def models_status():
         return {**model_router.status(), "default_route": cfg.default_route}
+
+    @api.get("/privacy")
+    def privacy():
+        on = private_mode.enabled()
+        return {
+            "private_mode": on,
+            "outbound": "none" if on else "cloud_optional",
+            "cloud_services_in_use": [] if on else private_mode.cloud_services(cfg),
+            "data_dirs": [str(resolve_data_dir(cfg))],
+        }
+
+    @api.post("/privacy")
+    def privacy_set(body: PrivacyRequest):
+        if not body.private_mode and private_mode.enabled():
+            approval = buddy.request(
+                "Turn off private mode", "Allow Piblo Core to use internet services?",
+                category="other", recipient="Piblo Core internet", sensitive=True,
+            )
+            decision = buddy.state(approval["id"], wait=60)
+            if decision.get("decision") != "allow":
+                raise HTTPException(403, "PRIVATE_MODE: approval denied or expired")
+        private_mode.save(cfg, body.private_mode)
+        return privacy()
 
     @api.get("/diagnostics")
     def diagnostics():
@@ -948,17 +1018,59 @@ def create_app(
     # already-paired session inviting a new client in); /pair/claim is
     # intentionally reachable with no token, since exchanging a short-lived
     # code for the real credential is the whole point.
-    api.mount("/pair", build_pairing_app(cfg, security))
+    key_file = resolve_data_dir(cfg) / "ask-device-keys.json"
+    device_keys = json.loads(key_file.read_text(encoding="utf-8")) if key_file.exists() else {}
+
+    def save_device_keys():
+        key_file.parent.mkdir(parents=True, exist_ok=True)
+        temp = key_file.with_suffix(".tmp")
+        temp.write_text(json.dumps(device_keys), encoding="utf-8")
+        temp.replace(key_file)
+
+    api.mount("/pair", build_pairing_app(cfg, security, device_keys=device_keys, save_keys=save_device_keys, audit=authority.audit_action))
     buddy_store = None if cfg.buddy_db == "off" else BuddyStore(
         cfg.buddy_db or resolve_data_dir(cfg) / "buddy.sqlite3")
-    buddy = install_buddy_routes(api, Buddy(store=buddy_store))
+    buddy = install_buddy_routes(api, Buddy(store=buddy_store, focus=focus, device_keys=device_keys))
     install_companion_routes(api, buddy, cfg.port)
+
+    learning = Learning(resolve_data_dir(cfg), model_router)
+    speaks_first = SpeaksFirst(buddy, focus, learning=learning)
+
+    @api.get("/learning")
+    def learning_summary():
+        return {"summary": learning.weekly_summary()}
+
+    @api.post("/learning/event")
+    def learning_event(body: LearningEvent):
+        return learning.record(body.feature, body.kind, body.text)
+
+    @api.post("/learning/{feature}/rewrite")
+    def learning_rewrite(feature: str):
+        return learning.rewrite_note(feature)
+
+    @api.post("/speaks-first/check")
+    def speaks_first_check(body: SpeaksFirstCheck):
+        try:
+            return speaks_first.check(body.events, body.deadlines, body.now)
+        except (KeyError, TypeError, ValueError, OverflowError) as error:
+            raise HTTPException(400, "invalid_event_or_deadline") from error
 
     api.include_router(build_dump_router(cfg, model_router))
     api.include_router(webui_router)
     api.include_router(build_library_router(cfg, model_router))
     api.include_router(build_needs_router(cfg, buddy))
-    install_focus_routes(api, focus)
+    install_focus_routes(api, focus, buddy.sync_focus)
+    api.include_router(build_where_router(cfg, buddy, focus))
+    api.include_router(build_memory_router(MemoryNotes(resolve_data_dir(cfg))))
+    install_rescue_routes(api, security.authorize, resolve_data_dir(cfg))
+    api.include_router(build_agent_router(
+        AgentBuilder(cfg, SkillVault(cfg, model_router), resolve_data_dir(cfg), llm=model_router, buddy=buddy)))
+    onboarding = Onboarding(resolve_data_dir(cfg))
+    api.include_router(build_catchup_router(Catchup(
+        resolve_data_dir(cfg), buddy, inbox_dir(cfg) / "library")))
+    api.include_router(build_share_router(cfg, model_router))
+    api.include_router(build_onboarding_router(onboarding))
+    api.include_router(build_buddy_forms_router(onboarding=onboarding))
     install_live_voice(api, cfg, security, turn_timings)
     # ------------------------------------------------------------ SUBTITLES
     install_subtitle_routes(api, subtitle_jobs)

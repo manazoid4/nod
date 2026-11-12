@@ -1,5 +1,5 @@
 /* Nod concept B, "Retro-future handheld". Reusable by the site, Nod Core (Windows) and device screens.
-   Contrast (WCAG AA) is checked by site/tests/site.test.mjs. Keep in sync: site/concepts/b/tokens.css. */
+   Contrast (WCAG AA) is checked by site/tests/site.test.mjs. */
 :root {
   /* colour: plastic + charcoal */
   --plastic: #ece9e1;

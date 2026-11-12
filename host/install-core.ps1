@@ -51,7 +51,6 @@ Set-MazEnv "MAZ_MAZLATEST_MODEL" "MazLatest"
 Set-MazEnv "MAZ_BUILD_ID" $Version
 Set-MazEnv "MAZ_CARDPUTER_URL" "http://piblo.local"
 Set-MazEnv "MAZ_WEB_ORIGINS" "https://mazos-site.vercel.app,http://localhost:3000,http://127.0.0.1:3000"
-Set-MazEnv "MAZ_BRIDGE_REPO" "manazoid4/maz-pocket"
 Set-MazEnv "MAZ_LOCAL_MODEL_POLICY" "auto"
 
 # Preserve working model choices. If the configured primary disappeared, pick

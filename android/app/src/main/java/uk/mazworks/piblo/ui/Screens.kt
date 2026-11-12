@@ -116,7 +116,7 @@ fun HomeScreen() {
     val state by a.hub.state.collectAsStateWithLifecycle()
     val battery = rememberBattery()
     LazyColumn(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp)) {
-        item { PibloScreen(state, battery) }
+        item { if (state.link == LinkState.ONLINE) LiveScreen() else PibloScreen(state, battery) }
         item { PibloButtons(state, a.hub::answer, { FindPhone.stop(ctx) }) }
         item {
             Section("Status") {
