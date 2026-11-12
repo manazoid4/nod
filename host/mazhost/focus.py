@@ -97,11 +97,14 @@ class Focus:
             return out
 
 
-def install_focus_routes(api: FastAPI, focus: Focus) -> Focus:
+def install_focus_routes(api: FastAPI, focus: Focus, on_change=None) -> Focus:
     @api.post("/focus/start")
     def focus_start(body: FocusStart | None = None):
         body = body or FocusStart()
-        return focus.start(body.minutes, body.task)
+        result = focus.start(body.minutes, body.task)
+        if on_change:
+            on_change()
+        return result
 
     @api.get("/focus/state")
     def focus_state():
@@ -110,7 +113,10 @@ def install_focus_routes(api: FastAPI, focus: Focus) -> Focus:
     @api.post("/focus/end")
     def focus_end(body: FocusEnd):
         try:
-            return {"ok": True, "logged": focus.end(body.done)}
+            logged = focus.end(body.done)
+            if on_change:
+                on_change()
+            return {"ok": True, "logged": logged}
         except KeyError:
             raise HTTPException(409, "no_active_sprint")
 

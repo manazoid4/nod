@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from .agent_runner import AgentRunError, AgentRunner, Provider
+from . import private_mode
 from .authority import AuthorityBroker, AuthorityError, Scope
 from .debug_capsule import DebugCapsules
 from .executor import ElevatedExecutor, ExecutionError, Shell
@@ -188,6 +189,7 @@ def install_control_routes(
 
     @api.post("/agents/run")
     def agent_run(body: AgentRunRequest):
+        private_mode.guard_subprocess("agent CLI")
         try:
             project = core_service.project(body.project)
             return {"ok": True, "job": agents.start(
@@ -216,6 +218,7 @@ def install_control_routes(
     # endpoint and requires a signed PROJECT FULL-or-broader phone grant.
     @api.post("/work/crew/execute")
     def crew_execute(body: CrewExecuteRequest):
+        private_mode.guard_subprocess("agent crew")
         try:
             project = core_service.project(body.project)
             plan = workflows.crew(body.task, body.project, body.route)

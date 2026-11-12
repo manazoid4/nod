@@ -53,6 +53,10 @@ MIGRATIONS: list[str] = [
     CREATE INDEX approvals_created ON approvals(created);
     CREATE INDEX connections_ts ON connections(ts);
     """,
+    """
+    ALTER TABLE approvals ADD COLUMN digest TEXT NOT NULL DEFAULT '';
+    ALTER TABLE approvals ADD COLUMN instruction TEXT NOT NULL DEFAULT '';
+    """,
 ]
 SCHEMA_VERSION = len(MIGRATIONS)
 
@@ -180,17 +184,21 @@ class BuddyStore:
 
     def add_approval(self, item: dict, idem: str | None = None) -> None:
         self._run("INSERT INTO approvals(id, idem, agent, tool, summary, project, session_id, sensitive, "
-                  "created, decision, decided_at, decided_by, reason) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                  "created, decision, decided_at, decided_by, reason, digest) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                   (item["id"], idem, item.get("agent", ""), item["tool"], item.get("summary", ""),
                    item.get("project", ""), item.get("session_id", ""), int(bool(item.get("sensitive"))),
                    item["t"], item.get("decision"), time.time() if item.get("decision") else None,
-                   "auto" if item.get("decision") else None, item.get("reason")))
+                   "auto" if item.get("decision") else None, item.get("reason"), item.get("digest", "")))
 
-    def set_approval_decision(self, rid: str, decision: str, by: str = "", reason: str | None = None) -> None:
+    def set_approval_decision(self, rid: str, decision: str, by: str = "", reason: str | None = None, instruction: str = "") -> None:
         # Only an undecided row may change: the first answer wins, also across a restart.
-        self._run("UPDATE approvals SET decision=?, decided_at=?, decided_by=?, reason=COALESCE(?, reason) "
+        self._run("UPDATE approvals SET decision=?, decided_at=?, decided_by=?, reason=COALESCE(?, reason), instruction=? "
                   "WHERE id=? AND decision IS NULL",
-                  (decision, time.time(), by, reason, rid))
+                  (decision, time.time(), by, reason, instruction, rid))
+
+    def undo_approval(self, rid: str, by: str) -> None:
+        self._run("UPDATE approvals SET decision='undone', decided_at=?, decided_by=? WHERE id=? AND decision='allow'",
+                  (time.time(), by, rid))
 
     def approval_row(self, rid: str) -> dict | None:
         rows = self._all("SELECT * FROM approvals WHERE id=?", (rid,))

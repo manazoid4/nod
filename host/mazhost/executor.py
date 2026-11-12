@@ -9,6 +9,7 @@ from typing import Literal
 
 from .authority import AuthorityBroker, AuthorityError, Grant
 from .config import Settings
+from . import private_mode
 
 
 Shell = Literal["powershell", "cmd"]
@@ -69,6 +70,8 @@ class ElevatedExecutor:
         agent: str = "",
         requires_admin: bool = False,
     ) -> dict:
+        # Arbitrary shell commands cannot be proved local by parsing their text.
+        private_mode.guard_subprocess("shell command")
         if not command.strip():
             raise ExecutionError("command_required")
         required = {"admin"} if requires_admin else {"project_full"}
@@ -98,6 +101,7 @@ class ElevatedExecutor:
             },
         )
         try:
+            private_mode.guard_subprocess("shell command")
             completed = subprocess.run(
                 argv,
                 cwd=str(workdir),
