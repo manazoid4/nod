@@ -139,7 +139,7 @@ export function Settings() {
           <input className="input" aria-label="Memory folder" value={memoryPath ?? memorySettings.data?.memory_repo_path ?? ''} onChange={(event) => setMemoryPath(event.target.value)} />
           <button className="btn" disabled={!running || memoryPath === null} onClick={() => void act('PUT', '/dev/memory-settings', { memory_repo_path: memoryPath }).then((r) => { if (r.ok) { setMemoryPath(null); memorySettings.reload(); } })}>Save</button>
         </Setting>
-        <Setting title="Piblo on this PC" sub={running ? `Running${health?.version ? ` v${health.version}` : ''} on port ${core?.port}${core?.managed ? ' (started by this app)' : ' (already running)'}` : core?.message ?? ''}>
+        <Setting title="Piblo on this PC" sub={running ? `Core${health?.version ? ` v${health.version}` : ''} on port ${core?.port}${core?.managed ? ' (started by this app)' : ' (already running)'}` : core?.message ?? ''}>
           <button className="btn" onClick={restart}>Restart</button>
           <button className="btn" onClick={() => void window.piblo.core.openLogs()}>Open log</button>
         </Setting>
@@ -150,7 +150,7 @@ export function Settings() {
         <Setting title="Phone control page" sub="The approval page you can open from your phone.">
           <button className="btn" disabled={!running} onClick={() => void window.piblo.openExternal(`http://127.0.0.1:${core?.port}/control/`)}>Open</button>
         </Setting>
-        <Setting title="Piblo app" sub={`Version ${window.piblo.version}. ${describeUpdate(update.status)}`}>
+        <Setting title="Piblo app" sub={`App version ${window.piblo.version}. ${describeUpdate(update.status)}`}>
           {update.status?.state === 'ready' ? (
             <button className="btn" onClick={() => void update.install()}>Restart to update</button>
           ) : (
