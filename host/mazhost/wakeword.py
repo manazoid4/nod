@@ -1,4 +1,4 @@
-﻿"""Local streaming wakeword detection for 16 kHz mono PCM16 device audio."""
+"""Local streaming wakeword detection for 16 kHz mono PCM16 device audio."""
 from pathlib import Path
 
 import numpy as np
