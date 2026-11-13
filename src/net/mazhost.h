@@ -241,7 +241,7 @@ Reply workIncrement(const std::string& trackId, const std::string& eventTypeId);
 
 CoreStatus coreStatus();
 // Core /health: its version plus the firmware it holds (fw_latest). Polled in the background.
-struct CoreInfo { bool ok = false; std::string version, fwVersion, fwSha, remoteUrl; };
+struct CoreInfo { bool ok = false, fwUpdateAvailable = false; std::string version, fwVersion, fwSha, remoteUrl; };
 CoreInfo fetchCoreInfo();
 // Core /buddy: Claude Code approvals waiting for a thumb (see docs/APPROVALS.md).
 // The Nod: a detailed approval has summary = "THE NOD  PAYMENT" / amount / "to recipient" on three lines; nod = hold-to-approve.

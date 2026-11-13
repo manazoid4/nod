@@ -542,7 +542,7 @@ def create_app(
         return result
 
     @api.get("/health")
-    def health(request: Request, authorization: str | None = Header(default=None)):
+    def health(request: Request, authorization: str | None = Header(default=None), fw_version: str = ""):
         if not security.token_ok(authorization):
             # Public by design (reachable via Funnel): no inventory, no paths.
             return {"ok": True, "name": "nod Core", "version": CORE_VERSION}
@@ -557,6 +557,7 @@ def create_app(
             "git_sha": updates.running_sha,
             "update": updates.brief(),
             "fw_latest": (lambda m: m and {"version": m["version"], "sha": m.get("sha", "")})(fw.manifest()),
+            "fw_update_available": fw.staged_status(fw_version)["update_available"],
             "stt": speech.available(),
             "llm": model_router.status(),
             "nudge": nudge_client.status(),
@@ -581,6 +582,10 @@ def create_app(
     @api.post("/core/update/check")
     async def core_update_check():
         return await asyncio.to_thread(updates.check)
+
+    @api.get("/fw/status")
+    def fw_status(version: str = ""):
+        return fw.staged_status(version)
 
     @api.get("/fw/manifest")
     def fw_manifest():
@@ -766,13 +771,13 @@ def create_app(
     def core_device():
         """One call for the web Device tab: what the device runs vs what the hub has staged."""
         device = core_service.cardputer_status()
-        staged = fw.manifest()
-        running = str(device.get("fw_build") or "")
+        status = fw.staged_status(str(device.get("version") or ""))
+        staged = status["staged"]
         return {
             "device": device,
             "online": "version" in device,
-            "hub_fw": staged and {k: staged.get(k) for k in ("version", "sha", "size")},
-            "update_available": bool(staged and running and staged.get("sha") and staged["sha"] != running),
+            "hub_fw": staged,
+            "update_available": status["update_available"],
             "hub_update": updates.brief(),
             "last_report": fw.last_report(),
         }

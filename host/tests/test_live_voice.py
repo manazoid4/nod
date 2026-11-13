@@ -229,3 +229,30 @@ def test_boosted_room_noise_never_starts_a_turn():
         with pytest.raises(WebSocketDisconnect):
             ws.receive_text()
     assert "response.create" not in fake.events
+
+
+def _vad_ended_after(loud_ms, silence_ms):
+    import numpy as np
+    from mazhost.live_voice import Vad, BLOCK_MS
+    v = Vad(450)
+    loud = (np.sin(np.arange(320) / 3) * 5000).astype("<i2").tobytes()
+    quiet = bytes(640)
+    for _ in range(loud_ms // BLOCK_MS):
+        v.feed(loud)
+    for i in range(silence_ms // BLOCK_MS):
+        if v.feed(quiet)[1]:
+            return (i + 1) * BLOCK_MS
+    return None
+
+
+def test_short_utterance_ends_after_base_silence():
+    assert _vad_ended_after(600, 1500) == 440  # 22 blocks, within one block of 450 ms
+
+
+def test_long_utterance_waits_longer_for_mid_thought_pause():
+    assert _vad_ended_after(2400, 1500) == 660  # 22 blocks * 1.5 = 33 blocks
+
+
+def test_long_speech_boundary_is_1500_ms_of_speech():
+    assert _vad_ended_after(1500, 1500) == 660
+    assert _vad_ended_after(1480, 1500) == 440

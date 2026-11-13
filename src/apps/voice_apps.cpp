@@ -89,7 +89,7 @@ void drawShortText(M5Canvas& g, const std::string& text, int y, int lines = 4) {
 class CaptureApp : public App {
 public:
     const char* id() const override { return "braindump"; }
-    const char* title() const override { return "BrainDump"; }
+    const char* title() const override { return "Brain Dump"; }
 
     const char* hints() const override {
         if (voice::state() == voice::State::Listening)
@@ -157,7 +157,7 @@ public:
 
     void render(M5Canvas& g) override {
         g.fillScreen(BG);
-        ui::header(g, "BrainDump", store::backendName());
+        ui::header(g, "Brain Dump", store::backendName());
 
         if (voice::state() == voice::State::Listening ||
             voice::state() == voice::State::Paused) {
@@ -240,7 +240,7 @@ private:
         store::Record item;
         item.kind = result.ok ? "inbox" : "outbox";
         item.status = result.ok ? "open" : "queued";
-        item.title = result.ok ? "BrainDump processed" : "BrainDump queued";
+        item.title = result.ok ? "Brain Dump processed" : "BrainDump queued";
         item.body = result.ok ? result.text : result.error;
         item.source = "braindump"; item.ref = _path;
         store::addRecord(item);
@@ -277,7 +277,7 @@ public:
 
     const char* hints() const override {
         if (voice::state() == voice::State::Listening) return "ENTER stop & save";
-        if (_files.empty()) return "ENTER record   ESC back";
+        if (_files.empty()) return "ENTER record";
         return "ENTER record   P play   D delete";
     }
 
