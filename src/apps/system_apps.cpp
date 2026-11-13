@@ -50,7 +50,7 @@ public:
         if (!_detail.empty()) {
             if ((e.code == KEY_ENTER || e.code == KEY_U) && host::updateReady() &&
                 _detail.rfind("nod v", 0) == 0) {
-                host::fwUpdate();
+                shell::confirmFwUpdate();
                 invalidate();
                 return true;
             }
