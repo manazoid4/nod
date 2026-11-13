@@ -928,22 +928,26 @@ def create_app(
             raise HTTPException(503, f"extraction_failed: {error}") from error
 
     def braindump_reply(transcript: str, highlights_raw: str, source: str) -> dict:
-        """Structure a transcript and save it to the dump inbox. The transcript is
-        saved even when structuring fails (the 503 to the device is unchanged)."""
+        """Structure a transcript and save it to the dump inbox. With no working brain
+        (offline, no local model) the deterministic structure is saved and returned, so
+        the device shows it as sent instead of "host request failed"."""
         try:
             marks = json.loads(highlights_raw)
+        except json.JSONDecodeError:
+            marks = []
+        try:
             prompt = EXTRACT_PROMPTS["braindump"] + f" Highlights: {marks}. Return JSON only."
             reply, provider = model_router.chat(
                 [{"role": "system", "content": prompt}, {"role": "user", "content": transcript}],
                 cfg.default_route,
             )
-        except (json.JSONDecodeError, RuntimeError):
-            save_safely(cfg, None, transcript, structure_braindump("", transcript)[0], source)
-            raise
+        except RuntimeError as error:
+            logging.getLogger("uvicorn.error").warning("braindump brain unavailable, saving deterministic structure: %s", error)
+            reply, provider = "", "none"
         structured, fallback = structure_braindump(reply, transcript)
         if fallback:
             provider += "+deterministic"
-        saved = save_safely(cfg, model_router, transcript, structured, source)
+        saved = save_safely(cfg, None if provider == "none" else model_router, transcript, structured, source)
         return {
             "transcript": transcript,
             "provider": provider,
