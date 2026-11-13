@@ -37,6 +37,8 @@ FRAME = 1280  # 40 ms reply frame to the device, bytes
 AHEAD_S = 0.4  # never run further than this ahead of real-time playback
 MIN_SPEECH_MS = 250
 PREROLL_MS = 300
+LONG_SPEECH_MS = 1500  # after this much speech a pause is more likely mid-thought than the end
+LONG_SPEECH_HANGOVER = 1.5
 FIRST_AUDIO_LIMIT_S = 4.0
 INSTRUCTIONS = ("You are Piblo, a friendly, warm and calm voice assistant on a tiny pocket device. "
                 "Never name or reveal your model. Keep replies short and spoken. "
@@ -97,7 +99,10 @@ class Vad:
                 self.last_loud_at = time.monotonic()
             else:
                 self._silence += 1
-                ended = self._silence >= self.end_blocks
+                need = self.end_blocks
+                if self.speech_ms >= LONG_SPEECH_MS:
+                    need = round(need * LONG_SPEECH_HANGOVER)
+                ended = self._silence >= need
         return out, ended
 
     @property
