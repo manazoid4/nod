@@ -61,6 +61,21 @@ export function locateCore({ env, resourcesPath, devHostDir, fs }: LocateInput):
   return { installDir, sourceDir, python, envFile: fs.exists(envPath) ? envPath : null, bundledDir: bundled };
 }
 
+/**
+ * Which files of the bundled Core may be copied into the install dir.
+ * User state (root `data/`, logs, .env, .venv) is never overwritten, but seed data shipped
+ * inside the package (`mazhost/data/...`) must be copied or Core 500s on /features and /templates.
+ */
+export function isCoreCopyable(relativePath: string): boolean {
+  const parts = relativePath.split(/[\\/]+/).filter((p) => p && p !== '.');
+  if (parts.length === 0) return true;
+  const name = parts[parts.length - 1];
+  if (name === '.env') return false;
+  if (parts.length === 1 && name === 'data') return false; // root holds live user data
+  // Cruft and virtualenvs are skipped at any depth.
+  return !parts.some((p) => ['.venv', '__pycache__', 'logs', 'tests'].includes(p));
+}
+
 export function discoverToken(loc: CoreLocation, fs: FsLike, env: Record<string, string | undefined> = {}): string {
   if (env.NOD_TOKEN) return env.NOD_TOKEN;
   return loc.envFile ? tokenFromEnv(fs.read(loc.envFile)) : '';
