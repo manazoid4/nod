@@ -67,15 +67,14 @@ static CoreInfo gCoreInfo;
 const CoreInfo& coreInfo() { return gCoreInfo; }
 void setCoreInfo(const CoreInfo& info) { gCoreInfo = info; }
 bool updateReady() {
-    return gCoreInfo.ok && !gCoreInfo.fwVersion.empty() &&
-           (gCoreInfo.fwVersion != NOD_FW_VERSION || gCoreInfo.fwSha != NOD_FW_SHA);
+    return Sys.wifiConnected && Sys.hostOnline && gCoreInfo.ok && gCoreInfo.fwUpdateAvailable;
 }
 
 CoreInfo fetchCoreInfo() {
     CoreInfo out;
     NodHttp http;
     const bool viaRemote = onRemoteLink();
-    if (!coreBegin(http, "/health", true, true)) return out;
+    if (!coreBegin(http, "/health?fw_version=" NOD_FW_VERSION, true, true)) return out;
     const int status = http.GET();
     const String body = status > 0 ? http.getString() : String();
     http.end();
@@ -85,6 +84,7 @@ CoreInfo fetchCoreInfo() {
     out.version = doc["version"] | "";
     out.fwVersion = doc["fw_latest"]["version"] | "";
     out.fwSha = doc["fw_latest"]["sha"] | "";
+    out.fwUpdateAvailable = doc["fw_update_available"].is<bool>() && doc["fw_update_available"].as<bool>();
     // Core tells us its Tailscale Funnel URL. Accept only when read over the LAN
     // (not via the remote link), https, a *.ts.net host, bounded length.
     if (!viaRemote) {

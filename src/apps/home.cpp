@@ -212,7 +212,7 @@ private:
             if (!host::configured()) return "Not paired: Control";
             return "Core is off (PC)";
         }
-        if (host::updateReady()) return "Update: press U";
+        if (host::updateReady()) return "Update available: press U";
         if (Sys.agentQuestion) return "Agent asked: press N";
         now = field::nowText();
         return now != "READY" ? ui::ellipsis(now, 20) : std::string("Quick: 1-3");
@@ -258,7 +258,8 @@ private:
         }
         g.setFont(&fonts::Font0);
         g.setTextColor(linkSentence(true) ? nt::TEXT : nt::DIM, nt::BG);
-        g.drawString(shortLine().c_str(), L.sentence.x, L.sentence.y + L.sentence.h / 2);
+        const bool update = !linkSentence(true) && host::updateReady();
+        g.drawString(shortLine().c_str(), update ? 4 : L.sentence.x, L.sentence.y + L.sentence.h / 2);
         g.setTextDatum(top_left);
     }
 
@@ -274,7 +275,7 @@ private:
             st.sentence = link;
         } else if (host::updateReady()) {
             ph = ui::Phase::Update;
-            st.sentence = "Press U, then Y";
+            st.sentence = "Update available: press U";
         } else if (Sys.agentQuestion) {
             ph = ui::Phase::NeedsYou;
             st.sentence = "An agent asked. Press N.";
