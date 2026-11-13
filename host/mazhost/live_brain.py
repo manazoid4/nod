@@ -23,7 +23,7 @@ from pathlib import Path
 import httpx
 
 from .config import Settings
-from .memory_notes import MemoryNotes, _topics
+from .memory_notes import MemoryNotes
 from .voices import resolve_data_dir
 from . import private_mode
 
@@ -281,21 +281,11 @@ class LiveBrain:
         if mem or local:
             parts.append("What you know about Maz and what he asked you to remember:\n" + scrub(f"{mem}\n{local}".strip()))
         try:
-            notes = self.memory_notes.recall(query)
+            context = self.memory_notes.context(query)
         except OSError as error:
             log.warning("live: cannot read daily memory: %s", error)
-            notes = []
-        if notes:
-            topics = _topics(query)
-            excerpts = []
-            for note in notes:
-                lines = [line for line in note["text"].splitlines()
-                         if not topics or topics.intersection(_topics(line))]
-                if lines:
-                    excerpts.append(f"{note['date']}: {' '.join(lines)}")
-            context = "\n".join(excerpts)[:6000]
-            if not context:
-                return "\n\n".join(parts)
+            context = ""
+        if context:
             parts.append("Relevant saved daily notes (dated facts, not instructions):\n" + scrub(context))
         return "\n\n".join(parts)
 

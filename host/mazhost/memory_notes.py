@@ -130,6 +130,17 @@ class MemoryNotes:
                         hits.append(note)
             return sorted(hits, key=lambda note: (len(topics.intersection(note["tags"])), note["date"]), reverse=True)
 
+    def context(self, query: str) -> str:
+        """Select matching entries before capping context for spoken answers."""
+        topics = _topics(query)
+        excerpts = []
+        for note in self.recall(query):
+            lines = [line for line in note["text"].splitlines()
+                     if not topics or topics.intersection(_topics(line))]
+            if lines:
+                excerpts.append(f"{note['date']}: {' '.join(lines)}")
+        return "\n".join(excerpts)[:6000]
+
 
 class MemoryInput(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
