@@ -266,6 +266,10 @@ def create_app(
         threading.Thread(target=speech_out.warm, name="tts-warm", daemon=True).start()
 
     @api.on_event("startup")
+    def warm_projects() -> None:
+        core_service._kick_refresh()
+
+    @api.on_event("startup")
     def start_remote_detect() -> None:
         remote_info.start()
 

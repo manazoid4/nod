@@ -48,7 +48,7 @@ SECRET_NAMES = {
     "secrets.json", "secrets.yml", "secrets.yaml", "id_rsa", "id_ed25519",
 }
 SECRET_EXTENSIONS = {".key", ".pem", ".p12", ".pfx", ".kdbx"}
-SUMMARY_TTL_SECONDS = 12.0
+SUMMARY_TTL_SECONDS = 30.0
 
 
 _PC_WORDS = re.compile(r"focus|priorit|work|next|project|repo|code|git|branch|commit|build|folder|file|pc\b|computer|laptop|model|ollama|llama|core", re.I)
@@ -65,6 +65,7 @@ class MazCore:
         self.device_ip: str | None = None
         self._cache_lock = threading.Lock()
         self._summary_cache: list[dict[str, Any]] = []
+        self._refreshing = False
         self._summary_cache_at = 0.0
 
     # ---------------------------------------------------------------- system
@@ -221,20 +222,42 @@ class MazCore:
 
     def _invalidate_project_cache(self) -> None:
         with self._cache_lock:
-            self._summary_cache = []
-            self._summary_cache_at = 0.0
+            self._summary_cache_at = 0.0  # mark stale; keep the list so reads stay instant
+
+    def _refresh_projects(self) -> None:
+        try:
+            from concurrent.futures import ThreadPoolExecutor
+            paths = self._project_paths(limit=80)
+            with ThreadPoolExecutor(max_workers=8) as pool:  # git calls are subprocess-bound
+                summaries = list(pool.map(self._project_summary, paths))
+            with self._cache_lock:
+                self._summary_cache = summaries
+                self._summary_cache_at = time.monotonic()
+        finally:
+            self._refreshing = False
+
+    def _kick_refresh(self) -> None:
+        with self._cache_lock:
+            if self._refreshing:
+                return
+            self._refreshing = True
+        threading.Thread(target=self._refresh_projects, name="projects-refresh", daemon=True).start()
 
     def projects(self, limit: int = 60) -> list[dict[str, Any]]:
-        now = time.monotonic()
+        """Stale-while-revalidate: serve the cached scan at once, refresh in the background."""
         with self._cache_lock:
-            if self._summary_cache and now - self._summary_cache_at < SUMMARY_TTL_SECONDS:
-                return [dict(item) for item in self._summary_cache[:limit]]
-
-        summaries = [self._project_summary(path) for path in self._project_paths(limit=80)]
-        with self._cache_lock:
-            self._summary_cache = summaries
-            self._summary_cache_at = now
-        return [dict(item) for item in summaries[:limit]]
+            cached = self._summary_cache
+            fresh = time.monotonic() - self._summary_cache_at < SUMMARY_TTL_SECONDS
+        if cached:
+            if not fresh:
+                self._kick_refresh()
+            return [dict(item) for item in cached[:limit]]
+        self._kick_refresh()  # first ever call: wait for the scan
+        while True:
+            with self._cache_lock:
+                if self._summary_cache or not self._refreshing:
+                    return [dict(item) for item in self._summary_cache[:limit]]
+            time.sleep(0.05)
 
     def _find_project(self, name: str) -> Path:
         wanted = name.strip().lower()
