@@ -31,7 +31,7 @@ void scheduleReminder(store::Record& reminder, uint32_t delaySeconds) {
 namespace {
 
 void drawRecords(M5Canvas& g, const std::vector<store::Record>& rows, const ListCursor& cursor) {
-    if (rows.empty()) { ui::emptyState(g, "Nothing here", "use the keyboard shortcut to add one"); return; }
+    if (rows.empty()) { ui::emptyState(g, "Nothing here", "press A to add one"); return; }
     const int visible = std::min<int>(ROWS_VISIBLE - 1, rows.size());
     for (int row = 0; row < visible; ++row) {
         const int idx = cursor.first + row;

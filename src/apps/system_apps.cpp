@@ -244,16 +244,26 @@ public:
     const char* title() const override { return "Say"; }
     const char* hints() const override { return "ENTER speak"; }
 
+    void update() override {
+        if (!_sayAt || millis() < _sayAt) return;
+        _sayAt = 0;
+        if (!_path.empty()) store::remove(_path);
+        _path = store::newPath("cache", "wav");
+        if (host::say(_text, _path)) voice::play(_path);
+        else _path.clear();
+        const char* link = linkSentence(true);  // names the real cause: Wi-Fi, pairing, or PC off
+        _note = !_path.empty() ? "Playing. ENTER repeats." : link ? link : "Voice unavailable on PC";
+        invalidate();
+    }
+
     bool onKey(const KeyEvent& e) override {
         if (!e.down || e.code == KEY_ESC) return false;
         if (e.code == KEY_ENTER) {
-            if (_text.empty() || !store::ready()) return true;
-            if (!_path.empty()) store::remove(_path);
-            _path = store::newPath("cache", "wav");
-            if (host::say(_text, _path)) voice::play(_path);
-            else _path.clear();
-            const char* link = linkSentence(true);  // names the real cause: Wi-Fi, pairing, or PC off
-            _note = !_path.empty() ? "Playing. ENTER repeats." : link ? link : "Voice unavailable on PC";
+            if (_text.empty() || !store::ready() || _sayAt) return true;
+            _note = "Speaking...";
+            _sayAt = millis() + 80;  // paint first; host::say blocks for seconds
+            invalidate();
+            return true;
         } else if (e.code == KEY_BACKSPACE) {
             if (!_text.empty()) _text.pop_back();
             _note.clear();
@@ -290,6 +300,7 @@ public:
 
 private:
     std::string _text, _path, _note;
+    uint32_t _sayAt = 0;
 };
 
 // --------------------------------------------------------------- Settings
@@ -297,7 +308,7 @@ const char* SET_NAMES[] = {"Brightness",    "Volume",        "UI sounds",
                            "Screen timeout", "Mic gain",     "Storage",
                            "Time zone",      "Wi-Fi & host", "Keys & help",
                            "Voice",           "Quiet mode", "Quiet for",
-                           "Easy Mode"};
+                           "Easy mode"};
 constexpr int SET_COUNT = sizeof(SET_NAMES) / sizeof(SET_NAMES[0]);
 
 class SettingsApp : public App {
@@ -305,7 +316,8 @@ public:
     const char* id() const override { return "settings"; }
     const char* title() const override { return "Settings"; }
     const char* hints() const override {
-        return "</> change  ENTER toggle";
+        const int s = _cursor.sel;
+        return s >= 7 && s <= 9 ? "ENTER open" : "</> change  ENTER toggle";
     }
 
     void onExit() override { Cfg.save(); }
@@ -757,11 +769,10 @@ private:
 
 // ------------------------------------------------------------------- Help
 const char* HELP_LINES[] = {
-    "#EASY MODE (start here)",
+    "#EASY MODE",
     "UP/DOWN     choose",
     "ENTER       open",
-    "ESC         back (once you are",
-    "            inside a text field)",
+    "ESC         back",
     "Type as     normal. LEFT/RIGHT",
     "            move the cursor.",
     "Phone       send text to any",
@@ -770,7 +781,7 @@ const char* HELP_LINES[] = {
     "Ctrl+P      next saved shortcut",
     "Ctrl+H      next recent phrase",
     "Ctrl+SPACE  talk to fill a field",
-    "Settings >  Easy Mode turns this",
+    "Settings >  Easy mode turns this",
     "            whole screen off.",
     "#GLOBAL",
     "Ctrl+K      command palette",

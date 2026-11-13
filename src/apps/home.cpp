@@ -55,6 +55,7 @@ public:
     void onEnter() override {
         buildPrimary();
         _spaceArmed = false;
+        _focus = nod::FOCUS_TALK;
         _easyCursor.clamp(EASY_COUNT);
         lvui::setActive(true);
         rebuildHints();

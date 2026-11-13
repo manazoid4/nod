@@ -24,7 +24,7 @@ public:
     const char* id() const override { return "core"; }
     const char* title() const override { return "PC"; }
     const char* hints() const override {
-        if (_view == View::Result) return "R refresh job  ESC actions";
+        if (_view == View::Result) return "R refresh  ESC actions";
         if (_view == View::Actions) return "ENTER run  ESC projects";
         return "R refresh  ENTER project";
     }
