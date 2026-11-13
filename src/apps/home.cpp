@@ -17,6 +17,7 @@
 #include "../audio/voice.h"
 #include "../net/host_worker.h"
 #include "../ui/lvgl_ui.h"
+#include "../ui/character.h"
 #include "../ui/talk_orb.h"
 #include "apps.h"
 #include "common.h"
@@ -226,8 +227,14 @@ private:
             host_worker::busy() && host_worker::jobKind() == host_worker::JobKind::TalkAudio);
         static const char* const sub[] = {"ENTER", "", "", ""};
         static const char* const word[] = {"Talk", "Listening", "Thinking", "Speaking"};
-        ui::talkOrb(g, L.cx, L.cy, L.r, st, voice::level(), _focus == nod::FOCUS_TALK,
-                    word[st], st == nod::TALK_IDLE ? sub[st] : nullptr);
+        // Piblo himself in place of the Talk circle; the word sits under him.
+        if (_focus == nod::FOCUS_TALK) g.drawRoundRect(L.cx - L.r, L.cy - L.r, L.r * 2, L.r * 2, 10, nt::TEXT);
+        ui::character(g, L.cx - ui::CHAR_W / 2, L.cy - ui::CHAR_H / 2 - 10, st, voice::level(), millis());
+        g.setFont(&fonts::Font2);
+        g.setTextDatum(middle_center);
+        g.setTextColor(nt::TEXT, nt::BG);
+        g.drawString(st == nod::TALK_IDLE ? "Talk: ENTER" : word[st], L.cx, L.cy + L.r - 12);
+        (void)sub;
 
         static const char* const hint[3] = {"hold SPACE", "", "all apps"};
         g.setTextDatum(middle_left);
