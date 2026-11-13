@@ -26,7 +26,7 @@ LOG = Path(os.environ.get("NOD_FLOW_LOG", "~/.maz-pocket/flow/agent.log")).expan
 def _token() -> str:
     if os.environ.get("MAZ_TOKEN"):
         return os.environ["MAZ_TOKEN"]
-    env = Path(os.environ.get("MAZ_ENV") or Path(os.environ.get("LOCALAPPDATA", "~/AppData/Local")) / "Piblo" / "Core" / ".env").expanduser()
+    env = Path(os.environ.get("MAZ_ENV", r"~\AppData\Local\MAZ Core\.env")).expanduser()
     for line in env.read_text(encoding="utf-8").splitlines() if env.exists() else []:
         if line.startswith("MAZ_TOKEN="):
             return line.split("=", 1)[1].strip().strip('"')

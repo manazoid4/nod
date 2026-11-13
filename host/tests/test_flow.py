@@ -143,7 +143,15 @@ def test_failed_parakeet_load_not_retried_and_logs_once(tmp_path, monkeypatch, c
     monkeypatch.setattr(s, "_transcribe_with", lambda *a: "whisper text")
     for _ in range(3):
         assert s.transcribe_local(tmp_path / "a.wav") == ("whisper text", "whisper")
-    assert len(calls) == 1 and s._onnx_failed
+    # request path never marks failure (no download attempted there); only warm() does
+    assert calls and not s._onnx_failed
+    monkeypatch.setattr(s, "_get_model", lambda *a: None)
+    s.warm()
+    n = len(calls)
+    assert s._onnx_failed
+    for _ in range(3):
+        assert s.transcribe_local(tmp_path / "a.wav") == ("whisper text", "whisper")
+    assert len(calls) == n
     assert sum("parakeet load failed" in r.message for r in caplog.records) == 1
 
 
@@ -174,3 +182,22 @@ def test_warm_downloads_once_request_path_does_not(tmp_path, monkeypatch):
     monkeypatch.setattr(s, "_transcribe_with", lambda *a: "w")
     s.transcribe_local(tmp_path / "a.wav")
     assert seen == [True, False]
+
+
+def test_whisper_not_blocked_by_onnx_lock(tmp_path, monkeypatch):
+    import threading
+    s = _stt(tmp_path)
+    import sys, types
+    monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=lambda *a, **k: "m"))
+    done = []
+    with s._onnx_lock:
+        t = threading.Thread(target=lambda: done.append(s._get_model("base.en", "cpu", "int8")))
+        t.start(); t.join(5)
+    assert done == ["m"]
+
+
+def test_custom_model_refused_on_request_path(tmp_path, monkeypatch):
+    s = _stt(tmp_path, stt_local_model="moonshine-base-en")
+    monkeypatch.setattr(s, "_transcribe_with", lambda *a: "w")
+    assert s.transcribe_local(tmp_path / "a.wav") == ("w", "whisper")
+    assert not s._onnx_failed

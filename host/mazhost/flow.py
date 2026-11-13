@@ -109,7 +109,8 @@ class Flow:
         if self.s.stt_provider == "parakeet":
             raw, engine = self.speech.transcribe_local(wav)
         elif self.s.flow_cloud:  # explicit opt-in only: audio leaves the machine
-            raw, engine = self.speech.transcribe_prompted(wav, "Names: " + ", ".join(self.words) + "."), "cloud"
+            raw = self.speech.transcribe_prompted(wav, "Names: " + ", ".join(self.words) + ".")
+            engine = "groq" if (self.s.groq_api_key or self.s.groq_key) else "whisper"
         else:
             raw, engine = self.speech.transcribe(wav), "whisper"
         t1 = time.perf_counter()

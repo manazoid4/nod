@@ -21,6 +21,7 @@ class SpeechToText:
         self._lock = Lock()
         self._onnx = None
         self._onnx_failed = False
+        self._onnx_lock = Lock()  # separate from _lock so a 640 MB download never blocks Whisper
 
     def whisper_available(self) -> bool:
         try:
@@ -39,13 +40,14 @@ class SpeechToText:
         return False
 
     def _get_onnx(self, download: bool = False):
-        """Load Parakeet once. A failed load is remembered: no retry on the request path.
+        """Load Parakeet once. Only warm() (download=True) may touch the network or mark a failure.
 
-        Only warm() (download=True) may fetch the pinned snapshot; requests use the local cache.
+        The request path loads from the local cache only, so a missing cache or a custom
+        (unpinned) model raises without any download and without poisoning later attempts.
         """
         if self._onnx is not None:
             return self._onnx
-        with self._lock:
+        with self._onnx_lock:
             if self._onnx is not None:
                 return self._onnx
             if self._onnx_failed:
@@ -60,10 +62,13 @@ class SpeechToText:
                                 f"*.{quant}.onnx" if quant else "*.onnx*"]
                     path = snapshot_download(PARAKEET_REPO, revision=PARAKEET_REV,
                                              allow_patterns=patterns, local_files_only=not download)
+                elif not download:
+                    raise RuntimeError("custom STT model loads only at warm-up")
                 self._onnx = onnx_asr.load_model(name, path=path, quantization=quant)
             except Exception as e:  # noqa: BLE001
-                self._onnx_failed = True
-                log.warning("parakeet load failed (%s); using Whisper for dictation", type(e).__name__)
+                if download:
+                    self._onnx_failed = True
+                    log.warning("parakeet load failed (%s); using Whisper for dictation", type(e).__name__)
                 raise
         return self._onnx
 
@@ -111,7 +116,8 @@ class SpeechToText:
         """Load the engines now so the first spoken turn is not +7 s (Whisper measured 7.8 s cold, 1.1 s warm)."""
         if self.settings.stt_provider == "parakeet":
             try:
-                self._get_onnx(download=True)
+                from . import private_mode
+                self._get_onnx(download=not private_mode.enabled())
             except Exception:  # noqa: BLE001 - failure remembered; Whisper takes over
                 pass
         try:
