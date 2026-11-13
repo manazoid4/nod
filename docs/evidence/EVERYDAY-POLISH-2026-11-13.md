@@ -11,7 +11,11 @@ sprints. Existing 15/25/50-minute presets and firmware remain unchanged.
 
 Evidence: three renderer regression tests; Electron/IPC fixture check in
 `app/scripts/verify-focus-finish.mjs` clicks both decisions and verifies their
-request bodies and return to idle. Owner test: pending. No hardware claim.
+request bodies and return to idle. Real installed Core + updated Electron preview:
+one-minute sprint expired, Finish returned idle/unmuted; a second sprint Stop
+returned idle/unmuted. The real focus log records 60 seconds with `done:true`
+and 2 seconds with `done:false` for the named verification tasks. This is an
+agent PC test, not owner hardware confirmation.
 
 ## Full thoughts
 
@@ -31,17 +35,27 @@ replaces that summary with a labelled Full thought on expansion. Retest pending.
 Local HTTP connections also reset and Core restarted during diagnosis; causation
 is unconfirmed. Do not treat this as a passing owner test.
 
+Maz subsequently instructed "test it yourself there is another agent working
+too". No more user test questions were sent. Lead attached to its own preview
+on port 9237, verified the exact `piblo-two-goals/app/dist/renderer/index.html`
+path, and confirmed Full thought plus the final sentence against real installed
+Core. The unchanged installed app was not replaced. Owner/device confirmation
+remains absent; the subsequent agent PC test passed.
+
 ## Verification and compatibility
 
 - `npm run typecheck`: passed.
 - `npm test`: 176 passed, 13 files. Existing preferred-contrast warnings remain.
 - Main and renderer builds: passed.
+- `npm run pack`: Windows unpacked package passed (existing unsigned build).
 - Runtime feature catalogue tests: 5 passed (`PYTHONPATH=host python -m pytest host/tests/test_features.py -q`).
 - Independent review of Read: no blocking findings; lead reviewed Focus diff.
 - Existing HTTP contracts reused. No firmware, Android, keyboard, recovery,
   Kokoro or website changes. Device connected at initial status check; this is
   connection evidence only.
-- No release published. Owner tests and PR CI must be complete before release.
+- Merge simulation with existing app auto-update UI branch: clean.
+- No release published. CI and release approval remain required; owner evidence
+  must not be invented from the agent's PC tests.
 
 Audit inputs: fetched main `4e71480`; recent merged PR/commit history, open PRs
 #75 and #107–#113, no open issues, feature inventory/runtime catalogue,

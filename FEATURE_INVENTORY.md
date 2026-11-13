@@ -56,7 +56,7 @@ Source of truth for "nothing useful gets silently removed". Base: MAZ Pocket **v
 | Self-update + staged firmware | `selfupdate.py`, `fw.py` | Preserved | ✅ | — | ✅ | ⬜ |
 | Web UI `/ui` (Now, Inbox, Approvals, Device, Settings) | `webui.py`, `static/` | Preserved (desktop app being built over it) | ✅ | — | ✅ | ✅ (ledger #3) |
 | Desktop app (Electron, tray, onboarding) | `app/` | Implemented; see individual feature evidence | ✅ | ⬜ | ✅ | ⬜ |
-| Read complete saved thoughts | Windows Memory → Read; existing `/dumps/{id}` | Improved: original transcript opens inline | ✅ | local renderer build ✅ | ✅ Electron/IPC check | ❌ first owner test failed; diagnosis/retest pending ([evidence](docs/evidence/EVERYDAY-POLISH-2026-11-13.md)) |
+| Read complete saved thoughts | Windows Memory → Read; existing `/dumps/{id}` | Improved: original transcript replaces summary | ✅ | local Windows package ✅ | ✅ Electron/IPC + real Core | ⬜ owner unconfirmed; first test failed, subsequent agent Windows test passed ([evidence](docs/evidence/EVERYDAY-POLISH-2026-11-13.md)) |
 
 ## Other
 
