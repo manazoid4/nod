@@ -40,7 +40,7 @@ def test_history_survives_restart_and_event_ids_keep_rising(tmp_path):
     c = boot(tmp_path)
     c.post("/buddy/event", json={"kind": "done", "text": "build ok", "source": "claude", "agent": "claude"}, headers=H)
     c.post("/buddy/alert", json={"title": "Stand up", "priority": "high", "agent": "cal"}, headers=H)
-    first_last = c.get("/buddy/events", headers=H).json()["last"]
+    first_last = c.get("/buddy/events?since=0", headers=H).json()["last"]
     c2 = boot(tmp_path)   # restart
     h = c2.get("/buddy/history", headers=H).json()
     assert [n["text"] for n in h["notifications"]][:2] == ["Stand up", "build ok"]
@@ -50,7 +50,7 @@ def test_history_survives_restart_and_event_ids_keep_rising(tmp_path):
     evs = c2.get(f"/buddy/events?since={first_last}", headers=H).json()["events"]
     assert [e["text"] for e in evs] == ["after"] and evs[0]["id"] > first_last
     # reloaded alerts are history: they are not re-announced
-    assert all(e["kind"] != "alert" for e in c2.get("/buddy/events", headers=H).json()["events"])
+    assert all(e["kind"] != "alert" for e in c2.get("/buddy/events?since=0", headers=H).json()["events"])
 
 
 def test_pending_approval_is_expired_after_restart_never_replayed(tmp_path):
@@ -162,13 +162,13 @@ def test_tasks_report_progress_and_raise_one_alert_when_finished(tmp_path):
     c = boot(tmp_path)
     t = {"id": "t1", "title": "Refactor auth", "status": "running", "progress": 40, "agent": "claude"}
     assert c.post("/buddy/task", json=t, headers=H).json()["task"]["progress"] == 40
-    assert c.get("/buddy/events", headers=H).json()["events"] == []        # progress alone is quiet
+    assert c.get("/buddy/events?since=0", headers=H).json()["events"] == []        # progress alone is quiet
     for _ in range(2):                                                      # a repeated 'done' alerts once
         c.post("/buddy/task", json={**t, "status": "done", "progress": 100}, headers=H)
-    alerts = [e["alert"] for e in c.get("/buddy/events", headers=H).json()["events"]]
+    alerts = [e["alert"] for e in c.get("/buddy/events?since=0", headers=H).json()["events"]]
     assert [(a["kind"], a["title"]) for a in alerts] == [("task_done", "Refactor auth")]
     c.post("/buddy/task", json={"id": "t2", "title": "Deploy", "status": "failed", "detail": "exit 1"}, headers=H)
-    failed = c.get("/buddy/events", headers=H).json()["events"][-1]["alert"]
+    failed = c.get("/buddy/events?since=0", headers=H).json()["events"][-1]["alert"]
     assert (failed["kind"], failed["priority"], failed["title"]) == ("info", "high", "Failed: Deploy")
     tasks = boot(tmp_path).get("/buddy/tasks", headers=H).json()["tasks"]   # survives restart
     assert {x["id"]: x["status"] for x in tasks} == {"t1": "done", "t2": "failed"}
@@ -247,7 +247,7 @@ def test_event_cursor_survives_when_all_notifications_are_pruned(tmp_path):
     c = boot(tmp_path)
     response = c.post("/buddy/event", json={"kind": "done", "text": "before"}, headers=H)
     assert response.status_code == 200
-    first = c.get("/buddy/events", headers=H).json()["last"]
+    first = c.get("/buddy/events?since=0", headers=H).json()["last"]
     # Retention can erase every notification, but the next event ID must still increase.
     store = BuddyStore(tmp_path / "buddy.sqlite3")
     store.db.execute("DELETE FROM notifications")
@@ -265,7 +265,7 @@ def test_event_cursor_counts_phone_text_across_restart(tmp_path):
     c = boot(tmp_path)
     c.post("/buddy/event", json={"kind": "done", "text": "before"}, headers=H)
     c.post("/buddy/text", json={"id": str(uuid.uuid4()), "text": "typed", "mode": "insert"}, headers=H)
-    last = c.get("/buddy/events", headers=H).json()["last"]
+    last = c.get("/buddy/events?since=0", headers=H).json()["last"]
     restarted = boot(tmp_path)
     after = restarted.post("/buddy/event", json={"kind": "done", "text": "after"}, headers=H).json()
     assert after["id"] > last
@@ -283,3 +283,31 @@ def test_approved_idempotency_key_rejects_changed_action_even_after_restart(tmp_
         assert changed.status_code == 409
         assert 'idempotency' in changed.text.lower()
         assert client.post('/buddy/request', json={**payload, 'nod': True}, headers=H).status_code == 409
+
+
+def _alerts(c):
+    return [a for a in c.get("/buddy/alerts", headers=H).json()["alerts"] if a["fired"]]
+
+
+def test_pending_reminder_survives_restart_and_fires_once(tmp_path):
+    c1 = boot(tmp_path)
+    c1.post("/buddy/alert", headers=H, json={"title": "later", "kind": "reminder", "delay_seconds": 4})
+    c1.post("/buddy/alert", headers=H, json={"title": "now", "kind": "reminder"})
+    assert [a["title"] for a in _alerts(c1)] == ["now"]
+    c2 = boot(tmp_path)   # restart before 'later' is due
+    assert [a["title"] for a in _alerts(c2)] == ["now"]   # fired history is not re-notified
+    time.sleep(4.5)
+    assert sorted(a["title"] for a in _alerts(c2)) == ["later", "now"]
+    def later_notifications():   # durable history: one row per time it actually fired
+        db = sqlite3.connect(tmp_path / "buddy.sqlite3")
+        return db.execute("SELECT COUNT(*) FROM notifications WHERE data LIKE '%\"later\"%'").fetchone()[0]
+    assert later_notifications() == 1
+    c3 = boot(tmp_path)   # restart after it fired: no replay
+    assert sorted(a["title"] for a in _alerts(c3)) == ["later", "now"]
+    assert later_notifications() == 1
+
+
+def test_reminder_missed_during_downtime_fires_late_not_lost(tmp_path):
+    boot(tmp_path).post("/buddy/alert", headers=H, json={"title": "missed", "kind": "reminder", "delay_seconds": 1})
+    time.sleep(1.2)   # Core is down while it comes due
+    assert [a["title"] for a in _alerts(boot(tmp_path))] == ["missed"]

@@ -213,7 +213,12 @@ class Buddy:
     def _reload_alerts(self) -> None:
         """History only: reloaded alerts are marked fired and expired so a restart never re-notifies."""
         for row in reversed(self.store.alerts(MAX_ALERTS)):
-            rec = {**row["data"], "due": row["created"], "fired": True, "snooze_until": 0.0, "_exp": 0.0,
+            data = row["data"]
+            # A reminder that never fired before the restart stays pending (late, not lost); legacy rows have no _due.
+            pending = "_due" in data and not data.get("_fired") and row["outcome"] is None
+            rec = {**{k: v for k, v in data.items() if k not in ("_due", "_fired")},
+                   "due": data["_due"] if pending else row["created"], "fired": not pending,
+                   "snooze_until": 0.0, "_exp": (row["expires"] or float("inf")) if pending else 0.0,
                    "outcome": "acked" if row["outcome"] == "acked" else None}
             self._alerts[rec["id"]] = rec
 
@@ -325,7 +330,7 @@ class Buddy:
                 rec["expires_at"] = datetime.fromtimestamp(rec["_exp"], timezone.utc).isoformat()
             self._alerts[aid] = rec
             self._db("add_alert", {"id": aid, "agent": a.agent or a.source, "created": now, "_exp": rec.get("_exp"),
-                                   "public": {k: v for k, v in rec.items() if k not in _PRIVATE}},
+                                   "public": {**{k: v for k, v in rec.items() if k not in _PRIVATE}, "_due": rec["due"]}},
                      a.idempotency_key or None)
             self._fire_due_locked()
             return {"ok": True, "routed": "alert", "id": aid, "scheduled": not rec["fired"]}
@@ -344,6 +349,7 @@ class Buddy:
             if not rec["fired"] and now < rec["due"]:
                 continue
             rec["fired"], rec["outcome"] = True, None   # (re)fire: an expired snooze nags again
+            self._db("mark_alert_fired", rec["id"])
             self._event_id += 1
             self._db("record_event_id", self._event_id)
             public = {k: v for k, v in rec.items() if k not in _PRIVATE}

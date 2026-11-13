@@ -221,6 +221,9 @@ class BuddyStore:
     def set_alert_outcome(self, aid: str, outcome: str) -> None:
         self._run("UPDATE alerts SET outcome=?, outcome_at=? WHERE id=?", (outcome, time.time(), aid))
 
+    def mark_alert_fired(self, aid: str) -> None:
+        self._run("UPDATE alerts SET data=json_set(data, '$._fired', json('true')) WHERE id=?", (aid,))
+
     def alerts(self, limit: int = 100) -> list[dict]:
         rows = self._all("SELECT * FROM alerts ORDER BY created DESC LIMIT ?", (limit,))
         for r in rows:

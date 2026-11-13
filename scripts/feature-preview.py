@@ -73,6 +73,7 @@ def main():
                 session = request('/session/start', token, {})['session_id']
                 saved = request('/turn/text', token, {'session_id': session, 'text': 'Remember that my appointment is Friday at noon.', 'route': 'local'})
                 assert saved['provider'] == 'memory-local', saved
+                request('/buddy/alert', token, {'source': 'reminder', 'kind': 'reminder', 'title': 'Synthetic reminder', 'delay_seconds': 8})
                 core.terminate()
                 core.wait(timeout=10)
                 core = subprocess.Popen([sys.executable, '-m', 'mazhost'], cwd=tmp, env=env)
@@ -97,6 +98,13 @@ def main():
                 digest = request('/turn/text', token, {'session_id': fresh, 'text': 'Catch me up', 'route': 'local'})
                 assert digest['provider'] == 'catchup-local' and 'Mum' in digest['reply'] and digest['reply'].endswith('Everything else can wait.'), digest
                 print('Synthetic spoken Catch me up reply:', digest['reply'])
+                for _ in range(60):   # the reminder was pending when Core stopped; it must still fire
+                    if any(a['title'] == 'Synthetic reminder' and a['fired'] for a in request('/buddy/alerts', token)['alerts']):
+                        break
+                    time.sleep(.5)
+                else:
+                    raise AssertionError('Pending reminder was lost across the Core restart.')
+                print('Pending reminder survived the Core restart and fired.')
             print('Isolated Core health and token authentication passed.')
         finally:
             core.terminate()
