@@ -354,6 +354,8 @@ class Buddy:
             if not rec["fired"] and now < rec["due"]:
                 continue
             rec["fired"], rec["outcome"] = True, None   # (re)fire: an expired snooze nags again
+            if snoozed:
+                self._db("set_alert_outcome", rec["id"], None)   # persist the cleared snooze or every restart re-nags
             self._db("mark_alert_fired", rec["id"])
             self._event_id += 1
             self._db("record_event_id", self._event_id)

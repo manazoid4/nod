@@ -26,7 +26,7 @@ MAX_MEMORY_CHARS = 4000  # one limit for typed, spoken and API saves
 TOO_LONG = "That's too long for me to remember in one go. Could you say a shorter note?"
 NO_SECRETS = "I won't store passwords."
 REDACTED = "Got it, but I left out part that looked like a secret."
-_SENSITIVE = re.compile(r"\bpass(?:word|code|wd)?\b|\bpin\b|card number|\bcvv\b|api key|\btoken\b|\bsecret\b|sort code|account number", re.I)
+_SENSITIVE = re.compile(r"\bpass(?:word|code|wd)\b|\bpin\b|card number|\bcvv\b|api key|\btoken\b|\bsecret(?:\s+(?:is|key)\b|\s*:)|sort code|account number", re.I)
 _QUESTION = re.compile(r"(?:what|when|where|who|which|why|how|if|whether)\b", re.I)
 _REMEMBER = re.compile(r"(?:please\s+)?remember\s+(?:that\s+)?(.+)", re.I | re.S)
 

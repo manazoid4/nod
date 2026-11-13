@@ -328,3 +328,14 @@ def test_snoozed_alert_stays_snoozed_across_restart(tmp_path):
     assert c1.post(f"/buddy/alert/{aid}/snooze", headers=H, json={"minutes": 60}).status_code == 200
     rec = next(a for a in boot(tmp_path).get("/buddy/alerts", headers=H).json()["alerts"] if a["id"] == aid)
     assert rec["outcome"] == "snoozed" and rec["snooze_until"] > time.time() + 3000
+
+
+def test_expired_snooze_does_not_renag_on_every_restart(tmp_path, monkeypatch):
+    c1 = boot(tmp_path)
+    aid = c1.post("/buddy/alert", headers=H, json={"title": "nap", "kind": "reminder", "actions": ["ack", "snooze"]}).json()["id"]
+    assert c1.post(f"/buddy/alert/{aid}/snooze", headers=H, json={"minutes": 1}).status_code == 200
+    real = time.time
+    monkeypatch.setattr(time, "time", lambda: real() + 120)   # the snooze has run out
+    c1.get("/buddy/alerts", headers=H)                         # poll: the alert re-fires once
+    rec = next(a for a in boot(tmp_path).get("/buddy/alerts", headers=H).json()["alerts"] if a["id"] == aid)
+    assert rec["outcome"] is None                              # not "snoozed" again after a restart
