@@ -52,7 +52,7 @@ def test_refusal_everywhere_still_returns_a_reply(monkeypatch):
     assert m.chat([{"role": "user", "content": "hi"}], "auto")[0] == "I can't help."
 
 
-def test_prompt_has_weather_maths_priorities_and_local_upgrades_to_auto(monkeypatch, tmp_path):
+def test_prompt_has_maths_priorities_and_local_route_stays_local(monkeypatch, tmp_path):
     f = tmp_path / "NOW.md"
     f.write_text("## 1. Site\n- [ ] Ship hero\n", encoding="utf-8")
     monkeypatch.setattr("mazhost.app.weather_line", lambda t: "\nLive weather, London UK: 18C\n" if "weather" in t else "")
@@ -69,7 +69,7 @@ def test_prompt_has_weather_maths_priorities_and_local_upgrades_to_auto(monkeypa
     assert "Live weather" not in ask("what is the weather today")
     assert "36" in ask("what is 15% of 240")
     assert "Ship hero" in ask("what should I work on now")
-    assert models.last_route == "auto"
+    assert models.last_route == "local"  # #128: explicit LOCAL never upgrades to the cloud chain
     assert "never say you lack access" in ask("hi")
 
 
