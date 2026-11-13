@@ -242,7 +242,17 @@ void finishToday(const host::TodayStatus& value) {
 
 void finishWork(const host::WorkSummary& s) {
     gWorkRequested = false;
-    if (!s.ok) return;  // keep last-known values on a failed poll — never blank/zero
+    if (!s.ok) {  // keep last-known values on a failed poll — never blank/zero
+        if (Sys.workError != s.error) {
+            Sys.workError = s.error;
+            Serial.printf("[work] poll failed: %s
+", s.error.c_str());
+            if (!Sys.workLoaded) notify::post(Note::Warn, "WORK sync failed", s.error);
+            shell::invalidate();
+        }
+        return;
+    }
+    Sys.workError.clear();
     Sys.workLoaded = true;
     Sys.workReceivedAt = millis();
     Sys.workTrackCount = static_cast<uint8_t>(std::min(s.trackCount, SysState::WORK_MAX_TRACKS));
