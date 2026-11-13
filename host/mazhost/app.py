@@ -831,11 +831,11 @@ def create_app(
             security.validate_upload(path, size)
             upload_ms = round((time.perf_counter() - upload_started) * 1000)
             stt_started = time.perf_counter()
-            text = turn_stt(path)
+            text = await run_in_threadpool(turn_stt, path)  # STT, brain and TTS block: keep /health answering
             stt_ms = round((time.perf_counter() - stt_started) * 1000)
-            result = answer(session_id, text, route, context)
+            result = await run_in_threadpool(answer, session_id, text, route, context)
             result["timings"].update({"upload_ms": upload_ms, "stt_ms": stt_ms})
-            return finish_turn(result, upload_ms, stt_ms, x_maz_speak)
+            return await run_in_threadpool(finish_turn, result, upload_ms, stt_ms, x_maz_speak)
         finally:
             path.unlink(missing_ok=True)
 
@@ -861,11 +861,11 @@ def create_app(
             security.validate_upload(path, size)
             upload_ms = round((time.perf_counter() - upload_started) * 1000)
             stt_started = time.perf_counter()
-            text = turn_stt(path)
+            text = await run_in_threadpool(turn_stt, path)  # STT, brain and TTS block: keep /health answering
             stt_ms = round((time.perf_counter() - stt_started) * 1000)
-            result = answer(x_maz_session, text, x_maz_route, x_maz_context)
+            result = await run_in_threadpool(answer, x_maz_session, text, x_maz_route, x_maz_context)
             result["timings"].update({"upload_ms": upload_ms, "stt_ms": stt_ms})
-            return finish_turn(result, upload_ms, stt_ms, x_maz_speak)
+            return await run_in_threadpool(finish_turn, result, upload_ms, stt_ms, x_maz_speak)
         finally:
             path.unlink(missing_ok=True)
 
@@ -928,22 +928,26 @@ def create_app(
             raise HTTPException(503, f"extraction_failed: {error}") from error
 
     def braindump_reply(transcript: str, highlights_raw: str, source: str) -> dict:
-        """Structure a transcript and save it to the dump inbox. The transcript is
-        saved even when structuring fails (the 503 to the device is unchanged)."""
+        """Structure a transcript and save it to the dump inbox. With no working brain
+        (offline, no local model) the deterministic structure is saved and returned, so
+        the device shows it as sent instead of "host request failed"."""
         try:
             marks = json.loads(highlights_raw)
+        except json.JSONDecodeError:
+            marks = []
+        try:
             prompt = EXTRACT_PROMPTS["braindump"] + f" Highlights: {marks}. Return JSON only."
             reply, provider = model_router.chat(
                 [{"role": "system", "content": prompt}, {"role": "user", "content": transcript}],
                 cfg.default_route,
             )
-        except (json.JSONDecodeError, RuntimeError):
-            save_safely(cfg, None, transcript, structure_braindump("", transcript)[0], source)
-            raise
+        except (RuntimeError, RouteError) as error:
+            logging.getLogger("uvicorn.error").warning("braindump brain unavailable, saving deterministic structure: %s", error)
+            reply, provider = "", "none"
         structured, fallback = structure_braindump(reply, transcript)
         if fallback:
             provider += "+deterministic"
-        saved = save_safely(cfg, model_router, transcript, structured, source)
+        saved = save_safely(cfg, None if provider == "none" else model_router, transcript, structured, source)
         return {
             "transcript": transcript,
             "provider": provider,
@@ -963,8 +967,9 @@ def create_app(
             path = Path(target.name)
         try:
             security.validate_upload(path, len(data))
-            transcript = speech.transcribe(path)
-            return braindump_reply(transcript, highlights, "device")
+            # Off the event loop: STT + brain can take seconds and must not block /health.
+            transcript = await run_in_threadpool(speech.transcribe, path)
+            return await run_in_threadpool(braindump_reply, transcript, highlights, "device")
         except (json.JSONDecodeError, RuntimeError) as error:
             raise HTTPException(503, f"processing_failed: {error}") from error
         finally:
@@ -986,8 +991,9 @@ def create_app(
             path = Path(target.name)
         try:
             security.validate_upload(path, size)
-            transcript = speech.transcribe(path)
-            return braindump_reply(transcript, x_maz_highlights, "device")
+            # Off the event loop: STT + brain can take seconds and must not block /health.
+            transcript = await run_in_threadpool(speech.transcribe, path)
+            return await run_in_threadpool(braindump_reply, transcript, x_maz_highlights, "device")
         except (json.JSONDecodeError, RuntimeError) as error:
             raise HTTPException(503, f"processing_failed: {error}") from error
         finally:
