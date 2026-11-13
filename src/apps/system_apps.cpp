@@ -242,7 +242,7 @@ class SayApp : public App {
 public:
     const char* id() const override { return "say"; }
     const char* title() const override { return "Say"; }
-    const char* hints() const override { return "ENTER speak  ESC back"; }
+    const char* hints() const override { return "ENTER speak"; }
 
     bool onKey(const KeyEvent& e) override {
         if (!e.down || e.code == KEY_ESC) return false;
@@ -252,7 +252,8 @@ public:
             _path = store::newPath("cache", "wav");
             if (host::say(_text, _path)) voice::play(_path);
             else _path.clear();
-            _note = _path.empty() ? "Say failed. Is hub on?" : "Playing. ENTER repeats.";
+            const char* link = linkSentence(true);  // names the real cause: Wi-Fi, pairing, or PC off
+            _note = !_path.empty() ? "Playing. ENTER repeats." : link ? link : "Voice unavailable on PC";
         } else if (e.code == KEY_BACKSPACE) {
             if (!_text.empty()) _text.pop_back();
             _note.clear();
@@ -455,7 +456,7 @@ class VoiceApp : public App {
 public:
     const char* id() const override { return "voice"; }
     const char* title() const override { return "Voice"; }
-    const char* hints() const override { return "UP/DOWN move   ENTER use + hear   ESC back"; }
+    const char* hints() const override { return "UP/DOWN move  ENTER hear"; }
 
     void onEnter() override {
         _items.clear();

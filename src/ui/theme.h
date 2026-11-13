@@ -11,6 +11,7 @@ constexpr int SCREEN_H = 135;
 constexpr int STATUS_H = 15;
 constexpr int HINT_H   = 14;
 constexpr int BODY_Y   = STATUS_H;
+constexpr int BELOW_RULE = BODY_Y + 22;  // first y under ui::header's rule (BODY_Y+19)
 constexpr int BODY_H   = SCREEN_H - STATUS_H - HINT_H;
 constexpr int PAD      = 6;
 constexpr int ROW_H    = 17;

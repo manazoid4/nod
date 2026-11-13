@@ -49,7 +49,7 @@ public:
             const char* link = linkSentence(true);
             return link ? link : "UP/DOWN choose  ENTER open";
         }
-        return _hints;
+        return _hints.c_str();
     }
 
     void onEnter() override {
@@ -327,7 +327,7 @@ private:
     nod::TalkFocus _focus = nod::FOCUS_TALK;
     ListCursor _easyCursor;
     uint32_t _lastAnim = 0;
-    const char* _hints = "";
+    std::string _hints;
 };
 
 }  // namespace

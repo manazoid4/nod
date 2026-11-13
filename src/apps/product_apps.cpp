@@ -224,7 +224,7 @@ void updateProductServices() {
 
             store::Record answer;
             answer.kind="inbox"; answer.status="open";
-            answer.title=item.source == "talk" ? "Piblo answer" : "BrainDump processed";
+            answer.title=item.source == "talk" ? "Piblo answer" : "Brain Dump processed";
             answer.body=result.text; answer.source=result.provider; answer.ref=item.ref;
             if (!store::addRecord(answer)) break;
 
