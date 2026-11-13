@@ -15,7 +15,7 @@
 #include "../net/host_worker.h"
 #include "../net/mazhost.h"
 #include "../storage/store.h"
-#include "../ui/talk_orb.h"
+#include "../ui/character.h"
 #include "apps.h"
 #include "common.h"
 
@@ -268,13 +268,13 @@ private:
         const ui::StatusWord sw = ui::statusWord(p);
         const char* word = sw.text;
         constexpr int GLYPH = 20;
-        constexpr int SIDE = PAD + GLYPH + 6;  // word stays centred with room for the glyph
-        if (p == Phase::Ready || p == Phase::Listening || p == Phase::Thinking || p == Phase::Speaking) {
-            // Same Talk circle as Home, small: pulses with the mic, spins while thinking.
-            ui::talkOrb(g, PAD + GLYPH / 2, STATE_Y + 4 + GLYPH / 2, 7,
-                        p == Phase::Listening ? nod::TALK_LISTENING : p == Phase::Thinking ? nod::TALK_THINKING
-                        : p == Phase::Speaking ? nod::TALK_SPEAKING : nod::TALK_IDLE,
-                        voice::level());
+        const bool talk = p == Phase::Ready || p == Phase::Listening || p == Phase::Thinking || p == Phase::Speaking;
+        const int SIDE = PAD + (talk ? ui::CHAR_W : GLYPH) + 6;  // word stays centred with room for the figure
+        if (talk) {
+            // Piblo himself: bobs with the mic while listening, bounces while speaking, sways while thinking.
+            ui::character(g, PAD, STATE_Y, p == Phase::Listening ? nod::TALK_LISTENING : p == Phase::Thinking ? nod::TALK_THINKING
+                          : p == Phase::Speaking ? nod::TALK_SPEAKING : nod::TALK_IDLE,
+                          voice::level(), millis());
         } else {
             ui::glyph(g, PAD, STATE_Y + 4, GLYPH, p);
         }
