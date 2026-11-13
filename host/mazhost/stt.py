@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from threading import Lock
 
 from .config import Settings
+
+log = logging.getLogger(__name__)
+
+# Pinned so a moved/replaced upstream model cannot change what we run (CC-BY-4.0, see NOTICE).
+PARAKEET_NAME = "nemo-parakeet-tdt-0.6b-v3"
+PARAKEET_REPO = "istupakov/parakeet-tdt-0.6b-v3-onnx"
+PARAKEET_REV = "8f23f0c03c8761650bdb5b40aaf3e40d2c15f1ce"  # verified on the HF API 2026-11-13
 
 
 class SpeechToText:
@@ -12,6 +20,14 @@ class SpeechToText:
         self._models: dict[tuple[str, str, str], object] = {}
         self._lock = Lock()
         self._onnx = None
+        self._onnx_failed = False
+
+    def whisper_available(self) -> bool:
+        try:
+            import faster_whisper  # noqa: F401
+            return True
+        except ImportError:
+            return False
 
     def available(self) -> bool:
         for mod in ("onnx_asr", "faster_whisper"):
@@ -22,20 +38,47 @@ class SpeechToText:
                 pass
         return False
 
-    def _get_onnx(self):
-        if self._onnx is None:
-            with self._lock:
-                if self._onnx is None:
-                    import onnx_asr
-                    self._onnx = onnx_asr.load_model(
-                        self.settings.stt_local_model,
-                        quantization=self.settings.stt_quantization or None,
-                    )
+    def _get_onnx(self, download: bool = False):
+        """Load Parakeet once. A failed load is remembered: no retry on the request path.
+
+        Only warm() (download=True) may fetch the pinned snapshot; requests use the local cache.
+        """
+        if self._onnx is not None:
+            return self._onnx
+        with self._lock:
+            if self._onnx is not None:
+                return self._onnx
+            if self._onnx_failed:
+                raise RuntimeError("parakeet unavailable")
+            try:
+                import onnx_asr
+                name, quant = self.settings.stt_local_model, self.settings.stt_quantization or None
+                path = None
+                if name == PARAKEET_NAME:
+                    from huggingface_hub import snapshot_download
+                    patterns = ["config.json", "vocab.txt", "nemo128.onnx",
+                                f"*.{quant}.onnx" if quant else "*.onnx*"]
+                    path = snapshot_download(PARAKEET_REPO, revision=PARAKEET_REV,
+                                             allow_patterns=patterns, local_files_only=not download)
+                self._onnx = onnx_asr.load_model(name, path=path, quantization=quant)
+            except Exception as e:  # noqa: BLE001
+                self._onnx_failed = True
+                log.warning("parakeet load failed (%s); using Whisper for dictation", type(e).__name__)
+                raise
         return self._onnx
 
     def _parakeet(self, path: Path) -> str:
         # onnx-asr resamples any wav rate to 16 kHz itself; the model punctuates and capitalises.
         return str(self._get_onnx().recognize(str(path))).strip()
+
+    def transcribe_local(self, path: Path) -> tuple[str, str]:
+        """Flow dictation only: (text, engine). Parakeet when selected and loadable, else local Whisper."""
+        if self.settings.stt_provider == "parakeet":
+            try:
+                return self._parakeet(path), "parakeet"
+            except Exception:  # noqa: BLE001 - already logged once at load; stay local
+                pass
+        return self.transcribe(path), "whisper"
 
     def _get_model(self, model_name: str | None = None, device: str | None = None,
                    compute: str | None = None):
@@ -65,14 +108,13 @@ class SpeechToText:
         return " ".join(segment.text.strip() for segment in segments).strip()
 
     def warm(self) -> None:
-        """Load Whisper now so the first spoken turn is not +7 s (measured 7.8 s cold, 1.1 s warm)."""
+        """Load the engines now so the first spoken turn is not +7 s (Whisper measured 7.8 s cold, 1.1 s warm)."""
+        if self.settings.stt_provider == "parakeet":
+            try:
+                self._get_onnx(download=True)
+            except Exception:  # noqa: BLE001 - failure remembered; Whisper takes over
+                pass
         try:
-            if self.settings.stt_provider == "parakeet":
-                try:
-                    self._get_onnx()
-                    return
-                except Exception:  # noqa: BLE001 - fall back to warming Whisper
-                    pass
             self._get_model(self.settings.whisper_model,
                             "cpu" if self.settings.whisper_device == "auto" else self.settings.whisper_device,
                             self.settings.whisper_compute)
@@ -110,11 +152,6 @@ class SpeechToText:
         return self.transcribe_prompted(path, "")
 
     def transcribe(self, path: Path) -> str:
-        if self.settings.stt_provider == "parakeet":
-            try:
-                return self._parakeet(path)
-            except Exception:  # noqa: BLE001 - not installed / model error: use Whisper
-                pass
         return self._transcribe_with(
             path,
             self.settings.whisper_model,
