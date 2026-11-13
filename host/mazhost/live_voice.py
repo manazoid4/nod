@@ -149,8 +149,16 @@ class Resampler24to16:
 class LiveBridge:
     """One device session: owns the upstream realtime socket and the per-turn state machine."""
 
-    def __init__(self, ws: WebSocket, cfg: Settings, timings=None) -> None:
+    def __init__(self, ws: WebSocket, cfg: Settings, timings=None, command_handler=None) -> None:
         self.ws, self.cfg, self.timings = ws, cfg, timings
+        self.command_handler = command_handler
+        model_dir = getattr(cfg, "wakeword_model_dir", "")
+        if model_dir:
+            from .wakeword import Wakeword
+            self.wakeword = Wakeword(model_dir)
+        else:
+            self.wakeword = None
+        self._armed = bool(self.wakeword)
         self.url = cfg.llamacpp_url.replace("http", "ws", 1).rstrip("/") + "/v1/realtime"
         self.vad = Vad(cfg.live_end_silence_ms)
         self.gain = cfg.live_mic_gain
@@ -225,6 +233,11 @@ class LiveBridge:
             return  # tail of our own reply / codec switch noise: never a user turn
         if self.gain != 1.0:
             pcm = boost(pcm, self.gain)
+        if self._armed:
+            if self.wakeword.feed(pcm):
+                self._armed = False
+                self.vad.reset()
+            return
         blocks, ended = self.vad.feed(pcm)
         if blocks and self.cloud:
             self._turn.extend(blocks)  # buffered on Core; transcribed once the turn ends
@@ -287,12 +300,16 @@ class LiveBridge:
             t["asr_ms"] = round((time.monotonic() - t0) * 1000)
             if is_noise(text):
                 log.info("live: dropped noise turn %r", text)
+                self._rearm()
                 return  # still "listening": the device never saw a state change
             await self._send({"type": "text", "role": "user", "text": text})
             await self._set_state("thinking")
             self.brain.on_slow = lambda: sentences.put_nowait("One sec.")
-            reply = await self.brain.command(text)
-            if reply:
+            reply = await self.command_handler(text) if self.command_handler else None
+            handled = reply is not None
+            if not handled:
+                reply = await self.brain.command(text)
+            if handled or reply:
                 sentences.put_nowait(reply)
                 sentences.put_nowait(None)
             else:
@@ -309,6 +326,8 @@ class LiveBridge:
             log.warning("live: cloud turn failed: %s", error)
             await self._send({"type": "error", "message": "Piblo's brain hit a snag"})
             if not self._player:
+                if self.state == "listening":
+                    self._rearm()
                 await self._set_state("listening")
         finally:
             if producer:
@@ -345,10 +364,16 @@ class LiveBridge:
             log.warning("live: TTS timed out")
             self._need_reset = True
 
+    def _rearm(self) -> None:
+        if self.wakeword:
+            self.wakeword.reset()
+            self._armed = True
+
     async def _set_state(self, state: str) -> None:
         if state == "listening" and self.state != "listening":
             self._mute_until = time.monotonic() + self.holdoff
             self.vad.reset()
+            self._rearm()
         self.state = state
         await self._send({"type": "state", "state": state})
 
@@ -461,7 +486,7 @@ class LiveBridge:
             self.timings.add(row)
 
 
-def install_live_voice(api, cfg: Settings, security, timings=None) -> None:
+def install_live_voice(api, cfg: Settings, security, timings=None, command_handler=None) -> None:
     """Register /voice/live. Plain Starlette route: the app-wide HTTP auth dependency can't take a WebSocket."""
 
     async def endpoint(ws: WebSocket) -> None:
@@ -471,6 +496,13 @@ def install_live_voice(api, cfg: Settings, security, timings=None) -> None:
         if not security.token_ok(auth):
             await ws.close(4401)
             return
-        await LiveBridge(ws, cfg, timings).run()
+        try:
+            bridge = LiveBridge(ws, cfg, timings, command_handler)
+        except Exception as error:
+            log.error("live: wakeword setup failed: %s", error)
+            await ws.send_text(json.dumps({"type": "error", "message": "Wakeword setup failed on PC"}))
+            await ws.close(1011)
+            return
+        await bridge.run()
 
     api.router.routes.append(WebSocketRoute("/voice/live", endpoint))
