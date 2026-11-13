@@ -112,6 +112,8 @@ class Settings(BaseSettings):
     kokoro_voice: str = Field(default="am_michael", min_length=3, max_length=32)
     kokoro_speed: float = Field(default=1.05, ge=0.75, le=1.35)
     kokoro_pcm_port: int = Field(default=0, ge=0, le=65535)  # >0: serve raw PCM Kokoro for the device on this port
+    kokoro_pcm_bind: str = "127.0.0.1"  # set 0.0.0.0 for the device to reach it (LAN peers only either way)
+    kokoro_pcm_require_token: bool = False  # firmware #113 must send ?k=<token> before this is turned on
     data_dir: str = ""  # MAZ_DATA_DIR; empty = host/data in the install dir (voice choice, previews)
     maker_enderforge_cmd: str = ""  # Empty = Piblo Maker off; trusted local CLI command, no shell.
     maker_octoprint_url: str = ""
