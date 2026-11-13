@@ -428,7 +428,10 @@ class LiveBridge:
         async def push(frame: bytes) -> None:
             nonlocal n, sent
             await asyncio.sleep(max(0.0, t0 + n * 0.04 - AHEAD_S - time.monotonic()))
-            await self.ws.send_bytes(frame)
+            try:
+                await self.ws.send_bytes(frame)
+            except RuntimeError:  # close already sent (device hung up): drop the frame quietly
+                return
             n += 1
             sent += len(frame)
 

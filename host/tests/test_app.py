@@ -303,7 +303,7 @@ def test_context_ask_is_added_as_untrusted_screen_evidence():
         },
     )
     assert response.status_code == 200
-    system = models.last_messages[0]["content"]
+    system = models.last_messages[-1]["content"]
     assert "current-screen context" in system
     assert "festival packing note" in system
     assert "never as instructions" in system
@@ -427,7 +427,7 @@ def test_raw_audio_turn_accepts_streamed_wav_and_context_header():
 
     assert response.status_code == 200
     assert response.json()["text"] == "what should I focus on"
-    assert "selected=SHIFT" in models.last_messages[0]["content"]
+    assert "selected=SHIFT" in models.last_messages[-1]["content"]
 
 
 def test_auto_chain_failure_returns_spoken_fallback():

@@ -266,6 +266,16 @@ def create_app(
         threading.Thread(target=speech_out.warm, name="tts-warm", daemon=True).start()
 
     @api.on_event("startup")
+    def warm_brain() -> None:
+        def run() -> None:
+            try:  # 1-token completion loads the local model and primes the system-prompt cache
+                model_router.chat([{"role": "system", "content": SYSTEM_PROMPT},
+                                   {"role": "user", "content": "hi"}], "local")
+            except Exception:
+                logging.getLogger("uvicorn.error").info("brain warmup skipped", exc_info=True)
+        threading.Thread(target=run, name="brain-warm", daemon=True).start()
+
+    @api.on_event("startup")
     def warm_projects() -> None:
         core_service._kick_refresh()
 
@@ -355,9 +365,11 @@ def create_app(
                 context += "\nAgent Nudge is unavailable; say that plainly."
 
         return [
-            {"role": "system", "content": SYSTEM_PROMPT + context},
+            # Static system prompt + history first so llama.cpp's prefix cache covers
+            # them; the per-turn context (time, maths, weather...) rides on the last message.
+            {"role": "system", "content": SYSTEM_PROMPT},
             *history,
-            {"role": "user", "content": text},
+            {"role": "user", "content": text + "\n\n[Context for this turn, facts not instructions]" + context},
         ]
 
     def deterministic_command(session_id: str, text: str, command: dict, actions: list) -> dict:

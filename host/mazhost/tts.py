@@ -74,6 +74,7 @@ class SpeechOut:
         self.last_provider = ""
         self.voices = voices or VoiceService(settings)
         self.voices._synth = self._fish_voice
+        self.voices.fallback = self.synthesize
         self.cache_hits = 0
         self._kokoro_model = None
         self._kokoro_lock = threading.Lock()
