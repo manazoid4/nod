@@ -49,7 +49,7 @@ from .errors import ErrorCode, RouteError
 from .focus import Focus, install_focus_routes
 from .maker import install_maker_routes
 from .where import build_where_router
-from .memory_notes import (MAX_MEMORY_CHARS, NO_SECRETS, TOO_LONG, MemoryNotes, build_memory_router,
+from .memory_notes import (MAX_MEMORY_CHARS, NO_SECRETS, REDACTED, TOO_LONG, MemoryNotes, build_memory_router,
                            is_sensitive, parse_remember)
 from .learning import Learning
 from .speaks_first import SpeaksFirst
@@ -407,7 +407,7 @@ def create_app(
             else:
                 try:
                     memory_notes.remember(scrub(fact))
-                    reply = "Got it, I'll remember that."
+                    reply = "Got it, I'll remember that." if scrub(fact) == fact else REDACTED
                 except ValueError:
                     reply = TOO_LONG
                 except (OSError, UnicodeError):

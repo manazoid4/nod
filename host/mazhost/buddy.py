@@ -212,14 +212,19 @@ class Buddy:
 
     def _reload_alerts(self) -> None:
         """History only: reloaded alerts are marked fired and expired so a restart never re-notifies."""
-        for row in reversed(self.store.alerts(MAX_ALERTS)):
+        rows = {r["id"]: r for r in [*self.store.pending_alerts(), *self.store.alerts(MAX_ALERTS)]}
+        for row in sorted(rows.values(), key=lambda r: r["created"]):
             data = row["data"]
             # A reminder that never fired before the restart stays pending (late, not lost); legacy rows have no _due.
             pending = "_due" in data and not data.get("_fired") and row["outcome"] is None
-            rec = {**{k: v for k, v in data.items() if k not in ("_due", "_fired")},
+            snoozed = row["outcome"] == "snoozed" and data.get("_snooze") is not None
+            rec = {**{k: v for k, v in data.items() if k not in ("_due", "_fired", "_snooze")},
                    "due": data["_due"] if pending else row["created"], "fired": not pending,
-                   "snooze_until": 0.0, "_exp": (row["expires"] or float("inf")) if pending else 0.0,
-                   "outcome": "acked" if row["outcome"] == "acked" else None}
+                   "snooze_until": data["_snooze"] if snoozed else 0.0,
+                   "_exp": (row["expires"] or float("inf")) if pending else 0.0,
+                   "outcome": "acked" if row["outcome"] == "acked" else "snoozed" if snoozed else None}
+            if snoozed:
+                rec["_exp"] = row["expires"] or float("inf")
             self._alerts[rec["id"]] = rec
 
     def _halted_locked(self) -> bool:
@@ -367,9 +372,9 @@ class Buddy:
                 raise ValueError("action_not_offered")
             rec["outcome"] = "acked" if action == "ack" else "snoozed"
             rec["outcome_at"] = time.time()
-            self._db("set_alert_outcome", aid, rec["outcome"])
             if action == "snooze":
                 rec["snooze_until"] = rec["outcome_at"] + minutes * 60
+            self._db("set_alert_outcome", aid, rec["outcome"], rec["snooze_until"] if action == "snooze" else None)
             return {"ok": True, "id": aid, "outcome": rec["outcome"]}
 
     def alerts(self) -> dict:

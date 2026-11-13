@@ -25,7 +25,8 @@ CONTEXT_CHARS = 6000
 MAX_MEMORY_CHARS = 4000  # one limit for typed, spoken and API saves
 TOO_LONG = "That's too long for me to remember in one go. Could you say a shorter note?"
 NO_SECRETS = "I won't store passwords."
-_SENSITIVE = re.compile(r"password|\bpin\b|passcode|card number|cvv", re.I)
+REDACTED = "Got it, but I left out part that looked like a secret."
+_SENSITIVE = re.compile(r"\bpass(?:word|code|wd)?\b|\bpin\b|card number|\bcvv\b|api key|\btoken\b|\bsecret\b|sort code|account number", re.I)
 _QUESTION = re.compile(r"(?:what|when|where|who|which|why|how|if|whether)\b", re.I)
 _REMEMBER = re.compile(r"(?:please\s+)?remember\s+(?:that\s+)?(.+)", re.I | re.S)
 
@@ -33,7 +34,8 @@ _REMEMBER = re.compile(r"(?:please\s+)?remember\s+(?:that\s+)?(.+)", re.I | re.S
 def parse_remember(text: str) -> str | None:
     """The fact in an explicit 'remember ...' statement; None for anything else, including questions."""
     match = _REMEMBER.fullmatch(text.strip())
-    if not match or text.rstrip().endswith("?") or _QUESTION.match(match[1].lstrip()):
+    if (not match or len(match[1].strip()) < 3 or text.rstrip().endswith("?")
+            or _QUESTION.match(match[1].lstrip())):
         return None
     return match[1]
 
@@ -110,7 +112,7 @@ class MemoryNotes:
     def remember(self, text: str) -> Path:
         text = text.strip()
         # A note must not be able to close the related-links block that follows it.
-        text = text.replace("<!--", "").replace("-->", "").strip()
+        text = re.sub(r"[<>]", "", text).strip()
         if not text or len(text) > MAX_MEMORY_CHARS:
             raise ValueError(f"Memory must contain 1 to {MAX_MEMORY_CHARS} characters")
         with _LOCK:
@@ -176,6 +178,8 @@ def build_memory_router(notes: MemoryNotes) -> APIRouter:
 
     @router.post("/memory")
     def remember(body: MemoryInput):
+        if is_sensitive(body.text):
+            raise HTTPException(422, NO_SECRETS)
         try:
             path = notes.remember(body.text)
             return {"date": path.stem, "note": path.name}
