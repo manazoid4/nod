@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     groq_key: str = ""
     groq_api_key: str = ""  # Alias for groq_key (PR #43 uses this name)
     groq_models: str = "openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b"
-    # Conversational turns on LOCAL/AUTO use the full free chain (local last).
+    # Legacy preference; explicit LOCAL always stays local. Choose AUTO for the cloud chain.
     smart_voice: bool = True
     now_path: str = "~/Desktop/Maz Works Knowledge Vault/NOW.md"
 
