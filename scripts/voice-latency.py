@@ -1,4 +1,4 @@
-"""Compare whole-reply and opening-clause PCM latency on the local Kokoro service.
+"""Kokoro opening clause vs Kokoro whole reply, TTS stage only, excludes ASR/LLM.
 
 No device commands, playback or configuration changes. Times exclude ASR/LLM/Wi-Fi.
 """
@@ -79,7 +79,7 @@ def main():
     # Synthetic text only: no conversation or customer data in timing artifacts.
     clause = "Here is the short answer,"
     reply = clause + " you can keep the device on Home while the computer prepares the rest of the reply."
-    result = {"scope": "Kokoro HTTP to first 1024 PCM bytes; excludes ASR, LLM and device playback",
+    result = {"scope": "Kokoro opening clause vs Kokoro whole reply, TTS stage only (first 1024 PCM bytes); excludes ASR/LLM/device playback",
               "core_health": urllib.request.urlopen("http://127.0.0.1:8787/health", timeout=3).status,
               "whole": [], "clause": []}
     for _ in range(args.runs):

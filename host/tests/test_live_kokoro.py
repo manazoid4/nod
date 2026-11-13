@@ -77,6 +77,19 @@ def test_kokoro_streams_before_eof_and_closes(monkeypatch, status):
 def test_midstream_failure_stops_playback_and_returns_to_listening(monkeypatch):
     async def run():
         socket = Socket()
+        closed = asyncio.Event()
+
+        class PCM(httpx.AsyncByteStream):
+            async def __aiter__(self):
+                yield b"\x01" * 2048
+                await asyncio.sleep(0.05)
+                raise httpx.ReadError("connection lost after first PCM")
+
+            async def aclose(self):
+                closed.set()
+
+        monkeypatch.setattr(live_voice.private_mode, "async_client", lambda **kw: httpx.AsyncClient(
+            transport=httpx.MockTransport(lambda req: httpx.Response(200, stream=PCM())), **kw))
         bridge = live_voice.LiveBridge(socket, Settings(_env_file=None, tts_provider="kokoro"))
         bridge._t = {"create": time.monotonic()}
 
@@ -86,18 +99,16 @@ def test_midstream_failure_stops_playback_and_returns_to_listening(monkeypatch):
         async def command(_):
             return "Here is the answer."
 
-        async def broken(_):
-            bridge._t["first"] = time.monotonic()
-            bridge.state = "speaking"
-            bridge._player = asyncio.create_task(asyncio.sleep(30))
-            raise httpx.ReadError("connection lost after first PCM")
+        async def play():
+            await asyncio.Event().wait()
 
         monkeypatch.setattr(bridge.brain, "transcribe", transcribe)
         monkeypatch.setattr(bridge.brain, "command", command)
-        monkeypatch.setattr(bridge, "_tts", broken)
+        monkeypatch.setattr(bridge, "_play", play)
         await bridge._cloud_turn(b"\x00\x00")
         assert bridge.state == "listening"
         assert bridge._player is None
         assert {"type": "stop"} in socket.events
+        assert closed.is_set()
 
     asyncio.run(run())
