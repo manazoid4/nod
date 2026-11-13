@@ -49,7 +49,8 @@ from .errors import ErrorCode, RouteError
 from .focus import Focus, install_focus_routes
 from .maker import install_maker_routes
 from .where import build_where_router
-from .memory_notes import MemoryNotes, build_memory_router
+from .memory_notes import (MAX_MEMORY_CHARS, NO_SECRETS, TOO_LONG, MemoryNotes, build_memory_router,
+                           is_sensitive, parse_remember)
 from .learning import Learning
 from .speaks_first import SpeaksFirst
 from .rescue import install_rescue_routes
@@ -398,21 +399,27 @@ def create_app(
         # Strip only leading speech fillers; preserve the fact exactly as spoken.
         memory_request = re.sub(rf"^(?:{FILLER.pattern})+", "", text.strip(), flags=re.I)
         # Screen-context Ask is informational and must not save selected text.
-        if not pocket_context and (match := re.fullmatch(
-                r"(?:please\s+)?remember\s+(?:that\s+)?(.+)", memory_request, re.I | re.S)):
-            try:
-                memory_notes.remember(scrub(match[1]))
-                reply = "Got it, I'll remember that."
-            except ValueError:
-                reply = "Please give me a memory between 1 and 4000 characters."
-            except (OSError, UnicodeError):
-                reply = "Sorry, I couldn't save that."
+        if not pocket_context and (fact := parse_remember(memory_request)) is not None:
+            if is_sensitive(fact):
+                reply = NO_SECRETS
+            elif len(fact) > MAX_MEMORY_CHARS:
+                reply = TOO_LONG
+            else:
+                try:
+                    memory_notes.remember(scrub(fact))
+                    reply = "Got it, I'll remember that."
+                except ValueError:
+                    reply = TOO_LONG
+                except (OSError, UnicodeError):
+                    reply = "Sorry, I couldn't save that."
             sessions.add_turn(session_id, text, reply)
             return {"text": text, "reply": reply, "provider": "memory-local",
                     "actions": [], "timings": {"llm_ms": 0}}
-        if not pocket_context and re.fullmatch(
-                r"(?:please\s+)?(?:catch me up|what (?:did|have) i miss(?:ed)?)[\s.?!]*",
-                memory_request, re.I):
+        # "what did I miss" is ordinary chat mid-conversation; only "catch me up" is unconditional.
+        if not pocket_context and (
+                re.fullmatch(r"(?:please\s+)?catch me up[\s.?!]*", memory_request, re.I)
+                or (not sessions.messages(session_id) and re.fullmatch(
+                    r"(?:please\s+)?what (?:did|have) i miss(?:ed)?[\s.?!]*", memory_request, re.I))):
             try:  # read-only digest of real alerts and Library saves; deterministic, no model
                 reply = catchup.catch_me_up(datetime.now(timezone.utc))
             except Exception:

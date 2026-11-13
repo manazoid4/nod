@@ -23,7 +23,8 @@ from pathlib import Path
 import httpx
 
 from .config import Settings
-from .memory_notes import MemoryNotes
+from .memory_notes import (MAX_MEMORY_CHARS, NO_SECRETS, TOO_LONG, MemoryNotes, is_sensitive,
+                           parse_remember)
 from .voices import resolve_data_dir
 from . import private_mode
 
@@ -234,7 +235,12 @@ class LiveBrain:
         if re.search(r"what (?:model|brain)s?\b.*\b(?:using|running)|which (?:model|brain)", low):
             cur = await self.current()
             return f"I'm using {cur['label']}, which is {cur['model']}." if "/" in cur["model"] else f"I'm using {cur['label']}."
-        if m := re.match(r"remember (?:that )?(.{3,400})$", t, re.I):
+        if (fact := parse_remember(text)) is not None and len(fact.strip()) >= 3:
+            if is_sensitive(fact):
+                return NO_SECRETS
+            if len(fact) > MAX_MEMORY_CHARS:
+                return TOO_LONG
+            m = [None, fact.strip().rstrip(".!").strip()]
             try:
                 self.memory_notes.remember(scrub(m[1]))
                 self.memory_path.parent.mkdir(parents=True, exist_ok=True)

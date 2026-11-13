@@ -21,6 +21,25 @@ _STOP = set("a an and are as at be been bring but by can could did do for from h
 _LINKS = "\n\n<!-- piblo-related -->\n"
 _LINKS_END = "<!-- /piblo-related -->"
 _LOCK = threading.RLock()
+CONTEXT_CHARS = 6000
+MAX_MEMORY_CHARS = 4000  # one limit for typed, spoken and API saves
+TOO_LONG = "That's too long for me to remember in one go. Could you say a shorter note?"
+NO_SECRETS = "I won't store passwords."
+_SENSITIVE = re.compile(r"password|\bpin\b|passcode|card number|cvv", re.I)
+_QUESTION = re.compile(r"(?:what|when|where|who|which|why|how|if|whether)\b", re.I)
+_REMEMBER = re.compile(r"(?:please\s+)?remember\s+(?:that\s+)?(.+)", re.I | re.S)
+
+
+def parse_remember(text: str) -> str | None:
+    """The fact in an explicit 'remember ...' statement; None for anything else, including questions."""
+    match = _REMEMBER.fullmatch(text.strip())
+    if not match or text.rstrip().endswith("?") or _QUESTION.match(match[1].lstrip()):
+        return None
+    return match[1]
+
+
+def is_sensitive(fact: str) -> bool:
+    return bool(_SENSITIVE.search(fact))
 
 
 def _topics(text: str) -> set[str]:
@@ -90,8 +109,10 @@ class MemoryNotes:
 
     def remember(self, text: str) -> Path:
         text = text.strip()
-        if not text or len(text) > 4000:
-            raise ValueError("Memory must contain 1 to 4000 characters")
+        # A note must not be able to close the related-links block that follows it.
+        text = text.replace("<!--", "").replace("-->", "").strip()
+        if not text or len(text) > MAX_MEMORY_CHARS:
+            raise ValueError(f"Memory must contain 1 to {MAX_MEMORY_CHARS} characters")
         with _LOCK:
             self.dir.mkdir(parents=True, exist_ok=True)
             path = self.dir / f"{self.today().isoformat()}.md"
@@ -131,19 +152,22 @@ class MemoryNotes:
             return sorted(hits, key=lambda note: (len(topics.intersection(note["tags"])), note["date"]), reverse=True)
 
     def context(self, query: str) -> str:
-        """Select matching entries before capping context for spoken answers."""
+        """Matching entries, one per line, fenced as data and capped for spoken answers."""
         topics = _topics(query)
+        if not topics:
+            return ""  # "How are you?" carries no notes
         excerpts = []
         for note in self.recall(query):
-            lines = [line for line in note["text"].splitlines()
-                     if not topics or topics.intersection(_topics(line))]
-            if lines:
-                excerpts.append(f"{note['date']}: {' '.join(lines)}")
-        return "\n".join(excerpts)[:6000]
+            for line in note["text"].splitlines():
+                if topics.intersection(_topics(line)):
+                    excerpts.append(f"{note['date']}: " + re.sub(r"[<>]", "", line).lstrip("- ").strip())
+        if not excerpts:
+            return ""
+        return "<saved_notes>\n" + "\n".join(excerpts)[:CONTEXT_CHARS] + "\n</saved_notes>"
 
 
 class MemoryInput(BaseModel):
-    text: str = Field(min_length=1, max_length=4000)
+    text: str = Field(min_length=1, max_length=MAX_MEMORY_CHARS)
 
 
 def build_memory_router(notes: MemoryNotes) -> APIRouter:
