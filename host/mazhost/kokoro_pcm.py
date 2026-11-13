@@ -1,7 +1,8 @@
 """LAN Kokoro endpoint for the device: GET /?text=... -> raw s16le mono 24 kHz PCM, streamed per sentence.
 
 HTTP/1.0, no Content-Length, no chunking: the body ends when the connection closes.
-Run standalone: python -m mazhost.kokoro_pcm --port 8880 (or set kokoro_pcm_port in Core).
+Run standalone: python -m mazhost.kokoro_pcm --port 8880 (binds 127.0.0.1; the device needs --host 0.0.0.0 or
+MAZ_KOKORO_PCM_BIND=0.0.0.0), or set kokoro_pcm_port in Core.
 
 Access: LAN peers only (security.is_lan_ip). With kokoro_pcm_require_token the shared token is also required
 (?k=<token> or an Authorization header). The firmware (pl-b kokoro_stream.cpp) does not send a token yet, so
@@ -123,19 +124,21 @@ def make_server(synth, host: str, port: int, token: str | None = None) -> Thread
 
 
 def _token(settings: Settings) -> str | None:
-    return settings.token if settings.kokoro_pcm_require_token else None
+    if not settings.kokoro_pcm_require_token:
+        return None
+    return settings.token if settings.token_configured else ""  # "" rejects everything
 
 
-def serve_in_thread(settings: Settings) -> bool:
+def serve_in_thread(settings: Settings) -> ThreadingHTTPServer | None:
     """Start the endpoint beside Core. A bind failure (port taken) is logged, never fatal to Core."""
     try:
         srv = make_server(KokoroSynth(settings), settings.kokoro_pcm_bind, settings.kokoro_pcm_port, _token(settings))
     except OSError:
         log.warning("kokoro_pcm: cannot bind %s:%s, endpoint disabled", settings.kokoro_pcm_bind,
                     settings.kokoro_pcm_port, exc_info=True)
-        return False
+        return None
     threading.Thread(target=srv.serve_forever, daemon=True, name="kokoro-pcm").start()
-    return True
+    return srv
 
 
 if __name__ == "__main__":

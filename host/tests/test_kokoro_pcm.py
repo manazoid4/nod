@@ -146,19 +146,37 @@ def test_serve_in_thread_bind_conflict_does_not_raise():
     blocker.listen(1)
     try:
         s = Settings(kokoro_pcm_port=blocker.getsockname()[1], kokoro_pcm_bind="127.0.0.1")
-        assert serve_in_thread(s) is False
+        assert serve_in_thread(s) is None
     finally:
         blocker.close()
 
 
 def test_serve_in_thread_starts_and_serves():
-    import socket
     from mazhost.config import Settings
     from mazhost.kokoro_pcm import serve_in_thread
+    # port 0 would disable it in Core, so use an ephemeral port via the handle after binding to a free one
+    import socket
     sk = socket.socket()
     sk.bind(("127.0.0.1", 0))
     port = sk.getsockname()[1]
     sk.close()
-    assert serve_in_thread(Settings(kokoro_pcm_port=port)) is True
-    # no model configured -> check() fails -> 503 proves the handler is live
-    assert _get(port, "/?text=hi")[0].status == 503
+    srv = serve_in_thread(Settings(kokoro_pcm_port=port, kokoro_model_path="", kokoro_voices_path=""))
+    assert srv is not None
+    try:
+        # empty model paths -> check() fails -> 503 proves the handler is live
+        assert _get(srv.server_port, "/?text=hi")[0].status == 503
+    finally:
+        srv.shutdown()
+
+
+def test_require_token_with_default_token_rejects_everything():
+    from mazhost.config import Settings
+    from mazhost.kokoro_pcm import _token
+    assert _token(Settings(kokoro_pcm_require_token=True)) == ""
+    assert _token(Settings(kokoro_pcm_require_token=True, token="real-token")) == "real-token"
+    assert _token(Settings()) is None
+    srv = _serve_with(_tone, token="")
+    try:
+        assert _get(srv.server_port, "/?text=hi&k=")[0].status == 403
+    finally:
+        srv.shutdown()
