@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     discovery_port: int = 8788  # MAZ_DISCOVERY_PORT: UDP LAN discovery for Piblo pairing; 0 = off
     remote_url: str = ""  # MAZ_REMOTE_URL; empty = auto-detect the Tailscale Funnel URL
     remote_detect: bool = True  # MAZ_REMOTE_DETECT=0 disables the background tailscale probe
+    flow_cleanup_llm: bool = False  # MAZ_FLOW_CLEANUP_LLM=1: opt in to LLM cleanup of dictation (network/route)
+    stt_provider: str = "parakeet"  # MAZ_STT_PROVIDER: parakeet (onnx-asr, local) | whisper (faster-whisper)
+    stt_local_model: str = "nemo-parakeet-tdt-0.6b-v3"  # any onnx-asr model name, e.g. moonshine-base-en
+    stt_quantization: str = "int8"
     whisper_model: str = "base.en"
     whisper_device: str = "cpu"
     whisper_compute: str = "int8"

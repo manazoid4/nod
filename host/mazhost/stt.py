@@ -11,13 +11,31 @@ class SpeechToText:
         self.settings = settings
         self._models: dict[tuple[str, str, str], object] = {}
         self._lock = Lock()
+        self._onnx = None
 
     def available(self) -> bool:
-        try:
-            import faster_whisper  # noqa: F401
-            return True
-        except ImportError:
-            return False
+        for mod in ("onnx_asr", "faster_whisper"):
+            try:
+                __import__(mod)
+                return True
+            except ImportError:
+                pass
+        return False
+
+    def _get_onnx(self):
+        if self._onnx is None:
+            with self._lock:
+                if self._onnx is None:
+                    import onnx_asr
+                    self._onnx = onnx_asr.load_model(
+                        self.settings.stt_local_model,
+                        quantization=self.settings.stt_quantization or None,
+                    )
+        return self._onnx
+
+    def _parakeet(self, path: Path) -> str:
+        # onnx-asr resamples any wav rate to 16 kHz itself; the model punctuates and capitalises.
+        return str(self._get_onnx().recognize(str(path))).strip()
 
     def _get_model(self, model_name: str | None = None, device: str | None = None,
                    compute: str | None = None):
@@ -49,6 +67,12 @@ class SpeechToText:
     def warm(self) -> None:
         """Load Whisper now so the first spoken turn is not +7 s (measured 7.8 s cold, 1.1 s warm)."""
         try:
+            if self.settings.stt_provider == "parakeet":
+                try:
+                    self._get_onnx()
+                    return
+                except Exception:  # noqa: BLE001 - fall back to warming Whisper
+                    pass
             self._get_model(self.settings.whisper_model,
                             "cpu" if self.settings.whisper_device == "auto" else self.settings.whisper_device,
                             self.settings.whisper_compute)
@@ -86,6 +110,11 @@ class SpeechToText:
         return self.transcribe_prompted(path, "")
 
     def transcribe(self, path: Path) -> str:
+        if self.settings.stt_provider == "parakeet":
+            try:
+                return self._parakeet(path)
+            except Exception:  # noqa: BLE001 - not installed / model error: use Whisper
+                pass
         return self._transcribe_with(
             path,
             self.settings.whisper_model,

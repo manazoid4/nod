@@ -12,6 +12,7 @@ psutil==7.2.2
 # Local speech-to-text. faster-whisper is the least painful reliable option on
 # Windows: pip-installable CTranslate2 wheels, no compiler, CPU works fine.
 faster-whisper==1.1.1
+onnx-asr==0.12.0  # local Parakeet STT (default); faster-whisper stays the fallback
 # PyAV 19 removed av.open(metadata_errors=...), which faster-whisper calls when it
 # decodes audio itself; leaving av unpinned breaks speech-to-text on fresh installs.
 av==18.0.0

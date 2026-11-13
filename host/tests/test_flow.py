@@ -62,7 +62,8 @@ class Models:
 
 
 def test_dictate_endpoint(tmp_path):
-    cfg = Settings(token="t" * 40, core_enabled=False, flow_dir=str(tmp_path), groq_api_key="")
+    cfg = Settings(token="t" * 40, core_enabled=False, flow_dir=str(tmp_path), groq_api_key="",
+                   flow_cleanup_llm=True)
     client = TestClient(create_app(cfg, stt=Stt(), models=Models()))
     r = client.post("/dictate?target=text", content=_wav(),
                     headers={"Authorization": "Bearer " + "t" * 40, "Content-Type": "audio/wav"})
@@ -91,3 +92,33 @@ def test_one_release_one_paste(monkeypatch):
     calls = []
     nodflow.send(C(), b"x", 0.0, paste_fn=lambda t, enter=False: calls.append((t, enter)))
     assert calls == [("hello", True)]
+
+
+def test_cleanup_is_local_by_default(tmp_path):
+    from mazhost.flow import Flow
+
+    class Boom:
+        def chat(self, *a, **k): raise AssertionError("network route called")
+
+    f = Flow(Settings(token="t" * 40, flow_dir=str(tmp_path), groq_api_key=""), Stt(), Boom())
+    assert f._cleanup("um hello there") == ("Hello there.", "rules")
+
+
+def test_parakeet_selected_then_whisper_fallback(tmp_path, monkeypatch):
+    from mazhost.stt import SpeechToText
+
+    s = SpeechToText(Settings(token="t" * 40, flow_dir=str(tmp_path)))
+    assert s.settings.stt_provider == "parakeet"
+
+    class Fake:
+        def recognize(self, p): return " Hello world. "
+
+    s._onnx = Fake()
+    assert s.transcribe(tmp_path / "a.wav") == "Hello world."
+
+    class Bad:
+        def recognize(self, p): raise RuntimeError("no model")
+
+    s._onnx = Bad()
+    monkeypatch.setattr(s, "_transcribe_with", lambda *a: "whisper text")
+    assert s.transcribe(tmp_path / "a.wav") == "whisper text"

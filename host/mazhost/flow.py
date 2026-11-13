@@ -74,6 +74,9 @@ class Flow:
         self.words = load_dictionary(self.dir / "dictionary.txt")
 
     def _cleanup(self, text: str) -> tuple[str, str]:
+        # Local by default: STT already punctuates, so no network/LLM hop unless explicitly configured.
+        if not (self.s.groq_api_key or getattr(self.s, "flow_cleanup_llm", False)):
+            return rule_cleanup(text), "rules"
         system = CLEAN_SYSTEM.format(words=", ".join(self.words))
         messages = [{"role": "system", "content": system}, {"role": "user", "content": text}]
         if self.s.groq_api_key:
@@ -91,7 +94,7 @@ class Flow:
                     return out, "groq"
             except Exception as e:  # noqa: BLE001 - fall through the chain
                 log.warning("flow cleanup groq failed: %s", type(e).__name__)
-        if self.models is not None:
+        if self.models is not None and getattr(self.s, "flow_cleanup_llm", False):
             try:
                 out, provider = self.models.chat(messages, "auto")
                 if out.strip():
