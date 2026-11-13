@@ -37,6 +37,8 @@ FRAME = 1280  # 40 ms reply frame to the device, bytes
 AHEAD_S = 0.4  # never run further than this ahead of real-time playback
 MIN_SPEECH_MS = 250
 PREROLL_MS = 300
+LONG_SPEECH_MS = 1500  # after this much speech a pause is more likely mid-thought than the end
+LONG_SPEECH_HANGOVER = 1.5
 FIRST_AUDIO_LIMIT_S = 4.0
 INSTRUCTIONS = ("You are Piblo, a friendly, warm and calm voice assistant on a tiny pocket device. "
                 "Never name or reveal your model. Keep replies short and spoken. "
@@ -97,7 +99,10 @@ class Vad:
                 self.last_loud_at = time.monotonic()
             else:
                 self._silence += 1
-                ended = self._silence >= self.end_blocks
+                need = self.end_blocks
+                if self.speech_ms >= LONG_SPEECH_MS:
+                    need = round(need * LONG_SPEECH_HANGOVER)
+                ended = self._silence >= need
         return out, ended
 
     @property
@@ -169,6 +174,7 @@ class LiveBridge:
         # cloud brain: LFM3 only hears (ASR over HTTP) and speaks (TTS on the realtime socket).
         # Private mode forces the local LFM3 speech-to-speech path (no cloud model).
         self.cloud = cfg.live_brain == "cloud" and not private_mode.enabled()
+        self.kokoro = self.cloud and cfg.tts_provider == "kokoro"
         self.brain = LiveBrain(cfg) if self.cloud else None
         self._turn: list[bytes] = []
         self._cloud: asyncio.Task | None = None
@@ -177,7 +183,8 @@ class LiveBridge:
     # ---- device side -----------------------------------------------------
     async def run(self) -> None:
         try:
-            await self._connect()
+            if not self.kokoro:
+                await self._connect()
         except Exception as error:  # model server down: tell the device, do not crash Core
             log.warning("live: model server unavailable: %s", error)
             await self._send({"type": "error", "message": "Piblo's brain is offline"})
@@ -258,7 +265,8 @@ class LiveBridge:
 
     async def _interrupt(self) -> None:
         self._end_turn_tasks()
-        await self._up_send({"type": "response.cancel"})
+        if not self.kokoro:
+            await self._up_send({"type": "response.cancel"})
         await self._send({"type": "stop"})
         await self._set_state("listening")
         self.vad.reset()
@@ -308,8 +316,9 @@ class LiveBridge:
         except Exception as error:
             log.warning("live: cloud turn failed: %s", error)
             await self._send({"type": "error", "message": "Piblo's brain hit a snag"})
-            if not self._player:
-                await self._set_state("listening")
+            self._end_turn_tasks()
+            await self._send({"type": "stop"})
+            await self._set_state("listening")
         finally:
             if producer:
                 producer.cancel()
@@ -335,6 +344,21 @@ class LiveBridge:
             sentences.put_nowait(None)
 
     async def _tts(self, sentence: str) -> None:
+        if self.kokoro:
+            async with private_mode.async_client(timeout=20, trust_env=False) as client:
+                async with client.stream("GET", "http://127.0.0.1:8880/", params={"text": sentence}) as response:
+                    response.raise_for_status()
+                    pending = b""
+                    async for chunk in response.aiter_bytes(1024):
+                        pending += chunk
+                        size = len(pending) & ~1
+                        if size:
+                            await self._audio(pending[:size])
+                            pending = pending[size:]
+                    if pending:
+                        raise ValueError("Kokoro returned truncated PCM16")
+            self._t["done"] = time.monotonic()
+            return
         self._tts_done.clear()
         await self._up_send({"type": "conversation.item.create", "item": {
             "type": "message", "role": "user", "content": [{"type": "input_text", "text": sentence}]}})
@@ -404,14 +428,7 @@ class LiveBridge:
         elif kind == "response.output_text.delta" and not self.cloud:
             await self._send({"type": "text", "role": "assistant", "text": ev.get("delta", "")})
         elif kind == "response.output_audio.delta":
-            pcm = self._rs.feed(base64.b64decode(ev.get("delta", "")))
-            if pcm and "first" not in self._t:
-                self._t["first"] = time.monotonic()
-                self._guard and self._guard.cancel()
-                await self._set_state("speaking")
-                self._player = asyncio.create_task(self._play())
-            if pcm:
-                self._q.put_nowait(pcm)
+            await self._audio(base64.b64decode(ev.get("delta", "")))
         elif kind == "response.done" and self.cloud:
             self._tts_done.set()  # one sentence spoken; _cloud_turn closes the audio queue when all are
         elif kind == "response.done":
@@ -420,6 +437,16 @@ class LiveBridge:
             if "first" not in self._t:  # model produced no audio: nothing to wait for
                 self._end_turn_tasks()
                 await self._set_state("listening")
+
+    async def _audio(self, pcm24: bytes) -> None:
+        pcm = self._rs.feed(pcm24)
+        if pcm and "first" not in self._t:
+            self._t["first"] = time.monotonic()
+            self._guard and self._guard.cancel()
+            await self._set_state("speaking")
+            self._player = asyncio.create_task(self._play())
+        if pcm:
+            self._q.put_nowait(pcm)
 
     async def _play(self) -> None:
         """Pace reply frames to the device (<= AHEAD_S ahead), then wait for playback_done."""

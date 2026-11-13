@@ -49,12 +49,13 @@ public:
             const char* link = linkSentence(true);
             return link ? link : "UP/DOWN choose  ENTER open";
         }
-        return _hints;
+        return _hints.c_str();
     }
 
     void onEnter() override {
         buildPrimary();
         _spaceArmed = false;
+        _focus = nod::FOCUS_TALK;
         _easyCursor.clamp(EASY_COUNT);
         lvui::setActive(true);
         rebuildHints();
@@ -115,7 +116,7 @@ public:
         if (!_grid) {  // Talk circle Home
             if (e.code == KEY_ENTER) { activate(_focus); return true; }
             const char dir = e.code == KEY_RIGHT ? 'R' : e.code == KEY_LEFT ? 'L' : e.code == KEY_DOWN ? 'D' : e.code == KEY_UP ? 'U' : 0;
-            if (dir) { _focus = nod::moveTalkFocus(_focus, dir); sfx::select(); invalidate(); return true; }
+            if (dir) { _focus = nod::moveTalkFocus(_focus, dir); sfx::select(); rebuildHints(); invalidate(); return true; }
         } else {
             if (e.code == KEY_ENTER) { open(_sel); return true; }
             if (e.code == KEY_DOWN)  { move(+1); return true; }
@@ -211,10 +212,10 @@ private:
             if (!host::configured()) return "Not paired: Control";
             return "Core is off (PC)";
         }
-        if (host::updateReady()) return "Update: press U";
+        if (host::updateReady()) return "Update available: press U";
         if (Sys.agentQuestion) return "Agent asked: press N";
         now = field::nowText();
-        return now != "READY" ? ui::ellipsis(now, 20) : std::string("1-4 quick actions");
+        return now != "READY" ? ui::ellipsis(now, 20) : std::string("Quick: 1-3");
     }
 
     void renderTalk(M5Canvas& g) {
@@ -257,7 +258,8 @@ private:
         }
         g.setFont(&fonts::Font0);
         g.setTextColor(linkSentence(true) ? nt::TEXT : nt::DIM, nt::BG);
-        g.drawString(shortLine().c_str(), L.sentence.x, L.sentence.y + L.sentence.h / 2);
+        const bool update = !linkSentence(true) && host::updateReady();
+        g.drawString(shortLine().c_str(), update ? 4 : L.sentence.x, L.sentence.y + L.sentence.h / 2);
         g.setTextDatum(top_left);
     }
 
@@ -273,7 +275,7 @@ private:
             st.sentence = link;
         } else if (host::updateReady()) {
             ph = ui::Phase::Update;
-            st.sentence = "Press U, then Y";
+            st.sentence = "Update available: press U";
         } else if (Sys.agentQuestion) {
             ph = ui::Phase::NeedsYou;
             st.sentence = "An agent asked. Press N.";
@@ -299,15 +301,12 @@ private:
 
     void rebuildHints() {
         // W opens Wi-Fi from Home (registry shortcut), so say so when Wi-Fi is down.
+        const char* tail = (linkSentence(true) && !Sys.wifiConnected) ? "  W wifi" : host::updateReady() ? "  U update" : "";
         if (!_grid) {
-            _hints = (linkSentence(true) && !Sys.wifiConnected) ? "ENTER live  SPACE save  W wifi"
-                   : host::updateReady()                        ? "ENTER live  SPACE save  U update"
-                                                                : "ENTER live  hold SPACE save";
+            _hints = std::string(_focus == nod::FOCUS_TALK ? "ENTER talk  hold SPACE save" : "ENTER open") + tail;
             return;
         }
-        _hints = (linkSentence(true) && !Sys.wifiConnected) ? "ENTER open  ESC back  W wifi"
-               : host::updateReady()                        ? "ENTER open  ESC back  U update"
-                                                            : "ENTER open  ESC back";
+        _hints = std::string("ENTER open") + tail;
     }
 
     void move(int delta) {
@@ -330,7 +329,7 @@ private:
     nod::TalkFocus _focus = nod::FOCUS_TALK;
     ListCursor _easyCursor;
     uint32_t _lastAnim = 0;
-    const char* _hints = "";
+    std::string _hints;
 };
 
 }  // namespace
