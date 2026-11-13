@@ -115,7 +115,7 @@ class SpeakPlanner:
         self._lock = threading.Lock()
         self._max = max_plans
 
-    def start(self, text: str, row: dict[str, Any]) -> tuple[str, int]:
+    def start(self, text: str, row: dict[str, Any], synth: Callable[[str], Path] | None = None) -> tuple[str, int]:
         parts = plan_parts(spoken_reply(text))
         if not parts:
             return "", 0
@@ -126,7 +126,7 @@ class SpeakPlanner:
 
         def run(index: int, part_text: str) -> Path:
             try:
-                return self._synth(part_text)
+                return (synth or self._synth)(part_text)
             finally:
                 done_ms = round((time.perf_counter() - began) * 1000)
                 with lock:
