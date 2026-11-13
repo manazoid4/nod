@@ -467,6 +467,21 @@ class Models:
             return self._local(messages)
         raise ValueError(f"unknown route stage: {stage}")
 
+    def warm(self, messages: list[dict[str, str]]) -> None:
+        """Load the local model and prime its prompt cache with a 1-token completion.
+
+        Skipped when no local engine is up; leaves last_route/last_usage untouched so
+        diagnostics never show a warm-up as a user turn."""
+        if not self.status()["local"]:
+            return
+        usage = dict(self._last_usage)
+        token = _output_cap.set(1)
+        try:
+            self._dispatch_one("local", messages)
+        finally:
+            _output_cap.reset(token)
+            self._last_usage = usage
+
     def _dispatch_one_bounded(self, stage: Route, messages: list[dict[str, str]]) -> tuple[str, str]:
         if self.settings.brain_order == "local_first" and stage in ("local_fast", "local_smart"):
             if not self._local_stage_healthy(stage):

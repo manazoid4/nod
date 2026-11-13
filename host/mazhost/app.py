@@ -132,6 +132,7 @@ class DeviceConfigRequest(BaseModel):
 
 
 # What the web live view may ask the device to do; anything else stays device-only.
+_FACTS_TAG = re.compile(r"</?\s*turn_facts\s*>", re.I)
 _DEVICE_ACTION = re.compile(r"update|reboot|key:\d{1,3},\d{1,3},\d{1,2}|open:[a-z_]{1,24}")
 
 
@@ -269,8 +270,8 @@ def create_app(
     def warm_brain() -> None:
         def run() -> None:
             try:  # 1-token completion loads the local model and primes the system-prompt cache
-                model_router.chat([{"role": "system", "content": SYSTEM_PROMPT},
-                                   {"role": "user", "content": "hi"}], "local")
+                getattr(model_router, "warm", lambda m: None)(
+                    [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": "hi"}])
             except Exception:
                 logging.getLogger("uvicorn.error").info("brain warmup skipped", exc_info=True)
         threading.Thread(target=run, name="brain-warm", daemon=True).start()
@@ -364,13 +365,15 @@ def create_app(
             except (RuntimeError, httpx.HTTPError):
                 context += "\nAgent Nudge is unavailable; say that plainly."
 
+        # Untrusted text must not be able to close the facts block early.
+        context = _FACTS_TAG.sub("", context)
         return [
             # Static system prompt + history first so llama.cpp's prefix cache covers
             # them; the per-turn context (time, maths, weather...) rides on the last message.
             {"role": "system", "content": SYSTEM_PROMPT},
             *history,
-            {"role": "user", "content": "[Background facts for this turn. Use silently; never repeat or read them out unless asked."
-                                        + context + "]\n\nUser: " + text},
+            {"role": "user", "content": "<turn_facts>\nBackground for this turn. Use silently; never repeat or read it out unless asked."
+                                        + context + "\n</turn_facts>\n\nUser: " + _FACTS_TAG.sub("", text)},
         ]
 
     def deterministic_command(session_id: str, text: str, command: dict, actions: list) -> dict:
@@ -400,7 +403,8 @@ def create_app(
             "timings": {"llm_ms": 0},
         }
 
-    def answer(session_id: str, text: str, route: Route, pocket_context: str = "") -> dict:
+    def answer(session_id: str, text: str, route: Route, pocket_context: str = "",
+               max_tokens: int | None = None) -> dict:
         if cfg.smart_voice and route == "local":
             route = "auto"  # free cloud brain first, local only as last fallback
         refined = refine(text)
@@ -432,13 +436,14 @@ def create_app(
             return deterministic_command(session_id, refined.text, command, refined.actions)
         started = time.perf_counter()
         try:
-            token = _output_cap.set(VOICE_MAX_TOKENS)  # spoken reply: keep generation short
+            token = _output_cap.set(max_tokens) if max_tokens else None  # spoken path only
             try:
                 reply, provider = model_router.chat(
                     grounded_messages(session_id, refined.text, pocket_context), route
                 )
             finally:
-                _output_cap.reset(token)
+                if token is not None:
+                    _output_cap.reset(token)
         except Exception as error:
             if route not in ("auto", "local"):  # explicit cloud routes keep their typed errors
                 if isinstance(error, RouteError):
@@ -854,7 +859,7 @@ def create_app(
             stt_started = time.perf_counter()
             text = turn_stt(path)
             stt_ms = round((time.perf_counter() - stt_started) * 1000)
-            result = answer(session_id, text, route, context)
+            result = answer(session_id, text, route, context, None if context else VOICE_MAX_TOKENS)
             result["timings"].update({"upload_ms": upload_ms, "stt_ms": stt_ms})
             return finish_turn(result, upload_ms, stt_ms, x_maz_speak)
         finally:
@@ -884,7 +889,8 @@ def create_app(
             stt_started = time.perf_counter()
             text = turn_stt(path)
             stt_ms = round((time.perf_counter() - stt_started) * 1000)
-            result = answer(x_maz_session, text, x_maz_route, x_maz_context)
+            result = answer(x_maz_session, text, x_maz_route, x_maz_context,
+                            None if x_maz_context else VOICE_MAX_TOKENS)
             result["timings"].update({"upload_ms": upload_ms, "stt_ms": stt_ms})
             return finish_turn(result, upload_ms, stt_ms, x_maz_speak)
         finally:

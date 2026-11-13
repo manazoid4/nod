@@ -66,6 +66,7 @@ class MazCore:
         self._cache_lock = threading.Lock()
         self._summary_cache: list[dict[str, Any]] = []
         self._refreshing = False
+        self._dirty = False
         self._summary_cache_at = 0.0
 
     # ---------------------------------------------------------------- system
@@ -221,20 +222,31 @@ class MazCore:
         return "git"
 
     def _invalidate_project_cache(self) -> None:
+        # A git pull/fetch/status just changed branch counts: mark stale and rescan in
+        # the background so the next read is fresh without blocking this caller.
         with self._cache_lock:
-            self._summary_cache_at = 0.0  # mark stale; keep the list so reads stay instant
+            self._summary_cache_at = 0.0
+            self._dirty = True
+        self._kick_refresh()
 
     def _refresh_projects(self) -> None:
         try:
             from concurrent.futures import ThreadPoolExecutor
-            paths = self._project_paths(limit=80)
-            with ThreadPoolExecutor(max_workers=8) as pool:  # git calls are subprocess-bound
-                summaries = list(pool.map(self._project_summary, paths))
-            with self._cache_lock:
-                self._summary_cache = summaries
-                self._summary_cache_at = time.monotonic()
+            while True:
+                with self._cache_lock:
+                    self._dirty = False
+                paths = self._project_paths(limit=80)
+                with ThreadPoolExecutor(max_workers=8) as pool:  # git calls are subprocess-bound
+                    summaries = list(pool.map(self._project_summary, paths))
+                with self._cache_lock:
+                    if self._dirty:  # invalidated mid-scan: this result may predate the change
+                        continue
+                    self._summary_cache = summaries
+                    self._summary_cache_at = time.monotonic()
+                    return
         finally:
-            self._refreshing = False
+            with self._cache_lock:
+                self._refreshing = False
 
     def _kick_refresh(self) -> None:
         with self._cache_lock:
