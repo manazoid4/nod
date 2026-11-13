@@ -63,13 +63,13 @@ def test_prompt_has_weather_maths_priorities_and_local_upgrades_to_auto(monkeypa
 
     def ask(text):
         api.post("/turn/text", headers=H, json={"text": text, "session_id": sid, "route": "local"})
-        return models.last_messages[0]["content"]
+        return models.last_messages[-1]["content"]
 
     assert "Live weather" in ask("what is the weather today")
     assert "36" in ask("what is 15% of 240")
     assert "Ship hero" in ask("what should I work on now")
     assert models.last_route == "auto"
-    assert "Never say" in ask("hi")
+    assert "never say you lack access" in ask("hi")
 
 
 def test_groq_429_hops_to_next_model_not_local(monkeypatch):

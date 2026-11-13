@@ -48,7 +48,8 @@ def test_dictionary_default(tmp_path):
 class Stt:
     prompts: list = []
     def available(self): return True
-    def transcribe(self, p): return ""
+    def transcribe(self, p): return "um so note uh buy the the cables for cardputer"
+    def transcribe_local(self, p): return self.transcribe(p), "parakeet"
     def transcribe_prompted(self, path, prompt):
         Stt.prompts.append(prompt)
         return "um so note uh buy the the cables for cardputer"
@@ -62,7 +63,8 @@ class Models:
 
 
 def test_dictate_endpoint(tmp_path):
-    cfg = Settings(token="t" * 40, core_enabled=False, flow_dir=str(tmp_path), groq_api_key="")
+    cfg = Settings(token="t" * 40, core_enabled=False, flow_dir=str(tmp_path), groq_api_key="",
+                   flow_cleanup_llm=True, stt_provider="whisper", flow_cloud=True)
     client = TestClient(create_app(cfg, stt=Stt(), models=Models()))
     r = client.post("/dictate?target=text", content=_wav(),
                     headers={"Authorization": "Bearer " + "t" * 40, "Content-Type": "audio/wav"})
@@ -91,3 +93,131 @@ def test_one_release_one_paste(monkeypatch):
     calls = []
     nodflow.send(C(), b"x", 0.0, paste_fn=lambda t, enter=False: calls.append((t, enter)))
     assert calls == [("hello", True)]
+
+
+def test_cleanup_is_local_by_default(tmp_path):
+    from mazhost.flow import Flow
+
+    class Boom:
+        def chat(self, *a, **k): raise AssertionError("network route called")
+
+    f = Flow(Settings(token="t" * 40, flow_dir=str(tmp_path), groq_api_key=""), Stt(), Boom())
+    assert f._cleanup("um hello there") == ("Hello there.", "rules")
+
+
+def _stt(tmp_path, **kw):
+    from mazhost.stt import SpeechToText
+    return SpeechToText(Settings(token="t" * 40, flow_dir=str(tmp_path), **kw))
+
+
+def test_groq_key_keeps_parakeet_dictation_local(tmp_path):
+    from mazhost.flow import Flow
+
+    class Spy(Stt):
+        def transcribe_prompted(self, *a): raise AssertionError("dictation audio sent to Groq")
+
+    class Boom:
+        def chat(self, *a, **k): raise AssertionError("network route called")
+
+    class NoNet:
+        def post(self, *a, **k): raise AssertionError("text sent to Groq")
+
+    f = Flow(Settings(token="t" * 40, flow_dir=str(tmp_path), groq_api_key="k"), Spy(), Boom(), client=NoNet())
+    out = f.dictate(tmp_path / "a.wav")
+    assert out["text"] and "stt_via=parakeet" in (tmp_path / "latency.log").read_text()
+
+
+def test_failed_parakeet_load_not_retried_and_logs_once(tmp_path, monkeypatch, caplog):
+    import builtins
+    s = _stt(tmp_path)
+    calls = []
+    real = builtins.__import__
+
+    def imp(name, *a, **k):
+        if name == "onnx_asr":
+            calls.append(1)
+            raise ImportError("nope")
+        return real(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", imp)
+    monkeypatch.setattr(s, "_transcribe_with", lambda *a: "whisper text")
+    for _ in range(3):
+        assert s.transcribe_local(tmp_path / "a.wav") == ("whisper text", "whisper")
+    # request path never marks failure (no download attempted there); only warm() does
+    assert calls and not s._onnx_failed
+    monkeypatch.setattr(s, "_get_model", lambda *a: None)
+    s.warm()
+    n = len(calls)
+    assert s._onnx_failed
+    for _ in range(3):
+        assert s.transcribe_local(tmp_path / "a.wav") == ("whisper text", "whisper")
+    assert len(calls) == n
+    assert sum("parakeet load failed" in r.message for r in caplog.records) == 1
+
+
+def test_transcribe_local_engine_and_other_paths_stay_whisper(tmp_path, monkeypatch):
+    s = _stt(tmp_path)
+
+    class Fake:
+        def recognize(self, p): return " Hello world. "
+
+    s._onnx = Fake()
+    assert s.transcribe_local(tmp_path / "a.wav") == ("Hello world.", "parakeet")
+    monkeypatch.setattr(s, "_transcribe_with", lambda *a: "whisper text")
+    assert s.transcribe(tmp_path / "a.wav") == "whisper text"  # turns/BrainDump/teach unchanged
+
+
+def test_warm_downloads_once_request_path_does_not(tmp_path, monkeypatch):
+    s = _stt(tmp_path)
+    seen = []
+    monkeypatch.setattr(s, "_get_model", lambda *a: None)
+
+    def fake(download=False):
+        seen.append(download)
+        raise RuntimeError("x")
+
+    monkeypatch.setattr(s, "_get_onnx", fake)
+    s.warm()
+    assert seen == [True]
+    monkeypatch.setattr(s, "_transcribe_with", lambda *a: "w")
+    s.transcribe_local(tmp_path / "a.wav")
+    assert seen == [True, False]
+
+
+def test_whisper_not_blocked_by_onnx_lock(tmp_path, monkeypatch):
+    import threading
+    s = _stt(tmp_path)
+    import sys, types
+    monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=lambda *a, **k: "m"))
+    done = []
+    with s._onnx_lock:
+        t = threading.Thread(target=lambda: done.append(s._get_model("base.en", "cpu", "int8")))
+        t.start(); t.join(5)
+    assert done == ["m"]
+
+
+def test_custom_model_refused_on_request_path(tmp_path, monkeypatch):
+    s = _stt(tmp_path, stt_local_model="moonshine-base-en")
+    monkeypatch.setattr(s, "_transcribe_with", lambda *a: "w")
+    assert s.transcribe_local(tmp_path / "a.wav") == ("w", "whisper")
+    assert not s._onnx_failed
+
+
+def test_request_does_not_wait_for_warm_download(tmp_path, monkeypatch):
+    import time
+    s = _stt(tmp_path)
+    monkeypatch.setattr(s, "_transcribe_with", lambda *a: "w")
+    with s._onnx_lock:  # warm() is mid-download
+        t0 = time.perf_counter()
+        assert s.transcribe_local(tmp_path / "a.wav") == ("w", "whisper")
+        assert time.perf_counter() - t0 < 1
+    assert not s._onnx_failed
+
+
+def test_warm_loads_whisper_first(tmp_path, monkeypatch):
+    s = _stt(tmp_path)
+    order = []
+    monkeypatch.setattr(s, "_get_model", lambda *a: order.append("whisper"))
+    monkeypatch.setattr(s, "_get_onnx", lambda download=False: order.append("parakeet"))
+    s.warm()
+    assert order == ["whisper", "parakeet"]
