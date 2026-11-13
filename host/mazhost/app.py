@@ -941,7 +941,7 @@ def create_app(
                 [{"role": "system", "content": prompt}, {"role": "user", "content": transcript}],
                 cfg.default_route,
             )
-        except RuntimeError as error:
+        except (RuntimeError, RouteError) as error:
             logging.getLogger("uvicorn.error").warning("braindump brain unavailable, saving deterministic structure: %s", error)
             reply, provider = "", "none"
         structured, fallback = structure_braindump(reply, transcript)
