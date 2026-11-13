@@ -233,8 +233,8 @@ public:
             state(g, Phase::Thinking, "voice loading...");
             drawCommWrapped(g, early, REPLY_Y, 0);
         } else if (busy) {
-            state(g, Phase::Thinking,
-                  host_worker::state() == host_worker::State::Queued ? "waiting for hub" : "Piblo is working on it");
+            const std::string why = host_worker::state() == host_worker::State::Queued ? "waiting for hub" : "Piblo is working on it";
+            state(g, Phase::Thinking, (why + (_thinkAt ? "  " + std::to_string((millis() - _thinkAt) / 1000) + "s" : "")).c_str());
         } else if (voice::isPlaying()) {
             state(g, Phase::Speaking, "SPACE stops the voice");
             drawCommWrapped(g, _reply, REPLY_Y, _scroll);
@@ -354,6 +354,7 @@ private:
         delete _sink;
         _sink = nullptr;
         _sending = true;
+        _thinkAt = millis();
         _sendAt = millis() + 120;
         invalidate();
     }
@@ -571,6 +572,7 @@ private:
     bool _discard = false;        // ESC cancelled the in-flight talk job; drop its result
     uint32_t _sendAt = 0;
     uint32_t _waitSince = 0;
+    uint32_t _thinkAt = 0;
     uint32_t _lastWorkerPaint = 0;
 };
 

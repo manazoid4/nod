@@ -115,7 +115,7 @@ public:
         if (!_grid) {  // Talk circle Home
             if (e.code == KEY_ENTER) { activate(_focus); return true; }
             const char dir = e.code == KEY_RIGHT ? 'R' : e.code == KEY_LEFT ? 'L' : e.code == KEY_DOWN ? 'D' : e.code == KEY_UP ? 'U' : 0;
-            if (dir) { _focus = nod::moveTalkFocus(_focus, dir); sfx::select(); invalidate(); return true; }
+            if (dir) { _focus = nod::moveTalkFocus(_focus, dir); sfx::select(); rebuildHints(); invalidate(); return true; }
         } else {
             if (e.code == KEY_ENTER) { open(_sel); return true; }
             if (e.code == KEY_DOWN)  { move(+1); return true; }
@@ -214,7 +214,7 @@ private:
         if (host::updateReady()) return "Update: press U";
         if (Sys.agentQuestion) return "Agent asked: press N";
         now = field::nowText();
-        return now != "READY" ? ui::ellipsis(now, 20) : std::string("1-4 quick actions");
+        return now != "READY" ? ui::ellipsis(now, 20) : std::string("Quick: 1-3");
     }
 
     void renderTalk(M5Canvas& g) {
@@ -299,15 +299,12 @@ private:
 
     void rebuildHints() {
         // W opens Wi-Fi from Home (registry shortcut), so say so when Wi-Fi is down.
+        const char* tail = (linkSentence(true) && !Sys.wifiConnected) ? "  W wifi" : host::updateReady() ? "  U update" : "";
         if (!_grid) {
-            _hints = (linkSentence(true) && !Sys.wifiConnected) ? "ENTER live  SPACE save  W wifi"
-                   : host::updateReady()                        ? "ENTER live  SPACE save  U update"
-                                                                : "ENTER live  hold SPACE save";
+            _hints = std::string(_focus == nod::FOCUS_TALK ? "ENTER talk  hold SPACE save" : "ENTER open") + tail;
             return;
         }
-        _hints = (linkSentence(true) && !Sys.wifiConnected) ? "ENTER open  ESC back  W wifi"
-               : host::updateReady()                        ? "ENTER open  ESC back  U update"
-                                                            : "ENTER open  ESC back";
+        _hints = std::string("ENTER open") + tail;
     }
 
     void move(int delta) {
