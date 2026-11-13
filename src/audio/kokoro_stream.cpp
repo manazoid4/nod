@@ -6,6 +6,8 @@
 
 #include "../core/settings.h"
 #include "../input/keyboard.h"
+#include "limiter.h"
+#include "live.h"
 #include "voice.h"
 
 namespace maz {
@@ -50,6 +52,7 @@ bool keyHit() {
 
 bool speak(const String& text) {
     if (WiFi.status() != WL_CONNECTED || text.isEmpty()) return false;
+    if (live::phase() != live::Phase::Off) return false;  // live session owns the codec
 
     const uint32_t t0 = millis();
     HTTPClient     http;
@@ -77,6 +80,7 @@ bool speak(const String& text) {
             if (keyHit()) { aborted = true; return; }
             delay(1);
         }
+        audio::softLimit((int16_t*)gBuf[idx], bytes / 2);
         M5.Speaker.playRaw((const int16_t*)gBuf[idx], bytes / 2, kRate, false, 1, kCh, false);
         if (!any) { any = true; firstMs = millis() - t0; }
         idx = (idx + 1) % 3;
