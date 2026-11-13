@@ -93,7 +93,8 @@ def main():
                     'MAZ_BRIDGE_ENABLED': 'false', 'MAZ_REMOTE_DETECT': 'false', 'MAZ_PRIVATE_MODE': 'true',
                     'MAZ_TTS_ENABLED': 'false', 'MAZ_BUDDY_DB': str(tmp / 'buddy.sqlite3'),
                     'MAZ_CORE_ENABLED': 'false', 'MAZ_NOW_PATH': str(tmp / 'NOW.md'), 'MAZ_LIVE_MEMORY_FILE': str(tmp / 'memory.md'),
-                    'MAZ_VAULT_DIR': str(vault), 'MAZ_WAKEWORD_MODEL_DIR': args.wakeword_model_dir or ''})
+                    'MAZ_VAULT_DIR': str(vault), 'MAZ_WAKEWORD': 'true' if args.wakeword_model_dir else 'false',
+                    'MAZ_WAKEWORD_MODEL_DIR': args.wakeword_model_dir or ''})
         for key in ('DATA_DIR', 'WORK_DIR', 'CONTROL_DIR', 'DUMPS_DIR', 'TEACH_DIR', 'SKILL_VAULT_DIR',
                     'SKILL_DRAFT_DIR', 'DEBUG_DIR', 'FLOW_DIR'):
             env['MAZ_' + key] = str(tmp / key.lower())

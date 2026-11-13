@@ -65,3 +65,18 @@ def test_cloud_handler_precedes_brain_command():
     handler.assert_awaited_once_with('open notes')
     bridge.brain.command.assert_not_awaited()
     bridge._tts.assert_awaited_once_with('Done')
+
+
+def test_missing_model_falls_back_to_ungated(tmp_path, monkeypatch):
+    import mazhost.wakeword as wakeword
+    monkeypatch.setattr(wakeword, '_warned', False)
+    warnings = []
+    monkeypatch.setattr(wakeword.log, 'warning', lambda *a: warnings.append(a))
+    cfg = SimpleNamespace(wakeword_model_dir=str(tmp_path), llamacpp_url='http://localhost',
+                          live_end_silence_ms=200, live_mic_gain=1,
+                          live_listen_holdoff_ms=0, live_brain='lfm')
+    first, second = LiveBridge(None, cfg), LiveBridge(None, cfg)
+    assert first.wakeword is None and not first._armed and second.wakeword is None
+    assert len(warnings) == 1 and 'incomplete' in str(warnings[0][-1])  # logged once
+    cfg.wakeword = False
+    assert wakeword.load(cfg) is None

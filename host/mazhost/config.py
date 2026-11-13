@@ -101,7 +101,8 @@ class Settings(BaseSettings):
     live_ollama_model: str = "qwen36-heretic:latest"
     live_memory_github: str = ""  # owner/repo:path; empty = off; needs github_token
     live_memory_file: str = ""  # "remember ..." notes; empty = <data_dir>/piblo-memory.md
-    wakeword_model_dir: str = ""  # opt-in local detector; empty keeps normal live voice
+    wakeword: bool = True  # MAZ_WAKEWORD=0: live voice listens without "Hey Piblo"; on but ungated if sherpa-onnx/model missing
+    wakeword_model_dir: str = ""  # empty = %LOCALAPPDATA%\Piblo\wakeword-model (scripts/setup-wakeword.py)
     vault_dir: str = ""  # explicitly selected document folder; disabled by default
     vault_remote_url: str = ""  # home PC's Tailscale Core, for a travelling client
     vault_remote_token: str = ""  # stays on this PC, never in a URL or device reply

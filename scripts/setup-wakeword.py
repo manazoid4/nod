@@ -1,4 +1,19 @@
-"""Download the pinned English wakeword model into a new local directory."""
+"""Download the pinned English wakeword model into a new local directory.
+
+Core's "Hey Piblo" gate (MAZ_WAKEWORD, on by default) looks in %LOCALAPPDATA%/Piblo/wakeword-model
+unless MAZ_WAKEWORD_MODEL_DIR says otherwise; without the model Live voice listens ungated.
+
+Model: sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01, from the k2-fsa/sherpa-onnx GitHub
+release "kws-models" (an icefall Zipformer transducer trained on GigaSpeech XL).
+Licence, as found in its sources (checked 13 Nov 2026, not legal advice):
+- sherpa-onnx (the runtime, PyPI sherpa-onnx) is Apache-2.0.
+- The archive has no LICENSE/NOTICE file; third-party notices report its bundled README declares
+  Apache-2.0. The upstream docs state no model licence, and licence questions are open upstream
+  (k2-fsa/sherpa-onnx issues 3760, 3802, 3878).
+- GigaSpeech's dataset terms restrict the data to non-commercial research and say a trained model's
+  licence is separate.
+Piblo does not redistribute the weights: this script downloads them on the owner's PC.
+"""
 import argparse
 import hashlib
 from pathlib import Path

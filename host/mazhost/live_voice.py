@@ -157,12 +157,8 @@ class LiveBridge:
     def __init__(self, ws: WebSocket, cfg: Settings, timings=None, command_handler=None) -> None:
         self.ws, self.cfg, self.timings = ws, cfg, timings
         self.command_handler = command_handler
-        model_dir = getattr(cfg, "wakeword_model_dir", "")
-        if model_dir:
-            from .wakeword import Wakeword
-            self.wakeword = Wakeword(model_dir)
-        else:
-            self.wakeword = None
+        from .wakeword import load
+        self.wakeword = load(cfg)
         self._armed = bool(self.wakeword)
         self.url = cfg.llamacpp_url.replace("http", "ws", 1).rstrip("/") + "/v1/realtime"
         self.vad = Vad(cfg.live_end_silence_ms)
@@ -530,9 +526,12 @@ def install_live_voice(api, cfg: Settings, security, timings=None, command_handl
         try:
             bridge = LiveBridge(ws, cfg, timings, command_handler)
         except Exception as error:
-            log.error("live: wakeword setup failed: %s", error)
-            await ws.send_text(json.dumps({"type": "error", "message": "Wakeword setup failed on PC"}))
-            await ws.close(1011)
+            log.error("live: session setup failed: %s", error)
+            try:
+                await ws.send_text(json.dumps({"type": "error", "message": "Live voice setup failed on PC"}))
+                await ws.close(1011)
+            except RuntimeError:  # already closed by the device
+                pass
             return
         await bridge.run()
 
