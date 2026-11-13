@@ -967,8 +967,9 @@ def create_app(
             path = Path(target.name)
         try:
             security.validate_upload(path, len(data))
-            transcript = speech.transcribe(path)
-            return braindump_reply(transcript, highlights, "device")
+            # Off the event loop: STT + brain can take seconds and must not block /health.
+            transcript = await run_in_threadpool(speech.transcribe, path)
+            return await run_in_threadpool(braindump_reply, transcript, highlights, "device")
         except (json.JSONDecodeError, RuntimeError) as error:
             raise HTTPException(503, f"processing_failed: {error}") from error
         finally:
@@ -990,8 +991,9 @@ def create_app(
             path = Path(target.name)
         try:
             security.validate_upload(path, size)
-            transcript = speech.transcribe(path)
-            return braindump_reply(transcript, x_maz_highlights, "device")
+            # Off the event loop: STT + brain can take seconds and must not block /health.
+            transcript = await run_in_threadpool(speech.transcribe, path)
+            return await run_in_threadpool(braindump_reply, transcript, x_maz_highlights, "device")
         except (json.JSONDecodeError, RuntimeError) as error:
             raise HTTPException(503, f"processing_failed: {error}") from error
         finally:
