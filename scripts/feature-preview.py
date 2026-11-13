@@ -28,6 +28,7 @@ def main():
     parser.add_argument('--vault-dir')
     parser.add_argument('--wakeword-model-dir')
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--check-app', action='store_true')
     args = parser.parse_args()
     with socket.socket() as sock:
         if sock.connect_ex(('127.0.0.1', PORT)) == 0:
@@ -80,7 +81,10 @@ def main():
                 print('Isolated Core health and token authentication passed.')
             else:
                 env.update({'NOD_CORE_DIR': str(tmp), 'NOD_CORE_PORT': str(PORT)})
-                subprocess.run(['node', str(app / 'scripts/feature-preview.mjs'), str(tmp / 'userdata')], cwd=app, env=env, check=True)
+                command = ['node', str(app / 'scripts/feature-preview.mjs'), str(tmp / 'userdata')]
+                if args.check_app:
+                    command.append('--check')
+                subprocess.run(command, cwd=app, env=env, check=True)
         finally:
             core.terminate()
             try:
