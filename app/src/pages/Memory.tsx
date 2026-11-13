@@ -23,6 +23,31 @@ interface Hit {
 
 const text = (v: unknown): string => (v == null ? '' : typeof v === 'string' ? v : typeof v === 'object' ? String((v as Record<string, unknown>).text ?? (v as Record<string, unknown>).title ?? (v as Record<string, unknown>).summary ?? '') : String(v));
 
+function ReadThought({ id }: { id: string }) {
+  const [open, setOpen] = useState(false);
+  const [transcript, setTranscript] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const act = useAct();
+  const read = async () => {
+    if (open) { setOpen(false); return; }
+    setOpen(true);
+    if (transcript !== null) return;
+    setLoading(true);
+    setError('');
+    const r = await act<{ transcript: string }>('GET', `/dumps/${encodeURIComponent(id)}`);
+    if (r.ok) setTranscript(r.data.transcript);
+    else setError(r.message);
+    setLoading(false);
+  };
+  return <div>
+    <button className="btn sm ghost" aria-expanded={open} aria-controls={`thought-${id}`} onClick={() => void read()} disabled={loading}>{open ? 'Close' : 'Read'}</button>
+    {open && <div id={`thought-${id}`} className="selectable" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+      {loading ? <p role="status">Loading thought...</p> : error ? <p role="alert">{error} Close and choose Read to try again.</p> : <p>{transcript || 'No transcript saved.'}</p>}
+    </div>}
+  </div>;
+}
+
 function Inbox() {
   const [status, setStatus] = useState('');
   const dumps = usePoll<{ dumps: Dump[] }>(`/dumps${status ? `?status=${status}` : ''}`, 8000);
@@ -64,6 +89,7 @@ function Inbox() {
             <div className="grow">
               <div className="title selectable">{text(d.summary) || '(no summary)'}</div>
               <div className="detail">{[d.project || 'no project', d.source, d.claimed_by && `claimed by ${d.claimed_by}`].filter(Boolean).join(' / ')}</div>
+              <ReadThought id={d.id} />
             </div>
             <span className="tag">{d.status ?? 'new'}</span>
             {d.status !== 'done' && <button className="btn sm" onClick={() => void done(d.id)}>Done</button>}
