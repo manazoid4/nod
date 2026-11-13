@@ -18,7 +18,7 @@ Source of truth for "nothing useful gets silently removed". Base: MAZ Pocket **v
 | Brain Dump (hold SPACE) | `braindump` | Restored | ✅ | ⬜ | ✅ | ✅ note reached inbox (ledger #5) |
 | Memory / Results inbox / Notes | `recall`, `inbox`, `notes` | Restored | ✅ | ⬜ | ✅ | ⬜ |
 | Today | `today` | Restored (was missing in v0.8.0 import) | ✅ | ⬜ | ✅ | ⬜ |
-| Focus timer, Sprint, Tasks, Reminders, Shift | `flowtools` under WORK | Moved (one level deeper) | ✅ | ⬜ | ✅ | ⬜ |
+| Focus timer, Sprint, Tasks, Reminders, Shift | `flowtools` under WORK; Windows Actions | Improved: Windows keeps Finish/Stop after expiry | ✅ | ⬜ | ✅ | ⬜ owner test pending; [13 Nov evidence](docs/evidence/EVERYDAY-POLISH-2026-11-13.md) |
 | Alerts / agent events | `notify`, `nudge` | Restored | ✅ | ⬜ | ✅ | ⬜ |
 | Alerts + Piblo Buddy (reminder / webhook / ack-snooze, priority sound table) | `alerts.cpp`, `buddy_face.cpp`, `alert_policy.h`, host `buddy.py` `/buddy/alert` | New (this PR; see docs/ALERTS.md) | ✅ | ⬜ | ✅ host + policy table | ⬜ |
 | Quiet (approval chime never muted) | `quiet.cpp`, Fn+Q | Restored | ✅ | ⬜ | ✅ | ⬜ |
@@ -55,7 +55,8 @@ Source of truth for "nothing useful gets silently removed". Base: MAZ Pocket **v
 | Pairing + phone control | `pairing.py`, `phone_control.py` | Preserved | ✅ | — | ✅ | ⬜ |
 | Self-update + staged firmware | `selfupdate.py`, `fw.py` | Preserved | ✅ | — | ✅ | ⬜ |
 | Web UI `/ui` (Now, Inbox, Approvals, Device, Settings) | `webui.py`, `static/` | Preserved (desktop app being built over it) | ✅ | — | ✅ | ✅ (ledger #3) |
-| Desktop app (Electron, tray, onboarding) | `app/` | Building | ⬜ | ⬜ | ⬜ | ⬜ |
+| Desktop app (Electron, tray, onboarding) | `app/` | Implemented; see individual feature evidence | ✅ | ⬜ | ✅ | ⬜ |
+| Read complete saved thoughts | Windows Memory → Read; existing `/dumps/{id}` | Improved: original transcript replaces summary | ✅ | local Windows package ✅ | ✅ Electron/IPC + real Core | ⬜ owner unconfirmed; first test failed, subsequent agent Windows test passed ([evidence](docs/evidence/EVERYDAY-POLISH-2026-11-13.md)) |
 
 ## Other
 

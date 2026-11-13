@@ -74,9 +74,13 @@ class Flow:
         self.words = load_dictionary(self.dir / "dictionary.txt")
 
     def _cleanup(self, text: str) -> tuple[str, str]:
+        # Local by default: STT already punctuates, so no network/LLM hop unless explicitly configured.
+        cloud = bool(self.s.groq_api_key) and self.s.flow_cloud
+        if not (cloud or self.s.flow_cleanup_llm):
+            return rule_cleanup(text), "rules"
         system = CLEAN_SYSTEM.format(words=", ".join(self.words))
         messages = [{"role": "system", "content": system}, {"role": "user", "content": text}]
-        if self.s.groq_api_key:
+        if cloud:
             try:
                 r = self.client.post(
                     f"{GROQ_URL}/chat/completions",
@@ -91,7 +95,7 @@ class Flow:
                     return out, "groq"
             except Exception as e:  # noqa: BLE001 - fall through the chain
                 log.warning("flow cleanup groq failed: %s", type(e).__name__)
-        if self.models is not None:
+        if self.models is not None and self.s.flow_cleanup_llm:
             try:
                 out, provider = self.models.chat(messages, "auto")
                 if out.strip():
@@ -102,7 +106,13 @@ class Flow:
 
     def dictate(self, wav: Path) -> dict:
         t0 = time.perf_counter()
-        raw = self.speech.transcribe_prompted(wav, "Names: " + ", ".join(self.words) + ".")
+        if self.s.stt_provider == "parakeet":
+            raw, engine = self.speech.transcribe_local(wav)
+        elif self.s.flow_cloud:  # explicit opt-in only: audio leaves the machine
+            raw = self.speech.transcribe_prompted(wav, "Names: " + ", ".join(self.words) + ".")
+            engine = "groq" if (self.s.groq_api_key or self.s.groq_key) else "whisper"
+        else:
+            raw, engine = self.speech.transcribe(wav), "whisper"
         t1 = time.perf_counter()
         if not raw.strip():
             return {"text": "", "intent": "paste", "raw": "", "ms": {"stt": 0, "clean": 0, "total": 0}}
@@ -117,7 +127,7 @@ class Flow:
         elif intent == "remind":
             self._append("reminders-pending.md", f"- {time.strftime('%Y-%m-%d %H:%M')} {body}")
         self._append("latency.log", f"{time.strftime('%Y-%m-%dT%H:%M:%S')} dictate intent={intent} "
-                     f"stt={ms['stt']} clean={ms['clean']} total={ms['total']} via={provider} chars={len(body)}")
+                     f"stt={ms['stt']} clean={ms['clean']} total={ms['total']} via={provider} stt_via={engine} chars={len(body)}")
         return {"text": body, "intent": intent, "raw": raw, "ms": ms}
 
     def _append(self, name: str, line: str) -> None:

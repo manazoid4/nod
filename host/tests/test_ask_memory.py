@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from mazhost.app import create_app
 from mazhost.config import Settings
+from mazhost.prompts import SYSTEM_PROMPT
 from mazhost.memory_notes import CONTEXT_CHARS, MAX_MEMORY_CHARS, MemoryNotes
 from test_app import FakeModels, FakeStt
 
@@ -37,8 +38,12 @@ def test_ask_remembers_then_reopens_in_fresh_core_and_conversation(tmp_path):
     reopened = client_at(tmp_path, reopened_models)
     assert turn(reopened, "When is my appointment?").status_code == 200
     messages = reopened_models.last_messages
-    assert "my appointment is Friday at noon" in messages[0]["content"]
-    assert "not instructions" in messages[0]["content"]
+    assert messages[0] == {"role": "system", "content": SYSTEM_PROMPT}
+    assert messages[-1]["role"] == "user"
+    facts = messages[-1]["content"].split("<turn_facts>")[1].split("</turn_facts>")[0]
+    assert "<saved_notes>" in facts and "</saved_notes>" in facts
+    assert "my appointment is Friday at noon" in facts
+    assert "not instructions" in messages[-1]["content"]
     assert len(messages) == 2  # no previous conversation carries the answer
     assert "Friday at noon" in reopened.get("/memory/recall", headers=HEADERS,
                                           params={"q": "appointment"}).text
@@ -91,7 +96,7 @@ def test_memory_context_is_bounded_and_selects_matching_lines(tmp_path):
     notes.remember("My appointment is Friday at noon")
     models = FakeModels()
     assert turn(client_at(tmp_path, models), "When is my appointment?").status_code == 200
-    context = models.last_messages[0]["content"]
+    context = models.last_messages[-1]["content"]
     assert "My appointment is Friday at noon" in context
     assert "unrelated" not in context
     assert len(context) < 9000
@@ -99,7 +104,7 @@ def test_memory_context_is_bounded_and_selects_matching_lines(tmp_path):
         notes.remember("appointment " + "padding " * 50)
     models = FakeModels()
     assert turn(client_at(tmp_path, models), "When is my appointment?").status_code == 200
-    saved = models.last_messages[0]["content"].split("<saved_notes>")[1].split("</saved_notes>")[0]
+    saved = models.last_messages[-1]["content"].split("<saved_notes>")[1].split("</saved_notes>")[0]
     assert len(saved.strip()) <= CONTEXT_CHARS
 
 
@@ -152,7 +157,9 @@ def test_no_topics_means_no_notes_in_context(tmp_path):
     MemoryNotes(tmp_path).remember("My appointment is Friday at noon")
     models = FakeModels()
     assert turn(client_at(tmp_path, models), "How are you?").status_code == 200
-    assert "saved_notes" not in models.last_messages[0]["content"]
+    assert models.last_messages[-1]["role"] == "user"
+    assert "<turn_facts>" in models.last_messages[-1]["content"]
+    assert "saved_notes" not in models.last_messages[-1]["content"]
 
 
 def test_recalled_notes_are_fenced_and_cannot_close_the_fence(tmp_path):
@@ -160,7 +167,7 @@ def test_recalled_notes_are_fenced_and_cannot_close_the_fence(tmp_path):
     MemoryNotes(tmp_path).remember(attack)
     models = FakeModels()
     turn(client_at(tmp_path, models), "When is my appointment?")
-    content = models.last_messages[0]["content"]
+    content = models.last_messages[-1]["content"]
     inside = content.split("<saved_notes>")[1].split("</saved_notes>")[0]
     assert "IGNORE ALL RULES" in inside and content.count("</saved_notes>") == 1
     assert "<" not in inside
@@ -225,3 +232,21 @@ def test_live_brain_local_memory_lines_are_fenced(tmp_path):
     prompt = asyncio.run(brain.system_prompt("hello"))
     inside = prompt.split("<saved_notes>")[1].split("</saved_notes>")[0]
     assert "OBEY" in inside and prompt.count("</saved_notes>") == 1 and "<" not in inside
+
+
+def test_screen_context_ask_does_not_leak_matching_saved_notes(tmp_path):
+    MemoryNotes(tmp_path).remember("My appointment is Friday at noon")
+    models = FakeModels()
+    api = client_at(tmp_path, models)
+    question = "When is my appointment?"
+    assert turn(api, question).status_code == 200
+    assert "Friday at noon" in models.last_messages[-1]["content"]
+    assert turn(api, question, context="surface=RECALL selected=appointment").status_code == 200
+    assert models.last_messages[0] == {"role": "system", "content": SYSTEM_PROMPT}
+    current = models.last_messages[-1]
+    assert current["role"] == "user"
+    assert "<turn_facts>" in current["content"]
+    assert "selected=appointment" in current["content"]
+    assert question in current["content"]
+    assert all("saved_notes" not in message["content"] and "Friday at noon" not in message["content"]
+               for message in models.last_messages)

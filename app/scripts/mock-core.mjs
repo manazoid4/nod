@@ -269,8 +269,12 @@ export function startMock({ port = 18787, token = 'mock-token-123', deviceOnline
     if (p === '/pc/action') return json(res, 200, { ok: true, reply: 'Done' });
     if (p === '/dumps' && req.method === 'GET') return json(res, 200, { dumps: url.searchParams.get('status') ? db.dumps.filter((d) => d.status === url.searchParams.get('status')) : db.dumps });
     if (p === '/dumps') {
-      db.dumps.unshift({ id: 'd' + (db.dumps.length + 1), summary: data.text, status: 'new', project: null, created: new Date().toISOString(), source: 'web' });
+      db.dumps.unshift({ id: 'd' + (db.dumps.length + 1), summary: data.text.slice(0, 280), transcript: data.text, status: 'new', project: null, created: new Date().toISOString(), source: 'web' });
       return json(res, 200, { dump_id: 'x' });
+    }
+    if (/^\/dumps\/[^/]+$/.test(p) && req.method === 'GET') {
+      const d = db.dumps.find((x) => x.id === p.split('/')[2]);
+      return d ? json(res, 200, { ...d, transcript: d.transcript ?? d.summary }) : json(res, 404, { detail: 'dump_not_found' });
     }
     if (p.endsWith('/done')) {
       const d = db.dumps.find((x) => x.id === p.split('/')[2]);
