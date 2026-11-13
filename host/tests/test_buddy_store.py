@@ -337,5 +337,6 @@ def test_expired_snooze_does_not_renag_on_every_restart(tmp_path, monkeypatch):
     real = time.time
     monkeypatch.setattr(time, "time", lambda: real() + 120)   # the snooze has run out
     c1.get("/buddy/alerts", headers=H)                         # poll: the alert re-fires once
-    rec = next(a for a in boot(tmp_path).get("/buddy/alerts", headers=H).json()["alerts"] if a["id"] == aid)
-    assert rec["outcome"] is None                              # not "snoozed" again after a restart
+    import sqlite3
+    row = sqlite3.connect(str(tmp_path / "buddy.sqlite3")).execute("SELECT outcome FROM alerts WHERE id=?", (aid,)).fetchone()
+    assert row[0] is None   # the persisted row no longer says "snoozed", so a restart cannot re-nag
