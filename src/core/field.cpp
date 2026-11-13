@@ -245,8 +245,7 @@ void finishWork(const host::WorkSummary& s) {
     if (!s.ok) {  // keep last-known values on a failed poll — never blank/zero
         if (Sys.workError != s.error) {
             Sys.workError = s.error;
-            Serial.printf("[work] poll failed: %s
-", s.error.c_str());
+            Serial.println(("[work] poll failed: " + s.error).c_str());
             if (!Sys.workLoaded) notify::post(Note::Warn, "WORK sync failed", s.error);
             shell::invalidate();
         }
