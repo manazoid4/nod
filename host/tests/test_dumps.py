@@ -199,6 +199,26 @@ def test_recall_sources_survive_new_app_instance(tmp_path):
         assert "nonexistent-term" not in original["body"]
 
 
+@pytest.mark.parametrize("created", [None, "invalid", 42, [], {}, "2026-11-13T10:00:00"])
+def test_recall_and_catch_up_with_invalid_created(tmp_path, created):
+    client, inbox = make(tmp_path)
+    valid = dumps.save_dump(inbox, "Valid capture", {"actions": ["Keep this"]}, source="web")
+    invalid = dumps.save_dump(inbox, "Undated capture", {"actions": ["Skip this"]}, source="web")
+    path = inbox / (invalid["id"] + ".md")
+    body = path.read_text(encoding="utf-8")
+    path.write_text(body.replace(json.dumps(invalid["created"]), json.dumps(created)), encoding="utf-8")
+
+    listed = client.get("/dumps", headers=AUTH).json()["dumps"]
+    assert [m["id"] for m in listed] == [valid["id"], invalid["id"]]
+    assert listed[1]["created"] == ""
+    recalled = client.get(f"/dumps/{invalid['id']}", headers=AUTH).json()
+    assert recalled["created"] == "" and recalled["transcript"] == "Undated capture"
+    result = dumps.catch_up(inbox, now=datetime.fromisoformat(valid["created"]))
+    assert [m["id"] for m in result["dumps"]] == [valid["id"]]
+    assert [a["text"] for a in result["actions"]] == ["Keep this"]
+    assert result["skipped"] == 1
+
+
 def test_console_recall_limit_sources_empty_and_failure():
     if not shutil.which("node"):
         pytest.skip("Node is required for the console JavaScript check")

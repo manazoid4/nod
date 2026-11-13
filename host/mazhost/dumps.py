@@ -99,6 +99,12 @@ def _parse(text: str) -> tuple[dict, str]:
             meta[key] = json.loads(raw)
         except json.JSONDecodeError:
             meta[key] = raw
+    if "created" in meta:
+        try:
+            if datetime.fromisoformat(meta["created"]).tzinfo is None:
+                raise ValueError("missing timezone")
+        except (TypeError, ValueError):
+            meta["created"] = ""
     return meta, body
 
 
