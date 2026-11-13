@@ -47,7 +47,12 @@ class SpeechToText:
         """
         if self._onnx is not None:
             return self._onnx
-        with self._onnx_lock:
+        # A request must never wait on warm()'s first-run download: fall through to Whisper instead.
+        if download:
+            self._onnx_lock.acquire()
+        elif not self._onnx_lock.acquire(blocking=False):
+            raise RuntimeError("parakeet loading")
+        try:
             if self._onnx is not None:
                 return self._onnx
             if self._onnx_failed:
@@ -70,6 +75,8 @@ class SpeechToText:
                     self._onnx_failed = True
                     log.warning("parakeet load failed (%s); using Whisper for dictation", type(e).__name__)
                 raise
+        finally:
+            self._onnx_lock.release()
         return self._onnx
 
     def _parakeet(self, path: Path) -> str:
@@ -114,18 +121,18 @@ class SpeechToText:
 
     def warm(self) -> None:
         """Load the engines now so the first spoken turn is not +7 s (Whisper measured 7.8 s cold, 1.1 s warm)."""
-        if self.settings.stt_provider == "parakeet":
-            try:
-                from . import private_mode
-                self._get_onnx(download=not private_mode.enabled())
-            except Exception:  # noqa: BLE001 - failure remembered; Whisper takes over
-                pass
         try:
             self._get_model(self.settings.whisper_model,
                             "cpu" if self.settings.whisper_device == "auto" else self.settings.whisper_device,
                             self.settings.whisper_compute)
         except Exception:  # first real turn will surface the error
             pass
+        if self.settings.stt_provider == "parakeet":
+            try:
+                from . import private_mode
+                self._get_onnx(download=not private_mode.enabled())
+            except Exception:  # noqa: BLE001 - failure remembered; Whisper takes over
+                pass
 
     def _groq(self, path: Path, prompt: str) -> str:
         from . import netpool

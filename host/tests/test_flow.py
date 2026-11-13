@@ -201,3 +201,23 @@ def test_custom_model_refused_on_request_path(tmp_path, monkeypatch):
     monkeypatch.setattr(s, "_transcribe_with", lambda *a: "w")
     assert s.transcribe_local(tmp_path / "a.wav") == ("w", "whisper")
     assert not s._onnx_failed
+
+
+def test_request_does_not_wait_for_warm_download(tmp_path, monkeypatch):
+    import time
+    s = _stt(tmp_path)
+    monkeypatch.setattr(s, "_transcribe_with", lambda *a: "w")
+    with s._onnx_lock:  # warm() is mid-download
+        t0 = time.perf_counter()
+        assert s.transcribe_local(tmp_path / "a.wav") == ("w", "whisper")
+        assert time.perf_counter() - t0 < 1
+    assert not s._onnx_failed
+
+
+def test_warm_loads_whisper_first(tmp_path, monkeypatch):
+    s = _stt(tmp_path)
+    order = []
+    monkeypatch.setattr(s, "_get_model", lambda *a: order.append("whisper"))
+    monkeypatch.setattr(s, "_get_onnx", lambda download=False: order.append("parakeet"))
+    s.warm()
+    assert order == ["whisper", "parakeet"]
