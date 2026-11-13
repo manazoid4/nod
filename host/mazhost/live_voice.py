@@ -100,7 +100,7 @@ class Vad:
             else:
                 self._silence += 1
                 need = self.end_blocks
-                if self._loud * BLOCK_MS >= LONG_SPEECH_MS:
+                if self.speech_ms >= LONG_SPEECH_MS:
                     need = round(need * LONG_SPEECH_HANGOVER)
                 ended = self._silence >= need
         return out, ended

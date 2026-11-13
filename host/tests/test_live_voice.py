@@ -251,3 +251,8 @@ def test_short_utterance_ends_after_base_silence():
 
 def test_long_utterance_waits_longer_for_mid_thought_pause():
     assert _vad_ended_after(2400, 1500) == 660  # 22 blocks * 1.5 = 33 blocks
+
+
+def test_long_speech_boundary_is_1500_ms_of_speech():
+    assert _vad_ended_after(1500, 1500) == 660
+    assert _vad_ended_after(1480, 1500) == 440

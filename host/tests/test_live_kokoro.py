@@ -149,6 +149,7 @@ def test_interrupt_during_kokoro_stream_cancels_turn_and_closes_stream(monkeypat
             if bridge._player:
                 break
             await asyncio.sleep(0.01)
+        assert not closed.is_set() and bridge.state == "speaking"
         await bridge._control('{"type": "interrupt"}')
         await asyncio.sleep(0.05)
         assert closed.is_set()
