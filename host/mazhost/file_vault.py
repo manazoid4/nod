@@ -6,15 +6,68 @@ import hashlib
 import mimetypes
 import os
 import re
+import ipaddress
+import json
+import httpx
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, HTTPException, Query
 
 from .core import MazCore, SKIP_DIRS
+from . import private_mode
 
 MAX_BYTES = 10 * 1024 * 1024
 MAX_FILES = 2000
 EXTENSIONS = {'.pdf', '.png', '.jpg', '.jpeg', '.webp', '.txt', '.md', '.docx'}
+
+
+class RemoteFileVault:
+    """Use the same authenticated API on an owner-configured Tailscale home PC."""
+    def __init__(self, url, token, transport=None):
+        parsed = urlsplit(url)
+        host = parsed.hostname or ''
+        try:
+            address = ipaddress.ip_address(host)
+            trusted = address.is_loopback or address in ipaddress.ip_network('100.64.0.0/10')
+        except ValueError:
+            trusted = host.endswith('.ts.net')
+        if (not trusted or parsed.scheme not in {'http', 'https'} or parsed.username or parsed.password
+                or parsed.query or parsed.fragment or parsed.path not in {'', '/'} or not token):
+            raise ValueError('vault_requires_a_tailscale_host_and_token')
+        self.url, self.token, self.transport = url.rstrip('/'), token, transport
+
+    @property
+    def enabled(self):
+        return True
+
+    def _get(self, path, limit):
+        try:
+            with private_mode.client(timeout=10, follow_redirects=False, trust_env=False,
+                                     transport=self.transport) as client:
+                with client.stream('GET', self.url + path,
+                                   headers={'Authorization': 'Bearer ' + self.token}) as response:
+                    response.raise_for_status()
+                    data = bytearray()
+                    for chunk in response.iter_bytes(chunk_size=65536):
+                        data.extend(chunk)
+                        if len(data) > limit:
+                            raise ValueError('remote_vault_response_too_large')
+        except httpx.HTTPError as error:
+            raise OSError('home_vault_unavailable') from error
+        return json.loads(data)
+
+    def search(self, query=''):
+        from urllib.parse import quote
+        return self._get('/vault?q=' + quote(query, safe=''), 65536)
+
+    def fetch(self, ident):
+        if not re.fullmatch(r'[0-9a-f]{24}', ident):
+            raise FileNotFoundError
+        result = self._get('/vault/' + ident, MAX_BYTES * 4 // 3 + 65536)
+        if len(base64.b64decode(result['content_base64'], validate=True)) > MAX_BYTES:
+            raise ValueError('file_too_large')
+        return result
 
 
 class FileVault:
@@ -132,7 +185,10 @@ def build_vault_router(vault: FileVault):
 
     @router.get('')
     def search(q: str = Query('', max_length=200)):
-        return vault.search(q)
+        try:
+            return vault.search(q)
+        except (OSError, ValueError, RuntimeError):
+            raise HTTPException(503, 'home_vault_unavailable') from None
 
     @router.get('/{ident}')
     def fetch(ident: str):

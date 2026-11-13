@@ -39,7 +39,10 @@ class FeatureCommands:
         if match:
             if not self.vault.enabled:
                 return 'Choose your home folder on the PC before fetching files.'
-            files = self.vault.search(match.group(1))['files']
+            try:
+                files = self.vault.search(match.group(1))['files']
+            except (OSError, ValueError, RuntimeError):
+                return 'Your home files are not answering right now. Check the home PC and Tailscale.'
             if not files:
                 return 'I could not find that file in your selected home folder.'
             names = ', '.join(item['name'] for item in files[:3])

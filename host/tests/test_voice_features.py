@@ -20,7 +20,8 @@ def allow(buddy, request_id):
 
 
 def wait_for_alert(buddy):
-    for _ in range(100):
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
         alerts = buddy.alerts()['alerts']
         if alerts:
             return alerts[-1]

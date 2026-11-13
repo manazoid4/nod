@@ -112,3 +112,25 @@ def test_vault_routes_use_existing_core_auth_and_voice_lookup(tmp_path):
     invalid_grant = client.post('/shortcuts/authorise', headers=headers,
                                 json={'name': 'check server', 'grant_token': 'invalid'})
     assert invalid_grant.status_code == 403, invalid_grant.text
+
+
+def test_travelling_client_fetches_original_through_home_vault_api(tmp_path):
+    import httpx
+    from mazhost.file_vault import RemoteFileVault
+
+    (tmp_path / 'insurance.pdf').write_bytes(b'%PDF original home document')
+    home = FileVault(str(tmp_path))
+
+    def transport(request):
+        assert request.headers['Authorization'] == 'Bearer home-test-token'
+        assert 'token' not in str(request.url)
+        if request.url.path == '/vault':
+            return httpx.Response(200, json=home.search(request.url.params.get('q', '')))
+        return httpx.Response(200, json=home.fetch(request.url.path.rsplit('/', 1)[1]))
+
+    remote = RemoteFileVault('http://100.64.0.2:8787', 'home-test-token', httpx.MockTransport(transport))
+    result = remote.search('insurance')['files'][0]
+    assert base64.b64decode(remote.fetch(result['id'])['content_base64']) == b'%PDF original home document'
+    for url in ['http://example.com', 'https://user:password@home.ts.net', 'http://100.64.0.2/?token=x']:
+        with pytest.raises(ValueError):
+            RemoteFileVault(url, 'home-test-token')

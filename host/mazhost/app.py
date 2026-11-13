@@ -54,7 +54,7 @@ from .learning import Learning
 from .speaks_first import SpeaksFirst
 from .rescue import install_rescue_routes
 from .executor import ElevatedExecutor
-from .file_vault import FileVault, build_vault_router
+from .file_vault import FileVault, RemoteFileVault, build_vault_router
 from .shortcuts import Shortcuts, ShortcutRun, ShortcutPoll, ShortcutAuthorise
 from .voice_features import FeatureCommands
 from .jobs import CoreJobs
@@ -1046,7 +1046,10 @@ def create_app(
     buddy_store = None if cfg.buddy_db == "off" else BuddyStore(
         cfg.buddy_db or resolve_data_dir(cfg) / "buddy.sqlite3")
     buddy = install_buddy_routes(api, Buddy(store=buddy_store, focus=focus, device_keys=device_keys))
-    vault = FileVault(cfg.vault_dir)
+    if cfg.vault_dir and cfg.vault_remote_url:
+        raise ValueError('Choose a local vault folder or a remote home vault, not both')
+    vault = (RemoteFileVault(cfg.vault_remote_url, cfg.vault_remote_token)
+             if cfg.vault_remote_url else FileVault(cfg.vault_dir))
     actions = json.loads(Path(cfg.shortcuts_file).expanduser().read_text('utf-8')) if cfg.shortcuts_file else {}
     shortcuts = Shortcuts(actions, buddy, executor=elevated_executor)
     feature_commands = FeatureCommands(vault, shortcuts, buddy)
