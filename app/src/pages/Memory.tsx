@@ -23,7 +23,7 @@ interface Hit {
 
 const text = (v: unknown): string => (v == null ? '' : typeof v === 'string' ? v : typeof v === 'object' ? String((v as Record<string, unknown>).text ?? (v as Record<string, unknown>).title ?? (v as Record<string, unknown>).summary ?? '') : String(v));
 
-function ReadThought({ id }: { id: string }) {
+function ReadThought({ id, summary }: { id: string; summary: string }) {
   const [open, setOpen] = useState(false);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -41,8 +41,10 @@ function ReadThought({ id }: { id: string }) {
     setLoading(false);
   };
   return <div>
+    {!open && <div className="title selectable">{summary}</div>}
     <button className="btn sm ghost" aria-expanded={open} aria-controls={`thought-${id}`} onClick={() => void read()} disabled={loading}>{open ? 'Close' : 'Read'}</button>
     {open && <div id={`thought-${id}`} className="selectable" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+      <strong>Full thought</strong>
       {loading ? <p role="status">Loading thought...</p> : error ? <p role="alert">{error} Close and choose Read to try again.</p> : <p>{transcript || 'No transcript saved.'}</p>}
     </div>}
   </div>;
@@ -87,9 +89,8 @@ function Inbox() {
         {list.map((d) => (
           <div className="list-item" key={d.id}>
             <div className="grow">
-              <div className="title selectable">{text(d.summary) || '(no summary)'}</div>
+              <ReadThought id={d.id} summary={text(d.summary) || '(no summary)'} />
               <div className="detail">{[d.project || 'no project', d.source, d.claimed_by && `claimed by ${d.claimed_by}`].filter(Boolean).join(' / ')}</div>
-              <ReadThought id={d.id} />
             </div>
             <span className="tag">{d.status ?? 'new'}</span>
             {d.status !== 'done' && <button className="btn sm" onClick={() => void done(d.id)}>Done</button>}

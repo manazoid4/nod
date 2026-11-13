@@ -24,14 +24,19 @@ Evidence: `app/scripts/verify-saved-thought.mjs` exercises save, a >280-characte
 transcript, literal script text, close, and reopen through Electron and Core IPC.
 The installed Core returned the complete 621-character live test note, including
 the final `blue notebook` phrase. **Owner's first test failed** (Read failed or
-text missing). Exact screen symptom is pending. Local HTTP connections reset and
-Core restarted during diagnosis; do not treat this as a passing owner test.
+text missing). Owner then confirmed Read changed to Close but quoted truncated
+text. A fresh Electron check against installed Core displayed the entire note;
+the screen showed the shortened summary above the full transcript. The UI now
+replaces that summary with a labelled Full thought on expansion. Retest pending.
+Local HTTP connections also reset and Core restarted during diagnosis; causation
+is unconfirmed. Do not treat this as a passing owner test.
 
 ## Verification and compatibility
 
 - `npm run typecheck`: passed.
 - `npm test`: 176 passed, 13 files. Existing preferred-contrast warnings remain.
 - Main and renderer builds: passed.
+- Runtime feature catalogue tests: 5 passed (`PYTHONPATH=host python -m pytest host/tests/test_features.py -q`).
 - Independent review of Read: no blocking findings; lead reviewed Focus diff.
 - Existing HTTP contracts reused. No firmware, Android, keyboard, recovery,
   Kokoro or website changes. Device connected at initial status check; this is
