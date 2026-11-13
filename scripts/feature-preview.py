@@ -1,4 +1,4 @@
-"""Prove memory or private PTT against a temporary Core on :18837."""
+"""Prove memory or private PTT against a temporary Core on :18837, or --app to open an isolated desktop preview."""
 import argparse
 import json
 import os
@@ -57,17 +57,31 @@ def request(path, token=None, body=None, timeout=3):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--vault-dir')
+    parser.add_argument('--wakeword-model-dir')
+    parser.add_argument('--app', action='store_true', help='Open the built desktop app against the isolated Core; stop it by closing the window')
+    parser.add_argument('--check-app', action='store_true', help='Like --app, but run the app self-check and exit')
     parser.add_argument('--check-memory', action='store_true', help='Synthetic Ask memory proof across a Core restart, using the configured local model')
     parser.add_argument('--check-private-ptt', action='store_true', help='Use installed model files with an isolated CPU llama-server on :18838; no live service calls')
     args = parser.parse_args()
-    if not args.check and not args.check_private_ptt:
+    launch = args.app or args.check_app
+    if not (args.check or args.check_private_ptt or launch):
         args.check_memory = True
+    app = ROOT / 'app'
+    if launch and not (app / 'dist/main/main.js').is_file():
+        raise SystemExit('Build the app first: npm run build:main and npm run build:renderer')
     with socket.socket() as sock:
         if sock.connect_ex(('127.0.0.1', PORT)) == 0:
             raise SystemExit(f'Port {PORT} is already in use; preview was not started.')
     with tempfile.TemporaryDirectory(prefix='piblo-preview-') as temp:
         tmp = Path(temp)
         token = secrets.token_urlsafe(32)
+        vault = Path(args.vault_dir).expanduser().resolve() if args.vault_dir else tmp / 'demo'
+        if args.vault_dir and not vault.is_dir():
+            raise SystemExit('Vault folder does not exist.')
+        if not args.vault_dir:
+            vault.mkdir()
+            (vault / 'Example note.txt').write_text('This is an isolated preview file.\n', encoding='utf-8')
         (tmp / '.env').write_text(f'MAZ_TOKEN={token}\nMAZ_PORT={PORT}\n', encoding='utf-8')
         env = {k: v for k, v in os.environ.items() if not k.startswith(('MAZ_', 'PIBLO_', 'NOD_'))}
         installed = Path(os.environ.get('LOCALAPPDATA', '')) / 'Piblo/Core/.env'
@@ -78,7 +92,8 @@ def main():
                     'MAZ_PORT': str(PORT), 'MAZ_DISCOVERY_PORT': '0', 'MAZ_AUTOUPDATE': 'false',
                     'MAZ_BRIDGE_ENABLED': 'false', 'MAZ_REMOTE_DETECT': 'false', 'MAZ_PRIVATE_MODE': 'true',
                     'MAZ_TTS_ENABLED': 'false', 'MAZ_BUDDY_DB': str(tmp / 'buddy.sqlite3'),
-                    'MAZ_CORE_ENABLED': 'false', 'MAZ_NOW_PATH': str(tmp / 'NOW.md'), 'MAZ_LIVE_MEMORY_FILE': str(tmp / 'memory.md')})
+                    'MAZ_CORE_ENABLED': 'false', 'MAZ_NOW_PATH': str(tmp / 'NOW.md'), 'MAZ_LIVE_MEMORY_FILE': str(tmp / 'memory.md'),
+                    'MAZ_VAULT_DIR': str(vault), 'MAZ_WAKEWORD_MODEL_DIR': args.wakeword_model_dir or ''})
         for key in ('DATA_DIR', 'WORK_DIR', 'CONTROL_DIR', 'DUMPS_DIR', 'TEACH_DIR', 'SKILL_VAULT_DIR',
                     'SKILL_DRAFT_DIR', 'DEBUG_DIR', 'FLOW_DIR'):
             env['MAZ_' + key] = str(tmp / key.lower())
@@ -176,6 +191,12 @@ def main():
                     raise AssertionError('Pending reminder was lost across the Core restart.')
                 print('Pending reminder survived the Core restart and fired.')
             print('Isolated Core health and token authentication passed.')
+            if launch:
+                env.update({'NOD_CORE_DIR': str(tmp), 'NOD_CORE_PORT': str(PORT)})
+                command = ['node', str(app / 'scripts/feature-preview.mjs'), str(tmp / 'userdata')]
+                if args.check_app:
+                    command.append('--check')
+                subprocess.run(command, cwd=app, env=env, check=True)
         finally:
             for process in (core, brain):
                 if process is None:

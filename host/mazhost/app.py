@@ -20,7 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from .agent_builder import AgentBuilder, build_agent_router
-from .authority import AuthorityBroker
+from .authority import AuthorityBroker, AuthorityError
 from .beam import BeamStore
 from .braindump import structure_braindump
 from .dump_routes import build_dump_router, inbox_dir, save_safely
@@ -55,6 +55,9 @@ from .learning import Learning
 from .speaks_first import SpeaksFirst
 from .rescue import install_rescue_routes
 from .executor import ElevatedExecutor
+from .file_vault import FileVault, RemoteFileVault, build_vault_router
+from .shortcuts import Shortcuts, ShortcutRun, ShortcutPoll, ShortcutAuthorise
+from .voice_features import FeatureCommands
 from .jobs import CoreJobs
 from .live_voice import install_live_voice
 from .live_brain import scrub
@@ -485,6 +488,13 @@ def create_app(
         command = None if pocket_context else parse_command(refined.text)
         if command:
             return deterministic_command(session_id, refined.text, command, refined.actions)
+        feature_reply = None if pocket_context else feature_commands.handle(refined.text)
+        if feature_reply is not None:
+            if not sessions.has(session_id):
+                raise HTTPException(404, 'session_not_found')
+            sessions.add_turn(session_id, refined.text, feature_reply)
+            return {'text': refined.text, 'reply': feature_reply, 'provider': 'piblo-local',
+                    'actions': refined.actions, 'timings': {'llm_ms': 0}}
         started = time.perf_counter()
         try:
             token = _output_cap.set(max_tokens) if max_tokens else None  # spoken path only
@@ -1135,6 +1145,40 @@ def create_app(
     buddy_store = None if cfg.buddy_db == "off" else BuddyStore(
         cfg.buddy_db or resolve_data_dir(cfg) / "buddy.sqlite3")
     buddy = install_buddy_routes(api, Buddy(store=buddy_store, focus=focus, device_keys=device_keys))
+    if cfg.vault_dir and cfg.vault_remote_url:
+        raise ValueError('Choose a local vault folder or a remote home vault, not both')
+    vault = (RemoteFileVault(cfg.vault_remote_url, cfg.vault_remote_token)
+             if cfg.vault_remote_url else FileVault(cfg.vault_dir))
+    actions = json.loads(Path(cfg.shortcuts_file).expanduser().read_text('utf-8')) if cfg.shortcuts_file else {}
+    shortcuts = Shortcuts(actions, buddy, executor=elevated_executor)
+    feature_commands = FeatureCommands(vault, shortcuts, buddy)
+    api.include_router(build_vault_router(vault))
+
+    @api.get('/shortcuts')
+    def shortcut_list():
+        return {'shortcuts': list(shortcuts.actions)}
+
+    @api.post('/shortcuts/authorise')
+    def shortcut_authorise(body: ShortcutAuthorise):
+        try:
+            feature_commands.authorise(body.name, body.grant_token)
+            return {'ok': True}
+        except (ValueError, AuthorityError) as error:
+            raise HTTPException(403, str(error)) from error
+
+    @api.post('/shortcuts/run')
+    def shortcut_run(body: ShortcutRun):
+        try:
+            return shortcuts.request(body.name)
+        except ValueError as error:
+            raise HTTPException(400, str(error)) from error
+
+    @api.post('/shortcuts/{request_id}/poll')
+    def shortcut_poll(request_id: str, body: ShortcutPoll):
+        try:
+            return shortcuts.poll(request_id, grant_token=body.grant_token)
+        except ValueError as error:
+            raise HTTPException(404, str(error)) from error
     install_companion_routes(api, buddy, cfg.port)
 
     learning = Learning(resolve_data_dir(cfg), model_router)
@@ -1178,7 +1222,10 @@ def create_app(
     api.include_router(build_share_router(cfg, model_router))
     api.include_router(build_onboarding_router(onboarding))
     api.include_router(build_buddy_forms_router(onboarding=onboarding))
-    install_live_voice(api, cfg, security, turn_timings)
+    async def feature_voice_command(text):
+        return await run_in_threadpool(feature_commands.handle, text)
+
+    install_live_voice(api, cfg, security, turn_timings, command_handler=feature_voice_command)
     # ------------------------------------------------------------ SUBTITLES
     install_subtitle_routes(api, subtitle_jobs)
 

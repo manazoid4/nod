@@ -101,6 +101,11 @@ class Settings(BaseSettings):
     live_ollama_model: str = "qwen36-heretic:latest"
     live_memory_github: str = ""  # owner/repo:path; empty = off; needs github_token
     live_memory_file: str = ""  # "remember ..." notes; empty = <data_dir>/piblo-memory.md
+    wakeword_model_dir: str = ""  # opt-in local detector; empty keeps normal live voice
+    vault_dir: str = ""  # explicitly selected document folder; disabled by default
+    vault_remote_url: str = ""  # home PC's Tailscale Core, for a travelling client
+    vault_remote_token: str = ""  # stays on this PC, never in a URL or device reply
+    shortcuts_file: str = ""  # owner-configured fixed names and targets JSON
     max_upload_mb: int = Field(default=12, ge=1, le=64)
     max_audio_seconds: int = Field(default=900, ge=1, le=3600)
     session_ttl_minutes: int = Field(default=120, ge=1, le=1440)
