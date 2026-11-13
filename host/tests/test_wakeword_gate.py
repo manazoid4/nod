@@ -35,7 +35,7 @@ def test_wake_gate_and_rearm(monkeypatch):
     async def run():
         await bridge._mic(block * 20)
         assert bridge._up_send.await_count == 0
-        assert np.frombuffer(bridge.wakeword.samples[0], '<i2')[0] == 2000
+        assert np.frombuffer(bridge.wakeword.samples[0], '<i2')[0] == 1000
         bridge.wakeword.match = True
         await bridge._mic(block)
         assert bridge._up_send.await_count == 0

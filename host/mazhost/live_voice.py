@@ -231,10 +231,11 @@ class LiveBridge:
             return  # half-duplex: the codec is playing (or a cloud turn is in flight), mic is not ours
         if time.monotonic() < self._mute_until:
             return  # tail of our own reply / codec switch noise: never a user turn
+        detector_pcm = pcm  # speech gain can clip; keyword features use the original stream
         if self.gain != 1.0:
             pcm = boost(pcm, self.gain)
         if self._armed:
-            if self.wakeword.feed(pcm):
+            if self.wakeword.feed(detector_pcm):
                 self._armed = False
                 self.vad.reset()
             return

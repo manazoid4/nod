@@ -6,8 +6,21 @@ import threading
 from urllib.parse import urlsplit
 
 import httpx
+from pydantic import BaseModel, Field
 
 from . import private_mode
+
+
+class ShortcutRun(BaseModel):
+    name: str = Field(min_length=1, max_length=40)
+
+
+class ShortcutPoll(BaseModel):
+    grant_token: str = Field(default='', max_length=8192)
+
+
+class ShortcutAuthorise(ShortcutRun):
+    grant_token: str = Field(min_length=1, max_length=8192)
 
 
 class Shortcuts:
@@ -19,7 +32,7 @@ class Shortcuts:
             if isinstance(target, dict):
                 if set(target) != {"command", "cwd"} or not all(isinstance(target[k], str) for k in target):
                     raise ValueError("invalid_shortcut_command")
-                if not target["command"].strip() or len(target["command"]) > 100 or len(target["cwd"]) > 60:
+                if not target["command"].strip() or len(target["command"]) > 100 or len(target["cwd"]) > 512:
                     raise ValueError("invalid_shortcut_command")
                 if any(ord(c) < 32 or ord(c) > 126 for c in target["command"] + target["cwd"]):
                     raise ValueError("invalid_shortcut_command")
