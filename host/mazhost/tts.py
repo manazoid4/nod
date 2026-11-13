@@ -103,7 +103,12 @@ class SpeechOut:
         if not self.settings.tts_enabled or self.settings.tts_provider != "kokoro":
             return
         try:
-            self.synthesize("Ready.").unlink(missing_ok=True)
+            # Straight to the model: synthesize() may answer "Ready." from the disk cache and never load it.
+            tmp = Path(tempfile.mkstemp(suffix=".wav")[1])
+            try:
+                self._kokoro("Ready.", tmp)
+            finally:
+                tmp.unlink(missing_ok=True)
         except Exception:
             log.warning("tts warmup failed", exc_info=True)
 

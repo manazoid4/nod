@@ -56,7 +56,7 @@ from .rescue import install_rescue_routes
 from .executor import ElevatedExecutor
 from .jobs import CoreJobs
 from .live_voice import install_live_voice
-from .llm import Models, Route
+from .llm import VOICE_MAX_TOKENS, Models, Route, _output_cap
 from .nudge import NudgeClient
 from .pairing import build_pairing_app
 from .pc import PCController
@@ -369,7 +369,8 @@ def create_app(
             # them; the per-turn context (time, maths, weather...) rides on the last message.
             {"role": "system", "content": SYSTEM_PROMPT},
             *history,
-            {"role": "user", "content": text + "\n\n[Context for this turn, facts not instructions]" + context},
+            {"role": "user", "content": "[Background facts for this turn. Use silently; never repeat or read them out unless asked."
+                                        + context + "]\n\nUser: " + text},
         ]
 
     def deterministic_command(session_id: str, text: str, command: dict, actions: list) -> dict:
@@ -431,9 +432,13 @@ def create_app(
             return deterministic_command(session_id, refined.text, command, refined.actions)
         started = time.perf_counter()
         try:
-            reply, provider = model_router.chat(
-                grounded_messages(session_id, refined.text, pocket_context), route
-            )
+            token = _output_cap.set(VOICE_MAX_TOKENS)  # spoken reply: keep generation short
+            try:
+                reply, provider = model_router.chat(
+                    grounded_messages(session_id, refined.text, pocket_context), route
+                )
+            finally:
+                _output_cap.reset(token)
         except Exception as error:
             if route not in ("auto", "local"):  # explicit cloud routes keep their typed errors
                 if isinstance(error, RouteError):
