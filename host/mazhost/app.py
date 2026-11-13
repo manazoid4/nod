@@ -831,11 +831,11 @@ def create_app(
             security.validate_upload(path, size)
             upload_ms = round((time.perf_counter() - upload_started) * 1000)
             stt_started = time.perf_counter()
-            text = turn_stt(path)
+            text = await run_in_threadpool(turn_stt, path)  # STT, brain and TTS block: keep /health answering
             stt_ms = round((time.perf_counter() - stt_started) * 1000)
-            result = answer(session_id, text, route, context)
+            result = await run_in_threadpool(answer, session_id, text, route, context)
             result["timings"].update({"upload_ms": upload_ms, "stt_ms": stt_ms})
-            return finish_turn(result, upload_ms, stt_ms, x_maz_speak)
+            return await run_in_threadpool(finish_turn, result, upload_ms, stt_ms, x_maz_speak)
         finally:
             path.unlink(missing_ok=True)
 
@@ -861,11 +861,11 @@ def create_app(
             security.validate_upload(path, size)
             upload_ms = round((time.perf_counter() - upload_started) * 1000)
             stt_started = time.perf_counter()
-            text = turn_stt(path)
+            text = await run_in_threadpool(turn_stt, path)  # STT, brain and TTS block: keep /health answering
             stt_ms = round((time.perf_counter() - stt_started) * 1000)
-            result = answer(x_maz_session, text, x_maz_route, x_maz_context)
+            result = await run_in_threadpool(answer, x_maz_session, text, x_maz_route, x_maz_context)
             result["timings"].update({"upload_ms": upload_ms, "stt_ms": stt_ms})
-            return finish_turn(result, upload_ms, stt_ms, x_maz_speak)
+            return await run_in_threadpool(finish_turn, result, upload_ms, stt_ms, x_maz_speak)
         finally:
             path.unlink(missing_ok=True)
 
