@@ -15,7 +15,7 @@ namespace {
 
 // Follows the link chosen by host::health(): LAN is always tried first (short
 // timeout) there, and the remote HTTPS URL is used only while LAN is down.
-bool coreBegin(NodHttp& http, const std::string& path, bool allowRemote = true) {
+bool coreBegin(NodHttp& http, const std::string& path, bool allowRemote = true, bool fast = false) {
     if (Cfg.hostToken.empty() || WiFi.status() != WL_CONNECTED) return false;
     bool remote = false;
     std::string base;
@@ -28,8 +28,9 @@ bool coreBegin(NodHttp& http, const std::string& path, bool allowRemote = true) 
     } else {
         return false;
     }
-    http.setConnectTimeout(remote ? 6500 : 1800);
-    http.setTimeout(12000);
+    // fast = UI-thread read: worst case ~4 s instead of ~18 s (ESC is dead while it blocks).
+    http.setConnectTimeout(remote ? (fast ? 2500 : 6500) : 1800);
+    http.setTimeout(fast ? 2000 : 12000);
     if (!http.open((base + path).c_str(), remote)) return false;
     http.addHeader("Authorization", ("Bearer " + Cfg.hostToken).c_str());
     return true;
@@ -74,7 +75,7 @@ CoreInfo fetchCoreInfo() {
     CoreInfo out;
     NodHttp http;
     const bool viaRemote = onRemoteLink();
-    if (!coreBegin(http, "/health")) return out;
+    if (!coreBegin(http, "/health", true, true)) return out;
     const int status = http.GET();
     const String body = status > 0 ? http.getString() : String();
     http.end();
@@ -110,7 +111,7 @@ CoreInfo fetchCoreInfo() {
 BuddyPoll buddyPoll() {
     BuddyPoll out;
     NodHttp http;
-    if (!coreBegin(http, "/buddy/summary")) return out;
+    if (!coreBegin(http, "/buddy/summary", true, true)) return out;
     const int status = http.GET();
     const String body = status > 0 ? http.getString() : String();
     http.end();
@@ -160,7 +161,7 @@ bool buddyDecide(const std::string& id, const std::string& decision, std::string
 CoreStatus coreStatus() {
     CoreStatus out;
     NodHttp http;
-    if (!coreBegin(http, "/core/status")) {
+    if (!coreBegin(http, "/core/status", true, true)) {
         out.error = "hub not paired / Wi-Fi offline";
         return out;
     }
@@ -190,7 +191,7 @@ std::vector<CoreProject> coreProjects(std::string& error) {
     std::vector<CoreProject> out;
     error.clear();
     NodHttp http;
-    if (!coreBegin(http, "/core/projects")) {
+    if (!coreBegin(http, "/core/projects", true, true)) {
         error = "hub not paired / Wi-Fi offline";
         return out;
     }

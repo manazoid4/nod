@@ -580,7 +580,18 @@ void loop() {
         gCanvas.drawString("Y/ENTER yes   ESC no", SCREEN_W / 2, 74);
         gCanvas.setTextDatum(top_left);
     }
-    gCanvas.pushSprite(0, 0);
+    // Idle repaints (clock tick, nothing changed) re-sent 64.8 KB over SPI every 250 ms (~13 ms
+    // blocked). Skip the push when the frame is byte-identical; refresh at least 1/s in case
+    // something drew straight to M5.Display (fwFail text, wake).
+    static uint32_t lastHash = 0, lastPush = 0;
+    const uint32_t* px = static_cast<const uint32_t*>(gCanvas.getBuffer());
+    uint32_t h = 2166136261u;
+    for (size_t i = 0, n = SCREEN_W * SCREEN_H / 2; i < n; ++i) h = (h ^ px[i]) * 16777619u;
+    if (h != lastHash || millis() - lastPush > 1000) {
+        gCanvas.pushSprite(0, 0);
+        lastHash = h;
+        lastPush = millis();
+    }
     top->clean();
     lastPaint = millis();
 }
