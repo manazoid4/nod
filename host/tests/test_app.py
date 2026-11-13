@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import tempfile
 import wave
 from types import SimpleNamespace
 
@@ -123,6 +124,7 @@ def client(pc=None, models=None, beam=None, telemetry=None, core=None, work_dir=
         settings_kwargs["work_dir"] = str(work_dir)
         settings_kwargs["control_dir"] = str(work_dir / "control")
         settings_kwargs["debug_dir"] = str(work_dir / "debug")
+    settings_kwargs["project_roots"] = tempfile.mkdtemp()  # startup project scan must not walk the real repos
     settings = Settings(**settings_kwargs)
     return TestClient(
         create_app(

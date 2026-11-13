@@ -243,6 +243,7 @@ class MazCore:
                         continue
                     self._summary_cache = summaries
                     self._summary_cache_at = time.monotonic()
+                    self._refreshing = False  # same lock block as the write: no window where a fresh cache is "refreshing"
                     return
         finally:
             with self._cache_lock:

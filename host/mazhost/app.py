@@ -132,7 +132,16 @@ class DeviceConfigRequest(BaseModel):
 
 
 # What the web live view may ask the device to do; anything else stays device-only.
-_FACTS_TAG = re.compile(r"</?\s*turn_facts\s*>", re.I)
+_FACTS_TAG = re.compile(r"<\s*/?\s*turn_facts\b[^>]*>", re.I)
+
+
+def _strip_facts_tag(text: str) -> str:
+    # Loop until stable: removing one tag can splice its neighbours into a new one.
+    while (cleaned := _FACTS_TAG.sub("[facts]", text)) != text:
+        text = cleaned
+    return text
+
+
 _DEVICE_ACTION = re.compile(r"update|reboot|key:\d{1,3},\d{1,3},\d{1,2}|open:[a-z_]{1,24}")
 
 
@@ -366,14 +375,14 @@ def create_app(
                 context += "\nAgent Nudge is unavailable; say that plainly."
 
         # Untrusted text must not be able to close the facts block early.
-        context = _FACTS_TAG.sub("", context)
+        context = _strip_facts_tag(context)
         return [
             # Static system prompt + history first so llama.cpp's prefix cache covers
             # them; the per-turn context (time, maths, weather...) rides on the last message.
             {"role": "system", "content": SYSTEM_PROMPT},
             *history,
             {"role": "user", "content": "<turn_facts>\nBackground for this turn. Use silently; never repeat or read it out unless asked."
-                                        + context + "\n</turn_facts>\n\nUser: " + _FACTS_TAG.sub("", text)},
+                                        + context + "\n</turn_facts>\n\nUser: " + _strip_facts_tag(text)},
         ]
 
     def deterministic_command(session_id: str, text: str, command: dict, actions: list) -> dict:
