@@ -5,7 +5,7 @@ import path from 'node:path';
 import type { AppSettings, EnvKey, PairRequest, ThemeMode } from '../shared/types';
 import { CARD, PAIR } from '../shared/types';
 import { createApiClient } from './api-client';
-import { discoverPort, discoverToken, locateCore, type FsLike } from './core-locator';
+import { discoverPort, discoverToken, isCoreCopyable, locateCore, type FsLike } from './core-locator';
 import { applyEnvEdit, validateEnvEdit, viewEnv } from './env-file';
 import { isSafeTaskName, planInstall } from './install-plan';
 import { CoreSidecar } from './sidecar';
@@ -302,7 +302,7 @@ async function installCore(): Promise<{ ok: boolean; message: string }> {
     if (path.resolve(loc.bundledDir) !== path.resolve(loc.installDir)) {
       fs.cpSync(loc.bundledDir, loc.installDir, {
         recursive: true,
-        filter: (src) => !/[\\/](\.env|\.venv|__pycache__|tests|logs|data)([\\/]|$)/.test(src.slice(loc.bundledDir!.length)),
+        filter: (src) => isCoreCopyable(path.relative(loc.bundledDir!, src)),
       });
       const ver = path.join(loc.bundledDir, 'VERSION');
       if (fs.existsSync(ver)) fs.copyFileSync(ver, path.join(loc.installDir, 'VERSION'));

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { AppSettings, CoreEnvView, EnvKey } from '../../shared/types';
 import { PageHead, Setting, Switch } from '../components/ui';
 import { useAct, usePoll, useStore } from '../lib/store';
+import { describeUpdate, useUpdate } from '../lib/useUpdate';
 import { useTheme } from '../App';
 
 function KeyField({ label, envKey, isSet, onSaved }: { label: string; envKey: EnvKey; isSet: boolean; onSaved(msg: string): void }) {
@@ -27,6 +28,7 @@ export function Settings() {
   const [code, setCode] = useState<{ code: string; ttl: number } | null>(null);
   const [diag, setDiag] = useState('');
   const memorySettings = usePoll<{ memory_repo_path: string }>('/dev/memory-settings', 0);
+  const update = useUpdate();
   const [memoryPath, setMemoryPath] = useState<string | null>(null);
 
   const loadEnv = () => void window.piblo.env.get().then(setEnv);
@@ -137,7 +139,7 @@ export function Settings() {
           <input className="input" aria-label="Memory folder" value={memoryPath ?? memorySettings.data?.memory_repo_path ?? ''} onChange={(event) => setMemoryPath(event.target.value)} />
           <button className="btn" disabled={!running || memoryPath === null} onClick={() => void act('PUT', '/dev/memory-settings', { memory_repo_path: memoryPath }).then((r) => { if (r.ok) { setMemoryPath(null); memorySettings.reload(); } })}>Save</button>
         </Setting>
-        <Setting title="Piblo on this PC" sub={running ? `Running${health?.version ? ` v${health.version}` : ''} on port ${core?.port}${core?.managed ? ' (started by this app)' : ' (already running)'}` : core?.message ?? ''}>
+        <Setting title="Piblo on this PC" sub={running ? `Core${health?.version ? ` v${health.version}` : ''} on port ${core?.port}${core?.managed ? ' (started by this app)' : ' (already running)'}` : core?.message ?? ''}>
           <button className="btn" onClick={restart}>Restart</button>
           <button className="btn" onClick={() => void window.piblo.core.openLogs()}>Open log</button>
         </Setting>
@@ -148,7 +150,19 @@ export function Settings() {
         <Setting title="Phone control page" sub="The approval page you can open from your phone.">
           <button className="btn" disabled={!running} onClick={() => void window.piblo.openExternal(`http://127.0.0.1:${core?.port}/control/`)}>Open</button>
         </Setting>
-        <p className="meta" style={{ paddingTop: 'var(--s-2)' }}>Piblo app {window.piblo.version}</p>
+        <Setting title="Piblo app" sub={`App version ${window.piblo.version}. ${describeUpdate(update.status)}`}>
+          {update.status?.state === 'ready' ? (
+            <button className="btn" onClick={() => void update.install()}>Restart to update</button>
+          ) : (
+            <button
+              className="btn"
+              disabled={update.status?.state === 'checking' || update.status?.state === 'downloading'}
+              onClick={() => void update.check()}
+            >
+              Check for updates
+            </button>
+          )}
+        </Setting>
       </section>
     </div>
   );
