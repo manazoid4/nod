@@ -155,6 +155,7 @@ def test_insert_text_uses_configured_mode(tmp_path, monkeypatch):
     flow_ = make_flow(tmp_path)
     calls = {}
     monkeypatch.setattr(flow_routes, "type_text", lambda text: calls.setdefault("typed", text))
+    monkeypatch.setattr(flow_routes, "_tap", lambda *vks: calls.setdefault("taps", vks))
     monkeypatch.setattr(flow, "paste", lambda text, enter=False: calls.setdefault("pasted", (text, enter)))
     assert flow_routes.insert_text("hello", False, flow_) == "paste"
     assert calls["pasted"] == ("hello", False)
@@ -163,3 +164,43 @@ def test_insert_text_uses_configured_mode(tmp_path, monkeypatch):
     write_settings(flow_, {"input_mode": "type", **{k: v for k, v in flow_routes.DEFAULTS.items() if k != "input_mode"}})
     assert flow_routes.insert_text("hello", True, flow_) == "type"
     assert calls["typed"] == "hello"
+    assert calls["taps"] == (0x0D,)  # Linux CI has no ctypes.windll: _tap must be stubbed
+
+
+def test_input_struct_size_matches_64bit_windows():
+    """A KEYBDINPUT-only union made INPUT 32 bytes; SendInput needs 40 on x64."""
+    import ctypes
+    from mazhost import flow_routes
+
+    expected = 40 if ctypes.sizeof(ctypes.c_void_p) == 8 else 28
+    assert ctypes.sizeof(flow_routes.INPUT) == expected
+    assert ctypes.sizeof(flow_routes.KEYBDINPUT) == (24 if expected == 40 else 16)
+
+
+def test_apply_settings_auto_restores_config_values(tmp_path):
+    from mazhost import flow_routes
+
+    flow = make_flow(tmp_path, flow_cloud=True, flow_cleanup_llm=True, stt_provider="whisper")
+    flow_routes.apply_settings(flow, {"cleanup": "rules", "stt": "parakeet"})
+    assert (flow.s.flow_cloud, flow.s.flow_cleanup_llm, flow.s.stt_provider) == (False, False, "parakeet")
+    flow_routes.apply_settings(flow, {"cleanup": "auto", "stt": "auto"})
+    assert (flow.s.flow_cloud, flow.s.flow_cleanup_llm, flow.s.stt_provider) == (True, True, "whisper")
+
+
+def test_dictionary_write_is_atomic_and_leaves_no_temp(tmp_path):
+    from mazhost import flow_routes
+
+    flow = make_flow(tmp_path)
+    flow.lines = ["Piblo"]
+    flow_routes.save_lines(flow, ["Piblo", "Rampage: ram page"])
+    assert (tmp_path / "dictionary.txt").read_text(encoding="utf-8") == "Piblo\nRampage: ram page\n"
+    assert [p.name for p in tmp_path.iterdir() if p.name.startswith(".dictionary-")] == []
+
+
+def test_dictionary_is_capped(tmp_path):
+    from mazhost import flow_routes
+
+    flow = make_flow(tmp_path)
+    flow.lines = [f"Word{i}" for i in range(flow_routes.DICTIONARY_MAX)]
+    api = make_client(flow)
+    assert api.post("/flow/dictionary", json={"word": "OneTooMany"}).status_code == 400

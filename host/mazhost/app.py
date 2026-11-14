@@ -72,7 +72,7 @@ from .sessions import SessionStore
 from .skill_vault import SkillVault
 from starlette.concurrency import run_in_threadpool
 from .flow import Flow
-from .flow_routes import build_flow_router, insert_text
+from .flow_routes import build_flow_router, insert_text, read_settings
 from .stt import SpeechToText
 from .subtitle_routes import install_subtitle_routes
 from .subtitles import SubtitleJobs, WhisperTranscriber
@@ -250,7 +250,7 @@ def create_app(
         CORSMiddleware,
         allow_origins=cfg.web_origin_list,
         allow_credentials=False,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-MAZ-Token", "X-MAZ-Context"],
         expose_headers=["X-MAZ-Width", "X-MAZ-Height", "X-MAZ-Format"],
     )
@@ -987,7 +987,14 @@ def create_app(
             security.validate_upload(path, size)
             result = await run_in_threadpool(flow_service.dictate, path)
             if target == "pc-paste" and result["intent"] in ("paste", "claude") and result["text"]:
-                await run_in_threadpool(insert_text, result["text"], result["intent"] == "claude", flow_service)
+                prefs = read_settings(flow_service)
+                enter = result["intent"] == "claude" or bool(prefs["press_enter"])
+                try:
+                    await run_in_threadpool(insert_text, result["text"], enter, flow_service)
+                    result["pc"] = "pasted"
+                except Exception:  # noqa: BLE001 - clipboard busy/locked: still return the text
+                    result["pc"] = "failed"
+                result["reply"] = result["pc"]  # firmware decodeReply reads `reply` as the outcome
             return result
         finally:
             path.unlink(missing_ok=True)
