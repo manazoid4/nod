@@ -57,6 +57,66 @@ describe('CoreSidecar', () => {
     expect(opts.env.PYTHONPATH).toBe('BUNDLED');
   });
 
+  it('recheck() starts Core again when a Core it did not launch disappears', async () => {
+    let up = true;
+    const { sc, spawn } = make({ probe: async () => up, sleep: async () => { up = true; } });
+    expect((await sc.ensure()).managed).toBe(false);
+    await sc.recheck(); // still answering: nothing to do
+    expect(spawn).not.toHaveBeenCalled();
+    up = false; // the external Core was killed
+    await sc.recheck();
+    expect(spawn).toHaveBeenCalledTimes(1);
+    expect(sc.state.phase).toBe('running');
+    expect(sc.state.managed).toBe(true);
+  });
+
+  it('recheck() kills a hung Core it launched, and its late exit does not clobber the new one', async () => {
+    const kids: { kill: ReturnType<typeof vi.fn>; exitCb: null | ((c: number | null) => void) }[] = [];
+    const spawn = vi.fn(() => {
+      const k = { pid: kids.length + 1, kill: vi.fn(() => true), exitCb: null as null | ((c: number | null) => void), once(_e: 'exit', cb: (c: number | null) => void) { k.exitCb = cb; } };
+      kids.push(k);
+      return k as ChildLike;
+    });
+    let up = false;
+    const { sc } = make({ probe: async () => up, sleep: async () => { up = true; }, spawn: spawn as unknown as SidecarDeps['spawn'] });
+    expect((await sc.ensure()).managed).toBe(true);
+    up = false; // first Core hangs: alive but silent
+    await sc.recheck();
+    await sc.recheck(); // two misses = maybe just busy: leave it alone
+    expect(spawn).toHaveBeenCalledTimes(1);
+    expect(kids[0].kill).not.toHaveBeenCalled();
+    await sc.recheck(); // third miss in a row = hung
+    expect(spawn).toHaveBeenCalledTimes(2);
+    expect(kids[0].kill).toHaveBeenCalled();
+    kids[0].exitCb?.(1); // the hung one finally exits
+    expect(sc.state.phase).toBe('running');
+    expect(sc.isManaged).toBe(true);
+  });
+
+  it('restarts a Core it launched that crashes after being healthy', async () => {
+    let up = false;
+    const exits: ((c: number | null) => void)[] = [];
+    const spawn = vi.fn(() => {
+      up = true; // Core answers once launched
+      return { pid: 1, kill: () => true, once: (_e: 'exit', cb: (c: number | null) => void) => exits.push(cb) } as ChildLike;
+    });
+    const { sc } = make({ probe: async () => up, spawn: spawn as unknown as SidecarDeps['spawn'] });
+    expect((await sc.ensure()).phase).toBe('running');
+    up = false;
+    exits[0](1); // killed mid-session
+    for (let i = 0; i < 20 && sc.state.phase !== 'running'; i++) await new Promise((r) => setTimeout(r, 0));
+    expect(spawn).toHaveBeenCalledTimes(2);
+    expect(sc.state.phase).toBe('running');
+  });
+
+  it('recheck() leaves non-running states for the owner to retry', async () => {
+    const { sc, spawn } = make({ hasToken: () => false });
+    expect((await sc.ensure()).phase).toBe('needs-setup');
+    await sc.recheck();
+    expect(spawn).not.toHaveBeenCalled();
+    expect(sc.state.phase).toBe('needs-setup');
+  });
+
   it('shares one attempt between concurrent ensure() calls', async () => {
     let up = false;
     const { sc, spawn } = make({

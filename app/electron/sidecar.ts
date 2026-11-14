@@ -28,6 +28,7 @@ export interface SidecarDeps {
 export class CoreSidecar extends EventEmitter {
   private child: ChildLike | null = null;
   private exited = false;
+  private misses = 0;
   private inflight: Promise<CoreState> | null = null;
   state: CoreState;
 
@@ -95,18 +96,24 @@ export class CoreSidecar extends EventEmitter {
     const env: Record<string, string> = {};
     for (const [k, v] of Object.entries(this.deps.baseEnv ?? {})) if (v !== undefined) env[k] = v;
     if (loc.sourceDir && loc.sourceDir !== loc.installDir) env.PYTHONPATH = loc.sourceDir;
+    this.stop(); // a hung Core we launched must not be orphaned by the new one
     this.exited = false;
+    let child: ChildLike;
     try {
-      this.child = this.deps.spawn(loc.python!, ['-m', 'mazhost'], { cwd: loc.installDir, env });
+      child = this.child = this.deps.spawn(loc.python!, ['-m', 'mazhost'], { cwd: loc.installDir, env });
     } catch (e) {
       return this.set(this.make('failed', 'Piblo on this PC could not be launched.', String((e as Error).message)));
     }
-    this.child.once('exit', (code) => {
+    child.once('exit', (code) => {
+      if (this.child !== child) return; // an older Core exiting late says nothing about this one
       this.exited = true;
       this.child = null;
-      if (this.state.phase === 'running' || this.state.phase === 'starting') {
+      const wasHealthy = this.state.phase === 'running';
+      if (wasHealthy || this.state.phase === 'starting') {
         this.set(this.make('failed', 'Piblo on this PC stopped unexpectedly.', `Exit code ${code ?? 'unknown'}. ${this.deps.logTail?.() ?? ''}`.trim()));
       }
+      // A Core that was healthy and then died is restarted; one that dies while starting is left for the owner (no crash loop).
+      if (wasHealthy) void this.deps.sleep(1000).then(() => this.ensure());
     });
     const deadline = this.deps.startTimeoutMs ?? 30_000;
     for (let waited = 0; waited < deadline; waited += 500) {
@@ -117,6 +124,20 @@ export class CoreSidecar extends EventEmitter {
     const tail = this.deps.logTail?.() ?? '';
     this.stop();
     return this.set(this.make('failed', 'Piblo on this PC did not start.', tail || 'No answer on the local port. Open the log for details.'));
+  }
+
+  /** Timer hook: a Core we reported running (ours or someone else's) that stopped answering gets started again. */
+  async recheck(): Promise<void> {
+    if (this.inflight || this.state.phase !== 'running') return;
+    if (await this.deps.probe()) {
+      this.misses = 0;
+      return;
+    }
+    // A Core we launched that is still alive is probably just busy (a slow request blocks /health):
+    // only treat it as hung after 3 silent checks in a row (~15 s at the 5 s timer).
+    if (this.child && !this.exited && ++this.misses < 3) return;
+    this.misses = 0;
+    await this.ensure();
   }
 
   /** Stops only a Core this app launched. A Core someone else started is left alone. */
