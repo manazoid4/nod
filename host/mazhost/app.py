@@ -71,7 +71,8 @@ from .selfupdate import SelfUpdater
 from .sessions import SessionStore
 from .skill_vault import SkillVault
 from starlette.concurrency import run_in_threadpool
-from .flow import Flow, paste as paste_text
+from .flow import Flow
+from .flow_routes import build_flow_router, insert_text
 from .stt import SpeechToText
 from .subtitle_routes import install_subtitle_routes
 from .subtitles import SubtitleJobs, WhisperTranscriber
@@ -986,7 +987,7 @@ def create_app(
             security.validate_upload(path, size)
             result = await run_in_threadpool(flow_service.dictate, path)
             if target == "pc-paste" and result["intent"] in ("paste", "claude") and result["text"]:
-                await run_in_threadpool(paste_text, result["text"], result["intent"] == "claude")
+                await run_in_threadpool(insert_text, result["text"], result["intent"] == "claude", flow_service)
             return result
         finally:
             path.unlink(missing_ok=True)
@@ -1140,6 +1141,7 @@ def create_app(
 
     api.include_router(build_dev_router(resolve_data_dir(cfg), Path(cfg.repo_dir) if cfg.repo_dir else Path(__file__).resolve().parents[2]))
     api.include_router(build_features_router(resolve_data_dir(cfg)))
+    api.include_router(build_flow_router(flow_service))
     api.include_router(build_dump_router(cfg, model_router))
     api.include_router(webui_router)
     api.include_router(build_library_router(cfg, model_router))
