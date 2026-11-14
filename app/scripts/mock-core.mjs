@@ -293,7 +293,7 @@ export function startMock({ port = 18787, token = 'mock-token-123', deviceOnline
       }
       return json(res, 200, flow.settings);
     }
-    if (p === '/flow/dictionary') {
+    if (p === '/flow/dictionary' || p.startsWith('/flow/dictionary/')) {
       if (req.method === 'GET') return json(res, 200, { words: flow.words });
       if (req.method === 'POST' || req.method === 'PATCH') {
         const w = (data?.word || '').trim();
@@ -303,11 +303,12 @@ export function startMock({ port = 18787, token = 'mock-token-123', deviceOnline
       }
       if (req.method === 'DELETE') {
         const w = decodeURIComponent(p.split('/')[3] || '').toLowerCase();
+        if (!w) return json(res, 400, { detail: 'word_required' });
         flow.words = flow.words.filter((x) => x.toLowerCase() !== w);
         return json(res, 200, { words: flow.words });
       }
     }
-    if (p === '/flow/status') return json(res, 200, { recent: [{ at: new Date().toISOString(), chars: 84, intent: 'paste', cleanup: 'rules', total_ms: 640 }], count: 1, avg_ms: 640, p95_ms: 640, errors: [], effective_cleanup: flow.settings.effective_cleanup });
+    if (p === '/flow/status') return json(res, 200, { recent: [{ at: new Date().toISOString(), chars: 84, intent: 'paste', cleanup: 'rules', total_ms: 640 }], count: 1, avg_total_ms: 640, p95_total_ms: 640, errors: [], effective_cleanup: flow.settings.effective_cleanup });
     if (p === '/flow/test') return json(res, 200, { ms: 420, word_count: 5, cleanup: flow.settings.cleanup, effective_cleanup: flow.settings.effective_cleanup, text: 'This is a test of dictation.' });
     if (p === '/voices') return json(res, 200, { ok: true, current: 'v1', current_name: 'Adrian', voices: [{ name: 'Adrian', reference_id: 'v1', description: 'Warm, steady', current: true }, { name: 'Maya', reference_id: 'v2', description: 'Bright and quick' }, { name: 'Theo', reference_id: 'v3', description: 'Low and calm' }] });
     if (p === '/session/start') return json(res, 200, { session_id: 's' + ++db.session });
