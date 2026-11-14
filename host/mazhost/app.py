@@ -74,7 +74,7 @@ from .selfupdate import SelfUpdater
 from .sessions import SessionStore
 from .skill_vault import SkillVault
 from starlette.concurrency import run_in_threadpool
-from .flow import Flow, paste as paste_text
+from .flow import Flow, foreground as flow_foreground, safe_paste as flow_safe_paste
 from .stt import SpeechToText
 from .subtitle_routes import install_subtitle_routes
 from .subtitles import SubtitleJobs, WhisperTranscriber
@@ -1009,9 +1009,15 @@ def create_app(
             path = Path(tmp.name)
         try:
             security.validate_upload(path, size)
+            armed = flow_foreground() if target == "pc-paste" else 0  # focus when the audio landed
             result = await run_in_threadpool(flow_service.dictate, path)
             if target == "pc-paste" and result["intent"] in ("paste", "claude") and result["text"]:
-                await run_in_threadpool(paste_text, result["text"], result["intent"] == "claude")
+                try:
+                    result["pc"] = await run_in_threadpool(
+                        flow_safe_paste, result["text"], result["intent"] == "claude", armed)
+                except Exception:  # noqa: BLE001 - clipboard busy/locked: still return the text
+                    result["pc"] = "failed"
+                result["reply"] = result["pc"]  # firmware decodeReply reads `reply` as the outcome
             return result
         finally:
             path.unlink(missing_ok=True)

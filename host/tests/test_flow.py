@@ -221,3 +221,49 @@ def test_warm_loads_whisper_first(tmp_path, monkeypatch):
     monkeypatch.setattr(s, "_get_onnx", lambda download=False: order.append("parakeet"))
     s.warm()
     assert order == ["whisper", "parakeet"]
+
+
+def test_safe_paste_pastes_into_armed_window():
+    from mazhost.flow import safe_paste
+    got = []
+    out = safe_paste("hi.", False, 42, paste_fn=lambda t, enter=False: got.append((t, enter)),
+                     fg_fn=lambda: 42, copy_fn=lambda t: got.append(("copy", t)), typable_fn=lambda h: True)
+    assert out == "pasted" and got == [("hi.", False)]
+
+
+def test_safe_paste_keeps_text_on_clipboard_when_focus_moved():
+    from mazhost.flow import safe_paste
+    got = []
+    out = safe_paste("hi.", True, 42, paste_fn=lambda t, enter=False: got.append("PASTED"),
+                     fg_fn=lambda: 99, copy_fn=lambda t: got.append(("copy", t)))
+    assert out == "clipboard" and got == [("copy", "hi.")]
+
+
+def test_safe_paste_never_types_when_locked():
+    from mazhost.flow import safe_paste
+    got = []
+    out = safe_paste("hi.", False, 0, paste_fn=lambda t, enter=False: got.append("PASTED"),
+                     fg_fn=lambda: 0, copy_fn=lambda t: got.append("copy"))
+    assert out == "clipboard" and "PASTED" not in got
+
+
+def test_dictionary_fixes_what_parakeet_hears():
+    from mazhost.flow import apply_dictionary
+    got = apply_dictionary("So this is a test of Pebloflow on the card Puter.", ["Piblo", "Cardputer"])
+    assert got == "So this is a test of Piblo Flow on the Cardputer."
+
+
+def test_dictionary_user_aliases_and_no_false_join():
+    from mazhost.flow import apply_dictionary
+    assert apply_dictionary("ask graw queue", ["Groq: graw queue"]) == "ask Groq"
+    assert apply_dictionary("a fish dish", ["Fish"]) == "a Fish dish"
+    # ordinary word pairs are never glued into a term (no automatic splitting)
+    assert apply_dictionary("come out look at this", ["Outlook"]) == "come out look at this"
+
+
+def test_safe_paste_admin_window_goes_to_clipboard():
+    from mazhost.flow import safe_paste
+    got = []
+    out = safe_paste("hi.", False, 42, paste_fn=lambda t, enter=False: got.append("PASTED"),
+                     fg_fn=lambda: 42, copy_fn=lambda t: got.append("copy"), typable_fn=lambda h: False)
+    assert out == "clipboard" and got == ["copy"]

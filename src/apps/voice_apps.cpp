@@ -417,6 +417,129 @@ private:
 
 }  // namespace
 
+// ---------------------------------------------------------------- Type on PC
+// Piblo Flow: hold SPACE, speak, release -> Core cleans the words and types them
+// into whatever window is focused on the computer. If focus moved while Core was
+// transcribing, Core leaves the text on the PC clipboard instead of typing it.
+class PcTypeApp : public App {
+public:
+    const char* id() const override { return "pctype"; }
+    const char* title() const override { return "Type on PC"; }
+
+    const char* hints() const override {
+        switch (dictate::state()) {
+            case dictate::State::Listening: return _toggle ? "tap SPACE: type  ESC cancel" : "release SPACE: type  ESC cancel";
+            case dictate::State::Working:   return "typing on PC...";
+            default: return "hold or tap SPACE to speak";
+        }
+    }
+
+    void onEnter() override {
+        _held = KB.held(KEY_SPACE);  // arrived by holding SPACE: start at once
+        if (_held) begin();
+        invalidate();
+    }
+
+    void onExit() override {
+        if (dictate::active(this)) dictate::cancel();
+    }
+
+    bool onKey(const KeyEvent& e) override {
+        const bool mine = dictate::active(this);
+        if (e.code == KEY_SPACE) {
+            const bool listening = mine && dictate::state() == dictate::State::Listening;
+            if (e.down && !mine) {
+                begin();
+                _downAt = millis();
+            } else if (e.down && listening && _toggle) {
+                _toggle = false;  // second tap ends a tap-started recording
+                dictate::stop();
+            } else if (!e.down && listening) {
+                // A quick tap keeps recording until the next tap; a real hold ends on release.
+                if (millis() - _downAt < 350) _toggle = true;
+                else dictate::stop();
+            }
+            invalidate();
+            return true;
+        }
+        if (e.down && e.code == KEY_ESC && mine) {  // cancel, stay on the screen
+            dictate::cancel();
+            sfx::recStop();
+            _toggle = false;
+            _status = "Cancelled";
+            _text.clear();
+            invalidate();
+            return true;
+        }
+        return false;
+    }
+
+    void update() override {
+        std::string out;
+        if (dictate::take(this, out)) {
+            const std::string pc = dictate::pcOutcome();
+            _text   = out;
+            _ok     = pc == "pasted";
+            _status = _ok ? "Typed on PC" : (pc == "clipboard" ? "On PC clipboard - Ctrl+V" : "Sent");
+            invalidate();
+        } else if (_wasMine && !dictate::active(this) && dictate::state() == dictate::State::Failed) {
+            _ok = false;
+            _status = dictate::error();
+            _text.clear();
+            invalidate();
+        }
+        _wasMine = dictate::active(this);
+        if (_wasMine) invalidate();  // live level meter
+    }
+
+    void render(M5Canvas& g) override {
+        g.fillScreen(BG);
+        ui::header(g, "Type on PC", Sys.hostOnline ? "PC" : "OFFLINE");
+        const auto st = dictate::state();
+        if (dictate::active(this) && st == dictate::State::Listening) {
+            drawVoiceFace(g, voice::State::Listening, ui::hhmmss(dictate::elapsedSeconds()).c_str());
+            return;
+        }
+        if (dictate::active(this) && st == dictate::State::Working) {
+            ui::emptyState(g, "TYPING", "cleaning up your words");
+            return;
+        }
+        if (_status.empty()) {
+            ui::emptyState(g, "Hold SPACE", "speak, release: it types on your PC");
+            return;
+        }
+        g.setFont(&fonts::Font0);
+        g.setTextColor(_ok ? LIVE : WARN, BG);
+        g.drawString(_status.c_str(), PAD, BODY_Y + 8);
+        drawShortText(g, _text, BODY_Y + 24, 6);
+    }
+
+private:
+    void begin() {
+        _toggle = false;
+        _status.clear();
+        _text.clear();
+        if (!Sys.wifiConnected || !host::configured()) {
+            _ok = false;
+            _status = "Connect to your PC first";
+            return;
+        }
+        if (!dictate::start(this, true)) {
+            _ok = false;
+            _status = *dictate::error() ? dictate::error() : "Busy - try again";
+        }
+    }
+
+    bool        _held    = false;
+    bool        _toggle  = false;   // started by a tap: next tap ends it
+    uint32_t    _downAt  = 0;
+    bool        _wasMine = false;
+    bool        _ok      = false;
+    std::string _status;
+    std::string _text;
+};
+
+App* makePcType() { return new PcTypeApp(); }
 App* makeCapture() { return new CaptureApp(); }
 App* makeRecorder() { return new RecorderApp(); }
 

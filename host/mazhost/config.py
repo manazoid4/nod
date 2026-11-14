@@ -94,6 +94,7 @@ class Settings(BaseSettings):
     # live voice brain: "cloud" = LFM3 hears/speaks, OpenRouter thinks (falls back to Ollama, then LFM3);
     # "lfm" = today's direct LFM3 speech-to-speech.
     live_brain: Literal["cloud", "lfm"] = "cloud"
+    live_model: str = ""  # upstream realtime model (MAZ_LIVE_MODEL); empty = server default
     live_cloud_default: str = "nemotron"  # voice alias resolved to a :free OpenRouter id until Maz switches by voice
     # tried in order when the chosen cloud model fails (429 etc.), before the slow local fallback. Measured 8 Nov 2026:
     # nemotron-3.5-lightning:free ~0.6 s first token; deepseek-v4.1-flash (cheap paid) ~0.7 s; gemma :free was 429ing.

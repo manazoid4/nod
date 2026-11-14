@@ -328,6 +328,7 @@ void begin() {
 }
 
 void update() {
+    host_worker::reapStale();
     static bool good = false;
     if (!good && millis() > 45000) { good = true; host::fwMarkGood(); }
     if (Sys.shiftRunning) Sys.shiftSeconds = (millis() - gShiftStartedMs) / 1000;
