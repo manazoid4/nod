@@ -80,6 +80,27 @@ await flow.locator('.tag', { hasText: 'Hyperspace' }).click();
 await flow.locator('.tag', { hasText: 'Hyperspace' }).waitFor({ state: 'detached', timeout: 10_000 });
 check('removing a chip deletes the word', (await flow.locator('.tag', { hasText: 'Hyperspace' }).count()) === 0);
 
+// Preferred spellings (Flow aliases, PR #130): a plain word must not flatten a `Term: misheard` line,
+// and adding an alias to an existing term merges it instead of duplicating the chip.
+await wordBox.fill('Sonarr');
+await flow.getByRole('button', { name: 'Add' }).click();
+await flow.locator('.tag', { hasText: 'Sonarr' }).waitFor({ timeout: 10_000 });
+const rampage = flow.locator('.tag', { hasText: 'Rampage' });
+check('an alias line keeps its chip after adding a word', await rampage.isVisible());
+check('the chip names the first mishearing', /ram page/.test(await rampage.innerText()), await rampage.innerText());
+await wordBox.fill('Rampage: ramp age');
+await flow.getByRole('button', { name: 'Add' }).click();
+await page.waitForTimeout(700);
+check('a new alias merges into the existing term', /\+2/.test(await rampage.innerText()), await rampage.innerText());
+check('no duplicate chip for the merged term', (await flow.locator('.tag', { hasText: 'Rampage' }).count()) === 1);
+await page.reload();
+await page.waitForSelector('h1:has-text("Home")', { timeout: 30_000 });
+await page.keyboard.press('Control+6');
+await flow.waitFor({ timeout: 20_000 });
+await flow.locator('.tag', { hasText: 'Rampage' }).waitFor({ timeout: 10_000 });
+check('aliases survive a reload', /\+2/.test(await flow.locator('.tag', { hasText: 'Rampage' }).innerText()));
+check('the plain word added alongside survives the reload', await flow.locator('.tag', { hasText: 'Sonarr' }).isVisible());
+
 const statusLine = await flow.getByText(/dictation · average/).innerText();
 check('status line reports Core history', /1 dictation · average 640 ms/.test(statusLine), statusLine);
 

@@ -79,6 +79,47 @@ def test_dictionary_add_dedupe_and_remove(tmp_path):
     assert flow.words == api.get("/flow/dictionary").json()["words"]
 
 
+def test_dictionary_keeps_alias_lines_when_adding_a_word(tmp_path):
+    """PR #130 stores `Term: alias, alias` lines; adding a word must not flatten them."""
+    flow = make_flow(tmp_path)
+    flow.lines = ["Rampage: ram page, ram payge", "Piblo"]
+    api = make_client(flow)
+    (tmp_path / "dictionary.txt").write_text("\n".join(flow.lines) + "\n", encoding="utf-8")
+    body = api.post("/flow/dictionary", json={"word": "Kubernetes"}).json()
+    assert body["words"] == ["Rampage", "Piblo", "Kubernetes"]
+    assert body["aliased"] == 1
+    assert body["entries"][0]["aliases"] == ["ram page", "ram payge"]
+    on_disk = (tmp_path / "dictionary.txt").read_text(encoding="utf-8").splitlines()
+    assert on_disk[0] == "Rampage: ram page, ram payge"
+    assert flow.lines == on_disk
+    assert flow.words == ["Rampage", "Piblo", "Kubernetes"]
+
+
+def test_dictionary_alias_entry_merges_into_existing_term(tmp_path):
+    flow = make_flow(tmp_path)
+    flow.lines = ["Rampage: ram page"]
+    api = make_client(flow)
+    body = api.post("/flow/dictionary", json={"word": "rampage: ramp age, ram page"}).json()
+    assert body["words"] == ["Rampage"]
+    assert body["entries"] == [{"term": "Rampage", "aliases": ["ram page", "ramp age"]}]
+
+
+def test_dictionary_removing_a_term_removes_its_aliases(tmp_path):
+    flow = make_flow(tmp_path)
+    flow.lines = ["Rampage: ram page", "Piblo"]
+    api = make_client(flow)
+    (tmp_path / "dictionary.txt").write_text("Rampage: ram page\nPiblo\n", encoding="utf-8")
+    body = api.delete("/flow/dictionary/rampage").json()
+    assert body["words"] == ["Piblo"]
+    assert (tmp_path / "dictionary.txt").read_text(encoding="utf-8") == "Piblo\n"
+
+
+def test_dictionary_rejects_bad_alias(tmp_path):
+    api = make_client(make_flow(tmp_path))
+    assert api.post("/flow/dictionary", json={"word": "Rampage: bad/alias"}).status_code == 400
+    assert api.post("/flow/dictionary", json={"word": ": no term"}).status_code == 400
+
+
 @pytest.mark.parametrize("word", ["", "   ", "a" * 65, "bad/word", "semi;colon", "quote\"d"])
 def test_dictionary_rejects_bad_words(tmp_path, word):
     api = make_client(make_flow(tmp_path))
