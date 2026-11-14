@@ -283,6 +283,11 @@ Reply transcribe(const std::string& wavPath) {
     return upload("/transcribe/raw", wavPath, {{"X-MAZ-Route", route()}});
 }
 
+Reply flowPaste(const std::string& wavPath) {
+    // Piblo Flow: Core cleans the text and types it into the focused PC window.
+    return upload("/dictate?target=pc-paste", wavPath, {});
+}
+
 Reply brainDump(const std::string& wavPath,
                 const std::vector<uint32_t>& highlights) {
     String marks = "[";
