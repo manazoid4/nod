@@ -13,6 +13,7 @@ import json
 import logging
 import time
 from collections import deque
+from urllib.parse import urlencode
 
 import numpy as np
 from fastapi import WebSocket
@@ -40,6 +41,8 @@ PREROLL_MS = 300
 LONG_SPEECH_MS = 1500  # after this much speech a pause is more likely mid-thought than the end
 LONG_SPEECH_HANGOVER = 1.5
 FIRST_AUDIO_LIMIT_S = 4.0
+UPSTREAM_STEP_S = 5.0  # each handshake event from the realtime socket must arrive within this
+UPSTREAM_CONNECT_S = 6.0  # whole upstream handshake, so a silent or text-only server fails fast
 INSTRUCTIONS = ("You are Piblo, a friendly, warm and calm voice assistant on a tiny pocket device. "
                 "Never name or reveal your model. Keep replies short and spoken. "
                 "Respond with interleaved text and audio.")
@@ -188,11 +191,16 @@ class LiveBridge:
     async def run(self) -> None:
         try:
             if not self.kokoro:
-                await self._connect()
-        except Exception as error:  # model server down: tell the device, do not crash Core
+                await asyncio.wait_for(self._connect(), UPSTREAM_CONNECT_S)
+        except Exception as error:  # model server down or text-only: tell the device, do not crash Core
             log.warning("live: model server unavailable: %s", error)
             await self._send({"type": "error", "message": "Piblo's brain is offline"})
-            await self.ws.close(1011)
+            if self.up:
+                await self.up.close()
+            try:
+                await self.ws.close(1011)
+            except RuntimeError:  # already closed by the device
+                pass
             return
         await self._set_state("listening")
         try:
@@ -409,14 +417,21 @@ class LiveBridge:
         private_mode.guard(self.url)
         self.cloud = self.cfg.live_brain == "cloud" and not private_mode.enabled()
         self.brain = LiveBrain(self.cfg) if self.cloud else None
-        self.up = await _PrivateSafeConnect(self.url, max_size=None, open_timeout=5, proxy=None if private_mode.enabled() else True)
-        json.loads(await self.up.recv())  # session.created
+        url = self.url + ("?" + urlencode({"model": self.cfg.live_model}) if self.cfg.live_model else "")
+        self.up = await _PrivateSafeConnect(url, max_size=None, open_timeout=5, proxy=None if private_mode.enabled() else True)
+        await self._expect("session.created")
         await self.up.send(json.dumps({"type": "session.update", "session": {
             "type": "realtime", "instructions": TTS_INSTRUCTIONS if self.cloud else INSTRUCTIONS,
             "output_modalities": ["audio"] if self.cloud else ["text", "audio"]}}))
-        json.loads(await self.up.recv())  # session.updated
+        await self._expect("session.updated")
         self._need_reset = False
         self._reader = asyncio.create_task(self._read_up())
+
+    async def _expect(self, kind: str) -> None:
+        """The next upstream event must be `kind`; an error event, a close or silence means the connect failed."""
+        ev = json.loads(await asyncio.wait_for(self.up.recv(), UPSTREAM_STEP_S))
+        if ev.get("type") != kind:
+            raise ConnectionError(f"upstream sent {ev.get('type')!r} instead of {kind}: {ev.get('error')}")
 
     async def _up_send(self, obj: dict) -> None:
         if self._need_reset or self.up is None:  # cancel was refused or socket died: fresh session
