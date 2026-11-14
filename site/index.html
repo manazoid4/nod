@@ -67,7 +67,7 @@
       <p class="lede">A pocket companion with real keys for the thoughts you want to catch without reaching for your phone. Our prototype connects to a Windows computer; voice and agent controls are still being tested.</p>
       <div class="actions">
         <a class="btn btn-primary btn-big" href="#waitlist" data-va="cta_click">Join the launch list</a>
-        <a class="btn btn-quiet btn-big" href="https://discord.gg/DaxywF3SQf" target="_blank" rel="noopener noreferrer" data-va="discord_click">Join the Discord</a>
+        <a class="btn btn-quiet btn-big" href="#proof">See the prototype story</a>
       </div>
     </div>
     <figure class="wrap hero-fig">
@@ -89,9 +89,47 @@
     <p class="needs"><strong>What you need:</strong> a Windows computer on the same Wi-Fi running the free Piblo app, and the AI you prefer. Free and open options are available. Phone support is planned, starting with Android.</p>
   </section>
 
-  <section class="proof wrap" aria-labelledby="proof-title">
-    <div><p class="proof-label"><span class="chip chip-done">Tested on prototype</span></p><h2 id="proof-title">A thought, saved before it slips away.</h2><p>Hold a key, say what&rsquo;s on your mind, and save it as a note on your connected computer. That&rsquo;s one small interaction we&rsquo;ve tested on the prototype.</p><a class="link" href="#faq">See what works today &rarr;</a></div>
+  <section class="proof wrap" id="proof" aria-labelledby="proof-title">
+    <div><p class="proof-label"><span class="chip chip-wip">Prototype in testing</span></p><h2 id="proof-title">A thought, saved before it slips away.</h2><p>Hold a key, say what&rsquo;s on your mind, and save it as a note on your connected computer. An earlier prototype test saved a note; reliability is still being checked before we call it ready.</p><a class="link" href="#faq">See what works today &rarr;</a></div>
     <div class="proof-example" aria-label="Illustrative example of a saved thought"><span>YOUR THOUGHT</span><p>&ldquo;Remember to call Mum.&rdquo;</p><span>Saved to your computer</span><small>Illustrative example &middot; Windows computer and Wi-Fi required</small></div>
+  </section>
+
+  <section class="sec wrap" id="waitlist">
+    <div class="join-card">
+      <p class="fine">Follow the build</p>
+    <h2>Follow Piblo from prototype to launch.</h2>
+      <p class="join-lede">Get prototype updates and hear when there is launch news. Free to join, with no payment or commitment. No launch date or price has been set.</p>
+      <form class="waitlist-form" id="waitlist-form" action="/api/waitlist" method="post" novalidate>
+        <input type="hidden" name="ref" value="">
+        <input class="waitlist-hp" type="text" name="piblo_hp_field" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="waitlist-fields">
+          <label class="waitlist-label">
+            <span>Email</span>
+            <input class="waitlist-input" type="email" name="email" placeholder="you@example.com" autocomplete="email" inputmode="email" aria-describedby="waitlist-status" required>
+          </label>
+        </div>
+        <div class="waitlist-consent">
+          <label class="waitlist-check">
+            <input type="checkbox" name="consent" value="yes" required>
+            <span>I am happy to receive Piblo updates by email. <a href="/privacy/" target="_blank" rel="noopener noreferrer">Privacy notice</a></span>
+          </label>
+        </div>
+        <button class="btn btn-primary btn-big waitlist-submit" type="submit">Join the launch list</button>
+        <p class="fine waitlist-status" id="waitlist-status" aria-live="polite">We'll only email you about Piblo. Unsubscribe any time.</p>
+      </form>
+      <div class="share-box" id="share-box" hidden>
+        <h3>Know someone who'd like Piblo?</h3>
+        <p>Share your link.</p>
+        <input class="waitlist-input" id="share-link" type="text" readonly aria-label="Your share link">
+        <div class="share-actions">
+          <button class="btn btn-quiet" type="button" id="share-copy">Copy link</button>
+          <button class="btn btn-primary" type="button" id="share-native" hidden>Share</button>
+        </div>
+        <p class="fine share-note" aria-live="polite"></p>
+        <p class="fine">Want to shape what we build? <a class="link" href="https://discord.gg/DaxywF3SQf" target="_blank" rel="noopener noreferrer">Join the Piblo Discord</a>.</p>
+      </div>
+      <p class="fine join-alt">Prefer to talk? <a class="link" href="https://discord.gg/DaxywF3SQf" target="_blank" rel="noopener noreferrer" data-va="discord_click">Join the Discord</a>.</p>
+    </div>
   </section>
 
   <section class="sec wrap" id="features">
@@ -140,8 +178,8 @@
     <ul class="key"><li><span class="chip chip-done">Works today</span> Tested on our prototype.</li><li><span class="chip chip-wip">In testing</span> Built, being checked on the device.</li><li><span class="chip chip-none">Coming</span> Planned, not built yet.</li></ul>
     <ul class="grid" data-open-wide data-reveal>
       <li><details><summary><h3>Out of your head</h3><span class="chip chip-wip">In testing</span></summary><p>Hold a key and speak to save a thought on your computer. Capture has been tested; reliability is still being checked.</p></details></li>
-      <li><details><summary><h3>Pick your AI</h3><span class="chip chip-done">Works today</span></summary><p>Use the AI you like, including free and open ones. Switch whenever you want.</p></details></li>
-      <li><details><summary><h3>Your notes stay yours</h3><span class="chip chip-done">Works today</span></summary><p>Your notes are plain files on your own computer. Read them, move them, delete them.</p></details></li>
+      <li><details><summary><h3>Pick your AI</h3><span class="chip chip-wip">In testing</span></summary><p>Use the AI you like, including free and open ones. Switch whenever you want.</p></details></li>
+      <li><details><summary><h3>Your notes stay yours</h3><span class="chip chip-wip">In testing</span></summary><p>Your notes are plain files on your own computer. Read them, move them, delete them.</p></details></li>
       <li><details><summary><h3>Piblo Flow: voice typing</h3><span class="chip chip-wip">In testing</span></summary><p>Speak to turn your words into cleaned-up text on your computer. Flow is being tested; it needs a connected computer and speech service.</p></details></li>
       <li><details><summary><h3>Focus</h3><span class="chip chip-wip">In testing</span></summary><p>We&rsquo;re testing focus timers to help you stay with one task.</p></details></li>
       <li><details><summary><h3>Show me once</h3><span class="chip chip-none">Coming</span></summary><p>We&rsquo;re exploring how to capture a workflow on your computer and make it easier to repeat. The learning experience is not finished.</p></details></li>
@@ -212,47 +250,15 @@
       <details><summary>When does the Kickstarter start, and when would it ship?</summary><p>There is no date yet. We&rsquo;ll only set one when the prototype is proven and the costs are checked, and backers will get an honest ship estimate based on real manufacturing progress.</p></details></div>
   </section>
 
-  <section class="sec wrap" id="waitlist">
-    <div class="join-card">
-      <p class="sec-no"><b>07</b>Launch list</p>
-    <h2>Follow Piblo from prototype to launch.</h2>
-      <p class="join-lede">Get honest prototype updates and hear if a Kickstarter is scheduled. No launch date or price has been set.</p>
-      <form class="waitlist-form" id="waitlist-form" action="/api/waitlist" method="post" novalidate>
-        <input type="hidden" name="ref" value="">
-        <input class="waitlist-hp" type="text" name="piblo_hp_field" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <div class="waitlist-fields">
-          <label class="waitlist-label">
-            <span>Name (optional)</span>
-            <input class="waitlist-input" type="text" name="first_name" placeholder="Your name" autocomplete="name">
-          </label>
-          <label class="waitlist-label">
-            <span>Email</span>
-            <input class="waitlist-input" type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
-          </label>
-        </div>
-        <div class="waitlist-consent">
-          <label class="waitlist-check">
-            <input type="checkbox" name="consent" value="yes" required>
-            <span>I am happy to receive Piblo updates by email. <a href="/privacy/" target="_blank" rel="noopener noreferrer">Privacy notice</a></span>
-          </label>
-        </div>
-        <button class="btn btn-primary btn-big waitlist-submit" type="submit">Join the launch list</button>
-        <p class="fine waitlist-status" aria-live="polite">We'll only email you about Piblo. Unsubscribe any time.</p>
-      </form>
-      <div class="share-box" id="share-box" hidden>
-        <h3>Know someone who'd like Piblo?</h3>
-        <p>Share your link.</p>
-        <input class="waitlist-input" id="share-link" type="text" readonly aria-label="Your share link">
-        <div class="share-actions">
-          <button class="btn btn-quiet" type="button" id="share-copy">Copy link</button>
-          <button class="btn btn-primary" type="button" id="share-native" hidden>Share</button>
-        </div>
-        <p class="fine share-note" aria-live="polite"></p>
-        <p class="fine">Want to shape what we build? <a class="link" href="https://discord.gg/DaxywF3SQf" target="_blank" rel="noopener noreferrer">Join the Piblo Discord</a>.</p>
-      </div>
-      <p class="fine join-alt">Prefer to talk? <a class="link" href="https://discord.gg/DaxywF3SQf" target="_blank" rel="noopener noreferrer" data-va="discord_click">Join the Discord</a>.</p>
-    </div>
+  <section class="sec wrap founder" aria-labelledby="founder-title">
+    <div class="founder-mark" aria-hidden="true">m.</div>
+    <div><h2 id="founder-title">Built by Maz. Shaped with you.</h2>
+    <p>I&rsquo;m building Piblo around a simple idea: catching a thought shouldn&rsquo;t mean opening a screen full of distractions.</p>
+    <p>The goal is a small, useful companion with real keys and a little personality. Today it&rsquo;s a prototype, with a Windows computer doing the heavy work. There is still testing to do.</p>
+    <p>Join the launch list to follow that work, see what changes, and help shape what comes next.</p>
+    <a class="btn btn-primary" href="#waitlist" data-va="cta_click">Join the launch list</a> <a class="link" href="/timeline/">Read the build timeline</a></div>
   </section>
+
 </main>
 <footer class="footer">
   <div class="wrap footer-inner">

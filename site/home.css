@@ -237,3 +237,13 @@ section[id] { scroll-margin-top: 116px; }
 .proof-example p { margin: 20px 0; color: var(--ink); font-size: clamp(24px, 3vw, 38px); line-height: 1.2; font-weight: 700; }
 .proof-example small { display: block; margin-top: 22px; color: var(--ink-2); }
 @media (min-width: 720px) { .proof { grid-template-columns: 1fr 1fr; gap: 8%; padding-top: 104px; } }
+
+/* A personal build note and one-field signup, within the existing brand. */
+.founder { display: flex; align-items: flex-start; gap: clamp(20px, 4vw, 56px); max-width: 900px; padding-bottom: 32px; }
+.founder-mark { flex: none; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--tomato); color: var(--on-accent); font-size: 32px; font-weight: 700; }
+.founder h2 { text-align: left; font-size: clamp(28px, 4vw, 44px); }
+.founder p { margin: 16px 0; max-width: 58ch; color: var(--ink-2); }
+.waitlist-fields { grid-template-columns: 1fr; }
+.waitlist-check { min-height: 44px; padding: 8px 0; cursor: pointer; }
+.waitlist-input[aria-invalid="true"] { border-color: var(--accent-ink); }
+@media (max-width: 480px) { .founder { flex-direction: column; } }

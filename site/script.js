@@ -64,6 +64,13 @@ waitlist?.addEventListener("submit", async function (e) {
   if (!data.email?.trim() || !data.consent) {
     return setWaitlistStatus("Please add your email and tick the box.", false);
   }
+  const emailInput = this.querySelector('input[name="email"]');
+  emailInput.setAttribute("aria-invalid", String(!emailInput.validity.valid));
+  if (!emailInput.validity.valid) {
+    setWaitlistStatus("Please enter a valid email address.", false);
+    emailInput.focus();
+    return;
+  }
   button.disabled = true;
   setWaitlistStatus("Sending...", false);
   try {
