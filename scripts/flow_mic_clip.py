@@ -37,6 +37,19 @@ def clipboard() -> str:
         r.destroy()
 
 
+def clear_clipboard() -> None:
+    import ctypes
+
+    u = ctypes.windll.user32
+    u.OpenClipboard.argtypes = [ctypes.c_void_p]
+    for _ in range(20):  # another app may hold it for a moment
+        if u.OpenClipboard(None):
+            u.EmptyClipboard()
+            u.CloseClipboard()
+            return
+        time.sleep(0.05)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--core", default="http://127.0.0.1:8787")
@@ -59,6 +72,7 @@ def main() -> int:
             print(f"ABORT run {n}: the focused window could receive a paste; refusing to run")
             return 2
         off = h.log_size(latency)
+        clear_clipboard()  # a stale clipboard must never count as this run's result
         core.call("/core/cardputer/key", "POST", {"keys": "esc"})
         time.sleep(0.5)
         core.call("/core/cardputer/key", "POST", {"keys": "y"})
