@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     discovery_port: int = 8788  # MAZ_DISCOVERY_PORT: UDP LAN discovery for Piblo pairing; 0 = off
     remote_url: str = ""  # MAZ_REMOTE_URL; empty = auto-detect the Tailscale Funnel URL
     remote_detect: bool = True  # MAZ_REMOTE_DETECT=0 disables the background tailscale probe
+    flow_cleanup_llm: bool = False  # MAZ_FLOW_CLEANUP_LLM=1: opt in to LLM cleanup of dictation (network/route)
+    flow_cloud: bool = False  # MAZ_FLOW_CLOUD=1: opt in to sending dictation audio/text to Groq
+    stt_provider: str = "parakeet"  # MAZ_STT_PROVIDER: parakeet (onnx-asr, local) | whisper (faster-whisper)
+    stt_local_model: str = "nemo-parakeet-tdt-0.6b-v3"  # any onnx-asr model name, e.g. moonshine-base-en
+    stt_quantization: str = "int8"
     whisper_model: str = "base.en"
     whisper_device: str = "cpu"
     whisper_compute: str = "int8"
@@ -111,6 +116,9 @@ class Settings(BaseSettings):
     kokoro_voices_path: str = ""
     kokoro_voice: str = Field(default="am_michael", min_length=3, max_length=32)
     kokoro_speed: float = Field(default=1.05, ge=0.75, le=1.35)
+    kokoro_pcm_port: int = Field(default=0, ge=0, le=65535)  # >0: serve raw PCM Kokoro for the device on this port
+    kokoro_pcm_bind: str = "127.0.0.1"  # set 0.0.0.0 for the device to reach it (LAN peers only either way)
+    kokoro_pcm_require_token: bool = False  # firmware #113 must send ?k=<token> before this is turned on
     data_dir: str = ""  # MAZ_DATA_DIR; empty = host/data in the install dir (voice choice, previews)
     maker_enderforge_cmd: str = ""  # Empty = Piblo Maker off; trusted local CLI command, no shell.
     maker_octoprint_url: str = ""
