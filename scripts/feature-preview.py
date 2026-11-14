@@ -1,4 +1,4 @@
-"""Prove Ask memory against a temporary Core on :18837, never the installed Core."""
+"""Prove memory or private PTT against a temporary Core on :18837."""
 import argparse
 import json
 import os
@@ -11,11 +11,41 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+import io
+import wave
 
 from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[1]
 PORT = 18837
+PTT_BRAIN_PORT = 18838
+
+
+def private_ptt(token):
+    """Real Kokoro -> Whisper -> local brain -> Kokoro; no microphone or speaker claim."""
+    headers = {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}
+    seed = urllib.request.Request(f'http://127.0.0.1:{PORT}/speak', headers=headers,
+                                  data=json.dumps({'text': 'Say hello in one short sentence.'}).encode())
+    with urllib.request.urlopen(seed, timeout=90) as response:
+        assert response.headers['X-TTS-Provider'] == 'kokoro'
+        audio = response.read()
+    sid = request('/session/start', token, {})['session_id']
+    turn = urllib.request.Request(f'http://127.0.0.1:{PORT}/turn/raw', data=audio,
+                                 headers={**headers, 'Content-Type': 'audio/wav', 'X-MAZ-Session': sid,
+                                          'X-MAZ-Route': 'local', 'X-MAZ-Speak': '1'})
+    with urllib.request.urlopen(turn, timeout=120) as response:
+        result = json.load(response)
+    assert result['provider'].startswith('local') and not result.get('degraded'), result
+    assert 'hello' in result['text'].lower(), result
+    for part in range(result['speak']['parts']):
+        url = f"http://127.0.0.1:{PORT}/speak?id={result['speak']['id']}&part={part}"
+        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=90) as response:
+            assert response.headers['X-TTS-Provider'] == 'kokoro'
+            with wave.open(io.BytesIO(response.read()), 'rb') as wav:
+                assert (wav.getnchannels(), wav.getsampwidth(), wav.getframerate()) == (1, 2, 16000)
+                assert wav.getnframes() > 0
+    print('Private PTT passed:', json.dumps({k: result[k] for k in ('text', 'reply', 'provider', 'timing_ms')}))
+    print('Real local STT/brain/Kokoro WAV verified; synthetic input, no device playback measured.')
 
 
 def request(path, token=None, body=None, timeout=3):
@@ -28,8 +58,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--check', action='store_true')
     parser.add_argument('--check-memory', action='store_true', help='Synthetic Ask memory proof across a Core restart, using the configured local model')
+    parser.add_argument('--check-private-ptt', action='store_true', help='Use installed model files with an isolated CPU llama-server on :18838; no live service calls')
     args = parser.parse_args()
-    if not args.check:
+    if not args.check and not args.check_private_ptt:
         args.check_memory = True
     with socket.socket() as sock:
         if sock.connect_ex(('127.0.0.1', PORT)) == 0:
@@ -51,8 +82,44 @@ def main():
         for key in ('DATA_DIR', 'WORK_DIR', 'CONTROL_DIR', 'DUMPS_DIR', 'TEACH_DIR', 'SKILL_VAULT_DIR',
                     'SKILL_DRAFT_DIR', 'DEBUG_DIR', 'FLOW_DIR'):
             env['MAZ_' + key] = str(tmp / key.lower())
-        core = subprocess.Popen([sys.executable, '-m', 'mazhost'], cwd=tmp, env=env)
+        brain = None
+        brain_log = None
+        if args.check_private_ptt:
+            assets = installed.parent.parent / 'models'
+            binary = assets / 'llama-server/llama-server.exe'
+            model = assets / 'llm/Qwen3-1.7B-Q4_K_M.gguf'
+            kokoro = assets / 'kokoro/kokoro-v1.0.fp16.onnx'
+            voices = assets / 'kokoro/voices-v1.0.bin'
+            for asset in (binary, model, kokoro, voices):
+                if not asset.is_file():
+                    raise RuntimeError(f'Installed local asset missing: {asset.name}; no downloads attempted.')
+            with socket.socket() as sock:
+                if sock.connect_ex(('127.0.0.1', PTT_BRAIN_PORT)) == 0:
+                    raise RuntimeError('Preview brain port is occupied; no existing process touched.')
+            env.update({'MAZ_LOCAL_ENGINE': 'llamacpp', 'MAZ_LLAMACPP_URL': f'http://127.0.0.1:{PTT_BRAIN_PORT}',
+                        'MAZ_LLAMACPP_MODEL': 'preview-local', 'MAZ_LLAMACPP_BACKUP_URL': '', 'MAZ_LLAMACPP_BACKUP_MODEL': '',
+                        'MAZ_OLLAMA_URL': 'http://127.0.0.1:1', 'MAZ_OLLAMA_BACKUP_MODEL': '',
+                        'MAZ_TTS_ENABLED': 'true', 'MAZ_TTS_PROVIDER': 'kokoro',
+                        'MAZ_KOKORO_MODEL_PATH': str(kokoro), 'MAZ_KOKORO_VOICES_PATH': str(voices),
+                        'HF_HUB_OFFLINE': '1', 'TRANSFORMERS_OFFLINE': '1', 'ONNX_PROVIDER': 'CPUExecutionProvider'})
+            brain_log = (tmp / 'brain.log').open('w', encoding='utf-8')
+            brain = subprocess.Popen([str(binary), '-m', str(model), '--host', '127.0.0.1',
+                                      '--port', str(PTT_BRAIN_PORT), '-ngl', '0', '-c', '2048', '-t', '4'],
+                                     cwd=tmp, env=env, stdout=brain_log, stderr=subprocess.STDOUT)
+        core = None
         try:
+            if brain is not None:
+                for _ in range(120):
+                    if brain.poll() is not None:
+                        raise RuntimeError('Isolated local brain exited during startup.')
+                    try:
+                        with urllib.request.urlopen(f'http://127.0.0.1:{PTT_BRAIN_PORT}/health', timeout=1):
+                            break
+                    except OSError:
+                        time.sleep(.25)
+                else:
+                    raise RuntimeError('Isolated local brain did not become ready.')
+            core = subprocess.Popen([sys.executable, '-m', 'mazhost'], cwd=tmp, env=env)
             for _ in range(120):
                 if core.poll() is not None:
                     raise RuntimeError('Preview Core exited during startup.')
@@ -69,6 +136,9 @@ def main():
             except urllib.error.HTTPError as error:
                 if error.code not in (401, 403):
                     raise
+            if args.check_private_ptt:
+                assert request('/health', token)['private_mode'] is True
+                private_ptt(token)
             if args.check_memory:
                 session = request('/session/start', token, {})['session_id']
                 saved = request('/turn/text', token, {'session_id': session, 'text': 'Remember that my appointment is Friday at noon.', 'route': 'local'})
@@ -107,12 +177,17 @@ def main():
                 print('Pending reminder survived the Core restart and fired.')
             print('Isolated Core health and token authentication passed.')
         finally:
-            core.terminate()
-            try:
-                core.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                core.kill()
-                core.wait()
+            for process in (core, brain):
+                if process is None:
+                    continue
+                process.terminate()
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+            if brain_log:
+                brain_log.close()
 
 
 if __name__ == '__main__':

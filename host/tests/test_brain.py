@@ -65,7 +65,8 @@ def test_prompt_has_weather_maths_priorities_and_local_upgrades_to_auto(monkeypa
         api.post("/turn/text", headers=H, json={"text": text, "session_id": sid, "route": "local"})
         return models.last_messages[-1]["content"]
 
-    assert "Live weather" in ask("what is the weather today")
+    # #128: a local-only turn makes no outbound weather lookup (private push-to-talk), so no weather line.
+    assert "Live weather" not in ask("what is the weather today")
     assert "36" in ask("what is 15% of 240")
     assert "Ship hero" in ask("what should I work on now")
     assert models.last_route == "auto"

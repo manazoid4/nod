@@ -337,7 +337,7 @@ def create_app(
         return status
 
     def grounded_messages(
-        session_id: str, text: str, pocket_context: str = ""
+        session_id: str, text: str, pocket_context: str = "", local_only: bool = False
     ) -> list[dict[str, str]]:
         history = sessions.messages(session_id)
         if not history and not sessions.has(session_id):
@@ -358,7 +358,7 @@ def create_app(
                 "\nThe user\'s previous question was: \"" + last_q[:200] + "\". Use it for follow-ups like "
                 "\"and after that\" or \"what did I just ask\".\n"
             )
-        context += maths_line(text) + weather_line(text) + priorities_line(text, cfg.now_path)
+        context += maths_line(text) + ("" if local_only else weather_line(text)) + priorities_line(text, cfg.now_path)
         try:
             saved = memory_notes.context(text) if not pocket_context else ""
             if saved:
@@ -458,8 +458,6 @@ def create_app(
             sessions.add_turn(session_id, text, reply)
             return {"text": text, "reply": reply, "provider": "catchup-local",
                     "actions": [], "timings": {"llm_ms": 0}}
-        if cfg.smart_voice and route == "local":
-            route = "auto"  # free cloud brain first, local only as last fallback
         refined = refine(text)
         normalized = " ".join(
             refined.text.lower().replace("?", "").replace("!", "").split()
@@ -492,7 +490,7 @@ def create_app(
             token = _output_cap.set(max_tokens) if max_tokens else None  # spoken path only
             try:
                 reply, provider = model_router.chat(
-                    grounded_messages(session_id, refined.text, pocket_context), route
+                    grounded_messages(session_id, refined.text, pocket_context, local_turn(route)), route
                 )
             finally:
                 if token is not None:
@@ -522,10 +520,19 @@ def create_app(
             "timings": {"llm_ms": llm_ms},
         }
 
-    def turn_stt(path: Path) -> str:
-        return getattr(speech, "transcribe_turn", speech.transcribe)(path)
+    def local_turn(route: Route) -> bool:
+        return private_mode.enabled() or route.startswith("local") or not any((
+            cfg.groq_key, cfg.groq_api_key, cfg.openrouter_api_key, cfg.cloud_key, cfg.mazlatest_key, cfg.fish_api_key))
 
-    def finish_turn(result: dict, upload_ms: int, stt_ms: int, speak: str) -> dict:
+    def turn_stt(path: Path, route: Route) -> str:
+        try:
+            if local_turn(route):
+                return speech.transcribe(path)
+            return getattr(speech, "transcribe_turn", speech.transcribe)(path)
+        except Exception as error:
+            raise HTTPException(503, "local_stt_unavailable" if local_turn(route) else "stt_unavailable") from error
+
+    def finish_turn(result: dict, upload_ms: int, stt_ms: int, speak: str, route: Route) -> dict:
         """Attach per-stage timing_ms, log one line, and (if the device asked) start TTS now."""
         timings = result.get("timings", {})
         row: dict = {"ts": round(time.time()), "provider": result.get("provider", ""),
@@ -533,7 +540,8 @@ def create_app(
         result["timing_ms"] = {"upload_ms": upload_ms, "stt_ms": stt_ms, "llm_ms": row["llm"]}
         reply = str(result.get("reply") or "")
         if speak.strip() == "1" and reply and speech_out.available():
-            pid, parts = speak_planner.start(reply, row)
+            synth = (lambda text: speech_out.synthesize(text, local_only=True)) if local_turn(route) else None
+            pid, parts = speak_planner.start(reply, row, synth=synth)
             if parts:
                 result["speak"] = {"id": pid, "parts": parts}
         else:
@@ -829,8 +837,8 @@ def create_app(
 
     # ------------------------------------------------------------- sessions
     @api.post("/session/start")
-    def session_start():
-        if cfg.fish_api_key or cfg.groq_api_key or cfg.groq_key:  # open TLS to Groq/Fish while the user speaks
+    def session_start(x_maz_route: Annotated[Route, Header()] = "local"):
+        if not local_turn(x_maz_route) and (cfg.fish_api_key or cfg.groq_api_key or cfg.groq_key):
             netpool.warm(*(["https://api.groq.com"] if cfg.groq_api_key or cfg.groq_key else []),
                          *(["https://api.fish.audio"] if cfg.fish_api_key else []))
         return {"session_id": sessions.start()}
@@ -841,7 +849,7 @@ def create_app(
 
     @api.post("/turn/text")
     def turn_text(turn: TextTurn, x_maz_speak: Annotated[str, Header()] = ""):
-        return finish_turn(answer(turn.session_id, turn.text, turn.route, turn.context), 0, 0, x_maz_speak)
+        return finish_turn(answer(turn.session_id, turn.text, turn.route, turn.context), 0, 0, x_maz_speak, turn.route)
 
     # ----------------------------------------------------------- PC control
     @api.post("/pc/action")
@@ -878,9 +886,10 @@ def create_app(
         return {"turns": turn_timings.recent()}
 
     @api.post("/speak")
-    def speak(body: SpeakRequest, background_tasks: BackgroundTasks):
+    def speak(body: SpeakRequest, background_tasks: BackgroundTasks,
+              x_maz_route: Annotated[Route, Header()] = "local"):
         try:
-            path = speech_out.synthesize(body.text)
+            path = speech_out.synthesize(body.text, local_only=local_turn(x_maz_route))
         except RuntimeError as error:
             raise HTTPException(503, str(error)) from error
         background_tasks.add_task(path.unlink, missing_ok=True)
@@ -910,11 +919,11 @@ def create_app(
             security.validate_upload(path, size)
             upload_ms = round((time.perf_counter() - upload_started) * 1000)
             stt_started = time.perf_counter()
-            text = turn_stt(path)
+            text = turn_stt(path, route)
             stt_ms = round((time.perf_counter() - stt_started) * 1000)
             result = answer(session_id, text, route, context, None if context else VOICE_MAX_TOKENS)
             result["timings"].update({"upload_ms": upload_ms, "stt_ms": stt_ms})
-            return finish_turn(result, upload_ms, stt_ms, x_maz_speak)
+            return finish_turn(result, upload_ms, stt_ms, x_maz_speak, route)
         finally:
             path.unlink(missing_ok=True)
 
@@ -940,17 +949,17 @@ def create_app(
             security.validate_upload(path, size)
             upload_ms = round((time.perf_counter() - upload_started) * 1000)
             stt_started = time.perf_counter()
-            text = turn_stt(path)
+            text = turn_stt(path, x_maz_route)
             stt_ms = round((time.perf_counter() - stt_started) * 1000)
             result = answer(x_maz_session, text, x_maz_route, x_maz_context,
                             None if x_maz_context else VOICE_MAX_TOKENS)
             result["timings"].update({"upload_ms": upload_ms, "stt_ms": stt_ms})
-            return finish_turn(result, upload_ms, stt_ms, x_maz_speak)
+            return finish_turn(result, upload_ms, stt_ms, x_maz_speak, x_maz_route)
         finally:
             path.unlink(missing_ok=True)
 
     @api.post("/transcribe/raw")
-    async def transcribe_raw(request: Request):
+    async def transcribe_raw(request: Request, x_maz_route: Annotated[Route, Header()] = "local"):
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as target:
             size = 0
             async for chunk in request.stream():
@@ -963,7 +972,7 @@ def create_app(
         try:
             security.validate_upload(path, size)
             started = time.perf_counter()
-            text = turn_stt(path)
+            text = turn_stt(path, x_maz_route)
             return {"transcript": text, "stt_ms": round((time.perf_counter() - started) * 1000)}
         finally:
             path.unlink(missing_ok=True)

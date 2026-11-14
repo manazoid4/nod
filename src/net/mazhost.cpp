@@ -204,6 +204,7 @@ std::string startSession() {
     for (const auto& base : bases()) {
         NodHttp http;
         if (!beginRequest(http, base.first, "/session/start", base.second)) continue;
+        http.addHeader("X-MAZ-Route", route());
         const int status = http.POST("");
         if (status <= 0) {
             http.end();
@@ -279,7 +280,7 @@ Reply talkAudio(const std::string& session, const std::string& wavPath) {
 }
 
 Reply transcribe(const std::string& wavPath) {
-    return upload("/transcribe/raw", wavPath, {});
+    return upload("/transcribe/raw", wavPath, {{"X-MAZ-Route", route()}});
 }
 
 Reply brainDump(const std::string& wavPath,
@@ -310,6 +311,7 @@ bool postWav(const char* path, const std::string& body, const std::string& wavPa
     for (const auto& base : bases()) {
         NodHttp http;
         if (!beginRequest(http, base.first, path, base.second)) continue;
+        http.addHeader("X-MAZ-Route", route());
         int status;
         if (get) {
             status = http.GET();
