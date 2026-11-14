@@ -10,6 +10,9 @@ export interface ChildLike {
   once(event: 'exit', cb: (code: number | null) => void): unknown;
 }
 
+/** Gaps before a Core that would not start is tried again: ~42 s of patience, then the user is told. */
+export const RETRY_DELAYS = [2000, 10000, 30000];
+
 export interface SidecarDeps {
   probe(): Promise<boolean>;
   /** Optional: version/capability + token check once Core answers. */
@@ -23,12 +26,14 @@ export interface SidecarDeps {
   startTimeoutMs?: number;
   logTail?(): string;
   baseEnv?: Record<string, string | undefined>;
+  retryDelays?: number[];
 }
 
 export class CoreSidecar extends EventEmitter {
   private child: ChildLike | null = null;
   private exited = false;
   private misses = 0;
+  private retries = 0;
   private inflight: Promise<CoreState> | null = null;
   state: CoreState;
 
@@ -88,6 +93,7 @@ export class CoreSidecar extends EventEmitter {
         this.make('token-mismatch', 'Core rejected the saved token.', 'Piblo on this PC is running but does not accept the token in its settings file. Restart Core, or run setup again to re-pair.', managed),
       );
     }
+    this.retries = 0;
     return this.set(this.make('running', 'Piblo on this PC is running.', undefined, managed));
   }
 
@@ -102,7 +108,9 @@ export class CoreSidecar extends EventEmitter {
     try {
       child = this.child = this.deps.spawn(loc.python!, ['-m', 'mazhost'], { cwd: loc.installDir, env });
     } catch (e) {
-      return this.set(this.make('failed', 'Piblo on this PC could not be launched.', String((e as Error).message)));
+      this.set(this.make('failed', 'Piblo on this PC could not be launched.', String((e as Error).message)));
+      this.retryAfterFailure();
+      return this.state;
     }
     child.once('exit', (code) => {
       if (this.child !== child) return; // an older Core exiting late says nothing about this one
@@ -111,8 +119,9 @@ export class CoreSidecar extends EventEmitter {
       const wasHealthy = this.state.phase === 'running';
       if (wasHealthy || this.state.phase === 'starting') {
         this.set(this.make('failed', 'Piblo on this PC stopped unexpectedly.', `Exit code ${code ?? 'unknown'}. ${this.deps.logTail?.() ?? ''}`.trim()));
+        if (!wasHealthy) this.retryAfterFailure();
       }
-      // A Core that was healthy and then died is restarted; one that dies while starting is left for the owner (no crash loop).
+      // A Core that was healthy and then died is restarted at once; one that keeps dying while starting gets a few spaced tries.
       if (wasHealthy) void this.deps.sleep(1000).then(() => this.ensure());
     });
     const deadline = this.deps.startTimeoutMs ?? 30_000;
@@ -123,7 +132,30 @@ export class CoreSidecar extends EventEmitter {
     }
     const tail = this.deps.logTail?.() ?? '';
     this.stop();
-    return this.set(this.make('failed', 'Piblo on this PC did not start.', tail || 'No answer on the local port. Open the log for details.'));
+    this.set(this.make('failed', 'Piblo on this PC did not start.', tail || 'No answer on the local port. Open the log for details.'));
+    this.retryAfterFailure();
+    return this.state;
+  }
+
+  /**
+   * A Core that would not start (or died while starting) is tried again a few times with a growing
+   * gap - slow PCs and first-run installs need it - then left to the user. Never for a Core that is
+   * missing its install or settings: an automatic retry of those would only loop.
+   */
+  private retryAfterFailure(): void {
+    const delays = this.deps.retryDelays ?? RETRY_DELAYS;
+    const delay = delays[this.retries];
+    if (delay === undefined) return;
+    this.retries += 1;
+    // Wait for the attempt that just failed to finish tearing down (its promise clears `inflight`), then wait
+    // the gap and try again - so an ensured retry is never swallowed by the attempt already in flight.
+    const settled = this.inflight ?? Promise.resolve();
+    void settled
+      .catch(() => undefined)
+      .then(() => this.deps.sleep(delay))
+      .then(() => {
+        if (this.state.phase === 'failed') void this.ensure();
+      });
   }
 
   /** Timer hook: a Core we reported running (ours or someone else's) that stopped answering gets started again. */
