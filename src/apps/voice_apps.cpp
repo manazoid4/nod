@@ -512,7 +512,10 @@ private:
             _status = "Connect to your PC first";
             return;
         }
-        dictate::start(this, true);
+        if (!dictate::start(this, true)) {
+            _ok = false;
+            _status = *dictate::error() ? dictate::error() : "Busy - try again";
+        }
     }
 
     bool        _held    = false;

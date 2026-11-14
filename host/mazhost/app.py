@@ -1012,8 +1012,11 @@ def create_app(
             armed = flow_foreground() if target == "pc-paste" else 0  # focus when the audio landed
             result = await run_in_threadpool(flow_service.dictate, path)
             if target == "pc-paste" and result["intent"] in ("paste", "claude") and result["text"]:
-                result["pc"] = await run_in_threadpool(
-                    flow_safe_paste, result["text"], result["intent"] == "claude", armed)
+                try:
+                    result["pc"] = await run_in_threadpool(
+                        flow_safe_paste, result["text"], result["intent"] == "claude", armed)
+                except Exception:  # noqa: BLE001 - clipboard busy/locked: still return the text
+                    result["pc"] = "failed"
                 result["reply"] = result["pc"]  # firmware decodeReply reads `reply` as the outcome
             return result
         finally:

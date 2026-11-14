@@ -256,7 +256,9 @@ def test_dictionary_fixes_what_parakeet_hears():
 def test_dictionary_user_aliases_and_no_false_join():
     from mazhost.flow import apply_dictionary
     assert apply_dictionary("ask graw queue", ["Groq: graw queue"]) == "ask Groq"
-    assert apply_dictionary("a fish dish", ["Fish"]) == "a Fish dish"  # short terms never fuzzy-join
+    assert apply_dictionary("a fish dish", ["Fish"]) == "a Fish dish"
+    # ordinary word pairs are never glued into a term (no automatic splitting)
+    assert apply_dictionary("come out look at this", ["Outlook"]) == "come out look at this"
 
 
 def test_safe_paste_admin_window_goes_to_clipboard():

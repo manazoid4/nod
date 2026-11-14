@@ -34,6 +34,7 @@ _INTENT = {"note": "note", "remind me": "remind", "claude": "claude"}
 BUILTIN_ALIASES = {
     "Piblo Flow": ["Pebloflow", "Peblo flow", "Pibloflow"],
     "Piblo": ["Peblo", "Pibblo", "Pebblo", "Piblow"],
+    "Cardputer": ["card puter", "card pewter", "card computer"],
 }
 
 
@@ -46,13 +47,6 @@ def load_dictionary(path: Path) -> list[str]:
     return [w.strip() for w in path.read_text(encoding="utf-8").splitlines() if w.strip()]
 
 
-def _term_pattern(term: str) -> str:
-    # Long single words also match when STT splits them ("card Puter" -> Cardputer).
-    if len(term) >= 6 and " " not in term:
-        return r"[\s-]?".join(re.escape(c) for c in term)
-    return re.escape(term)
-
-
 def apply_dictionary(text: str, words: list[str]) -> str:
     entries: dict[str, list[str]] = {k: list(v) for k, v in BUILTIN_ALIASES.items()}
     for line in words:
@@ -60,7 +54,7 @@ def apply_dictionary(text: str, words: list[str]) -> str:
         entries.setdefault(term.strip(), []).extend(a.strip() for a in aliases.split(",") if a.strip())
     # Longest first so "Piblo Flow" wins over "Piblo".
     for term in sorted(entries, key=len, reverse=True):
-        alts = [_term_pattern(term)] + [re.escape(a) for a in entries[term]]
+        alts = [re.escape(term)] + [re.escape(a) for a in entries[term]]
         text = re.sub(rf"(?i)\b(?:{'|'.join(alts)})\b", term, text)
     return text
 
@@ -201,7 +195,10 @@ def typable(hwnd: int) -> bool:
 
 def safe_paste(text: str, enter: bool, armed_hwnd: int, paste_fn=None, fg_fn=foreground,
                copy_fn=None, typable_fn=typable) -> str:
-    """Paste only into the window that was focused when the audio arrived.
+    """Paste only into the top-level window that was focused when the audio arrived.
+
+    Limits (by design): the guard covers the ~1 s of transcription, not the speaking time,
+    and it compares whole windows, so switching a tab/pane inside the same app still pastes.
 
     Returns "pasted", or "clipboard" when focus moved, the PC is locked or the window is
     an admin one we cannot type into: the text is left on the clipboard so nothing is
@@ -232,7 +229,7 @@ def paste(text: str, enter: bool = False, only_hwnd: int | None = None) -> None:
     try:
         old = pyperclip.paste()
     except Exception:  # noqa: BLE001
-        old = ""
+        old = None
     pyperclip.copy(text)
 
     def tap(*vks: int) -> None:
@@ -247,8 +244,9 @@ def paste(text: str, enter: bool = False, only_hwnd: int | None = None) -> None:
     if enter:
         time.sleep(0.05)
         tap(0x0D)
-    time.sleep(0.15)  # let the target read the clipboard before restoring
-    pyperclip.copy(old)
+    time.sleep(0.4)  # slow targets (RDP, heavy Electron) read the clipboard late
+    if old:  # an image/files clipboard cannot be restored: leave the dictated text rather than blank it
+        pyperclip.copy(old)
 
 
 
