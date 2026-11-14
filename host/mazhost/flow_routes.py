@@ -86,20 +86,56 @@ def dictionary_path(flow) -> Path:
     return Path(flow.dir) / "dictionary.txt"
 
 
-def save_words(flow, words: list[str]) -> None:
+def dictionary_lines(flow) -> list[str]:
+    """Whole dictionary lines: ``Term`` or ``Term: misheard, misheard`` (Flow aliases)."""
+    lines = getattr(flow, "lines", None)
+    return list(lines) if lines is not None else list(flow.words)
+
+
+def split_line(line: str) -> tuple[str, list[str]]:
+    term, _, aliases = str(line).partition(":")
+    return term.strip(), [a.strip() for a in aliases.split(",") if a.strip()]
+
+
+def save_lines(flow, lines: list[str]) -> None:
+    """Write every line back, keeping aliases, and refresh the live Flow object.
+
+    ``flow.lines`` is what Flow's dictionary actually applies (aliases included);
+    ``flow.words`` stays a plain term list for older code paths.
+    """
     path = dictionary_path(flow)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(words) + ("\n" if words else ""), encoding="utf-8")
-    flow.words = words
+    path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+    flow.lines = lines
+    flow.words = [split_line(line)[0] for line in lines]
 
 
-def clean_word(word: str) -> str:
-    word = " ".join(str(word).split())
-    if not word or len(word) > 64:
+def dictionary_view(flow) -> dict:
+    entries = [{"term": term, "aliases": aliases} for term, aliases in map(split_line, dictionary_lines(flow))]
+    return {
+        "words": [entry["term"] for entry in entries],
+        "entries": entries,
+        "aliased": sum(1 for entry in entries if entry["aliases"]),
+    }
+
+
+_TERM_CHARS = " -'._&+"
+
+
+def clean_line(word: str) -> str:
+    """Normalise one dictionary entry; ``Term: alias, alias`` is allowed."""
+    text = " ".join(str(word).split())
+    if not text or len(text) > 120:
+        raise HTTPException(400, "word must be 1-120 characters")
+    term, _, rest = text.partition(":")
+    term = term.strip()
+    if not term or len(term) > 64:
         raise HTTPException(400, "word must be 1-64 characters")
-    if any(not (ch.isalnum() or ch in " -'._&+") for ch in word):
-        raise HTTPException(400, "word has unsupported characters")
-    return word
+    aliases = [a.strip() for a in rest.split(",") if a.strip()]
+    for part in [term, *aliases]:
+        if len(part) > 64 or any(not (ch.isalnum() or ch in _TERM_CHARS) for ch in part):
+            raise HTTPException(400, "word has unsupported characters")
+    return term + (": " + ", ".join(aliases) if aliases else "")
 
 
 # ---------------------------------------------------------------- latency log
@@ -252,21 +288,34 @@ def build_flow_router(flow) -> APIRouter:
 
     @api.get("/flow/dictionary")
     def get_dictionary():
-        return {"words": flow.words}
+        return dictionary_view(flow)
 
     @api.post("/flow/dictionary")
     def add_word(body: WordIn):
-        word = clean_word(body.word)
-        if word.lower() not in {w.lower() for w in flow.words}:
-            save_words(flow, [*flow.words, word])
-        return {"words": flow.words}
+        word = clean_line(body.word)
+        term, aliases = split_line(word)
+        lines = dictionary_lines(flow)
+        for index, line in enumerate(lines):
+            existing_term, existing_aliases = split_line(line)
+            if existing_term.lower() != term.lower():
+                continue
+            known = {a.lower() for a in existing_aliases}
+            merged = [*existing_aliases, *(a for a in aliases if a.lower() not in known)]
+            if merged != existing_aliases:
+                lines[index] = f"{existing_term}: {', '.join(merged)}"
+                save_lines(flow, lines)
+            return dictionary_view(flow)
+        save_lines(flow, [*lines, word])
+        return dictionary_view(flow)
 
     @api.delete("/flow/dictionary/{word}")
     def remove_word(word: str):
-        keep = [w for w in flow.words if w.lower() != word.strip().lower()]
-        if len(keep) != len(flow.words):
-            save_words(flow, keep)
-        return {"words": flow.words}
+        target = split_line(word)[0].lower()
+        lines = dictionary_lines(flow)
+        keep = [line for line in lines if split_line(line)[0].lower() != target]
+        if len(keep) != len(lines):
+            save_lines(flow, keep)
+        return dictionary_view(flow)
 
     @api.get("/flow/status")
     def status():

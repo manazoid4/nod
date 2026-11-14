@@ -33,10 +33,11 @@ export function FlowSection() {
   const act = useAct();
   const settings = usePoll<FlowSettings>('/flow/settings', 0);
   const status = usePoll<FlowStatus>('/flow/status', 15000);
-  const dictionary = usePoll<{ words: string[] }>('/flow/dictionary', 0);
+  const dictionary = usePoll<{ words: string[]; entries?: { term: string; aliases: string[] }[] }>('/flow/dictionary', 0);
   const [word, setWord] = useState('');
 
   const s = settings.data;
+  const entries = dictionary.data?.entries ?? (dictionary.data?.words ?? []).map((w) => ({ term: w, aliases: [] }));
   const save = async (p: Partial<FlowSettings>) => {
     const r = await act<void>('PATCH', '/flow/settings', p, 'Flow updated');
     if (r.ok) settings.reload();
@@ -83,16 +84,24 @@ export function FlowSection() {
           ))}
         </div>
       </Setting>
-      <Setting title="Words Piblo should get right" sub="Names and jargon Flow keeps exactly as written.">
+      <Setting title="Words Piblo should get right" sub="Names and jargon Flow keeps exactly as written. Add “Rampage: ram page” to also catch a mishearing.">
         <div className="row" style={{ flex: '0 1 250px', minWidth: 0 }}>
-          <input className="input" aria-label="New word" placeholder="Add a word" value={word} maxLength={64} onChange={(e) => setWord(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && word.trim()) void add(); }} />
+          <input className="input" aria-label="New word" placeholder="Add a word, or Term: misheard" value={word} maxLength={120} onChange={(e) => setWord(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && word.trim()) void add(); }} />
           <button className="btn" disabled={!word.trim()} onClick={add}>Add</button>
         </div>
       </Setting>
-      {!!dictionary.data?.words?.length && (
+      {!!entries.length && (
         <div className="row wrap" style={{ paddingTop: 'var(--s-2)' }}>
-          {dictionary.data.words.slice(0, 40).map((w) => (
-            <button key={w} className="tag" title={`Remove ${w}`} onClick={() => void remove(w)}>{w} ×</button>
+          {entries.slice(0, 40).map((e) => (
+            <button
+              key={e.term}
+              className="tag"
+              title={e.aliases.length ? `${e.term} — also heard as ${e.aliases.join(', ')}. Remove.` : `Remove ${e.term}`}
+              onClick={() => void remove(e.term)}
+            >
+              {e.term}
+              {!!e.aliases.length && <span className="meta"> · also “{e.aliases[0]}”{e.aliases.length > 1 ? ` +${e.aliases.length - 1}` : ''}</span>} ×
+            </button>
           ))}
         </div>
       )}
