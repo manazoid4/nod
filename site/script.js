@@ -21,6 +21,20 @@ window.va = window.va || function () { (window.vaq = window.vaq || []).push(argu
 const track = (name) => { try { window.va("event", { name }); } catch {} };
 document.querySelectorAll("[data-va]").forEach((el) => el.addEventListener("click", () => track(el.dataset.va)));
 
+// Remember a recognised campaign for this tab so the owner can identify new signups.
+const campaignSources = ["reddit", "x", "discord"];
+const campaignParam = (new URLSearchParams(location.search).get("utm_source") || "").toLowerCase();
+let campaignSource = campaignSources.includes(campaignParam) ? campaignParam : "";
+try {
+  if (campaignParam) {
+    if (campaignSource) sessionStorage.setItem("piblo_campaign_source", campaignSource);
+    else sessionStorage.removeItem("piblo_campaign_source");
+  } else campaignSource = sessionStorage.getItem("piblo_campaign_source") || "";
+} catch { /* signup still works without browser storage */ }
+if (!campaignSources.includes(campaignSource)) campaignSource = "";
+const campaignInput = document.querySelector("#waitlist-form input[name=source]");
+if (campaignInput) campaignInput.value = campaignSource;
+
 // Referral: remember ?ref= (letters/digits only) so a later visit to the form still credits the friend.
 const REF = /^[a-z0-9]{6,12}$/;
 const store = (fn) => { try { return fn(localStorage); } catch { return null; } };
@@ -82,6 +96,7 @@ waitlist?.addEventListener("submit", async function (e) {
     const out = await res.json().catch(() => ({}));
     if (res.ok && out.ok) {
       this.reset();
+      if (campaignInput) campaignInput.value = campaignSource;
       if (refInput && REF.test(savedRef)) refInput.value = savedRef;
       track("waitlist_signup");
       showShare(out.ref);

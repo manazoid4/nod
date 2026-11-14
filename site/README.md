@@ -48,3 +48,7 @@ The sender is `signups@mazworks.uk` for now. The form works without JavaScript (
 Run `site/tests/browser/waitlist.cjs` with an existing Playwright installation or the installed Playwright skill runner, from the repository root. It starts a temporary local site, exercises the real waitlist handler with an isolated provider, checks validation, segment membership, success and referral UI, and saves responsive screenshots to the OS temp directory. It does not send email or create real contacts.
 
 The founder photo is reused from the owner-approved Maz Works `public/maz.webp`; the one-field signup and native validity pattern are adapted from its `app/newsletter-signup.tsx`. The existing Piblo backend already reused the Resend integration.
+
+## Launch-post source labels
+
+Use `/?utm_source=reddit#waitlist`, `/?utm_source=x#waitlist` or `/?utm_source=discord#waitlist` on the corresponding posts. A recognised source is remembered in the current tab and added to the owner notification for a new signup; it is not added to the Resend contact. Unknown values are ignored. Duplicate signups do not send a second alert, so this is a count of source-labelled owner alerts, not total signups or a conversion rate. JavaScript and an enabled owner notification are required. The Vercel Hobby plan does not support custom analytics events.

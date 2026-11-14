@@ -28,7 +28,7 @@ const assert = require('node:assert/strict');
   const browser = await chromium.launch({headless: true});
   try {
     const page = await browser.newPage({viewport: {width: 390, height: 844}});
-    await page.goto(`http://127.0.0.1:${server.address().port}`);
+    await page.goto(`http://127.0.0.1:${server.address().port}/?utm_source=reddit`);
     const submit = page.locator('#waitlist-form button[type=submit]');
     await submit.click();
     assert.match(await page.locator('.waitlist-status').innerText(), /tick the box/);
@@ -44,6 +44,9 @@ const assert = require('node:assert/strict');
     assert.equal(contacts[0].email, 'browser@example.invalid');
     assert.deepEqual(contacts[0].segments, [{id:'piblo-test-segment'}]);
     assert.ok(await page.locator('#share-box').isVisible());
+    assert.equal(await page.locator('input[name=source]').inputValue(), 'reddit');
+    await page.goto(`http://127.0.0.1:${server.address().port}/?utm_source=unknown`);
+    assert.equal(await page.locator('input[name=source]').inputValue(), '');
     console.log('PASS: browser -> real waitlist handler -> isolated provider; consent, invalid email, correct segment, success and referral');
     await page.reload();
     for (const width of [360,390,768,1280]) {
