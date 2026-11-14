@@ -23,6 +23,7 @@ function make(over: Partial<SidecarDeps> & { loc?: CoreLocation } = {}) {
     hasSystemPython: () => true,
     sleep: async () => {},
     startTimeoutMs: 2000,
+    retryDelays: [], // tests opt in, so a failure never schedules background work
     ...over,
   };
   return { sc: new CoreSidecar(deps), spawn, child };
@@ -153,6 +154,55 @@ describe('CoreSidecar', () => {
     expect(s.phase).toBe('failed');
     expect(s.detail).toContain('fastapi');
     expect(child.kill).toHaveBeenCalled();
+  });
+
+  it('tries a Core that would not start again on a growing gap, then leaves it to the user', async () => {
+    const waits: number[] = [];
+    const { sc, spawn } = make({
+      probe: async () => false,
+      startTimeoutMs: 600,
+      retryDelays: [5, 10],
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    expect((await sc.ensure()).phase).toBe('failed');
+    await vi.waitFor(() => expect(spawn).toHaveBeenCalledTimes(3));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(waits).toContain(5);
+    expect(waits).toContain(10);
+    expect(spawn).toHaveBeenCalledTimes(3); // the budget is spent: no endless restart
+    expect(sc.state.phase).toBe('failed');
+  });
+
+  it('comes back up on a retry and stops retrying once it is running', async () => {
+    let up = false;
+    const waits: number[] = [];
+    const { sc, spawn } = make({
+      probe: async () => up,
+      startTimeoutMs: 600,
+      retryDelays: [5, 10],
+      sleep: async (ms) => {
+        waits.push(ms);
+        if (ms === 500 && spawn.mock.calls.length >= 2) up = true; // the second launch is the one that makes it
+      },
+    });
+    expect((await sc.ensure()).phase).toBe('failed');
+    await vi.waitFor(() => expect(sc.state.phase).toBe('running'));
+    expect(spawn).toHaveBeenCalledTimes(2);
+    expect(waits).not.toContain(10); // the second gap was never needed
+  });
+
+  it('never auto-retries a Core that is not installed or not set up', async () => {
+    const retries: number[] = [];
+    const notReady = make({ loc: { installDir: 'I', sourceDir: '', python: '', envFile: '', bundledDir: '' }, retryDelays: [5] });
+    retries.push(notReady.sc.state.managed ? 1 : 0);
+    expect((await notReady.sc.ensure()).phase).toBe('not-installed');
+    const noToken = make({ hasToken: () => false, retryDelays: [5] });
+    expect((await noToken.sc.ensure()).phase).toBe('needs-setup');
+    await new Promise((r) => setTimeout(r, 20));
+    expect(noToken.spawn).not.toHaveBeenCalled();
+    expect(retries).toEqual([0]);
   });
 
   it('detects a crash right after launch', async () => {
