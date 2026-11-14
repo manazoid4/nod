@@ -84,8 +84,10 @@ export function FlowSection() {
         </div>
       </Setting>
       <Setting title="Words Piblo should get right" sub="Names and jargon Flow keeps exactly as written.">
-        <input className="input" aria-label="New word" placeholder="Add a word" value={word} maxLength={64} onChange={(e) => setWord(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && word.trim()) void add(); }} />
-        <button className="btn" disabled={!word.trim()} onClick={add}>Add</button>
+        <div className="row" style={{ flex: '0 1 250px', minWidth: 0 }}>
+          <input className="input" aria-label="New word" placeholder="Add a word" value={word} maxLength={64} onChange={(e) => setWord(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && word.trim()) void add(); }} />
+          <button className="btn" disabled={!word.trim()} onClick={add}>Add</button>
+        </div>
       </Setting>
       {!!dictionary.data?.words?.length && (
         <div className="row wrap" style={{ paddingTop: 'var(--s-2)' }}>
