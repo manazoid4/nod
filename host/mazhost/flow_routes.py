@@ -6,10 +6,12 @@ Core restart. Unknown/absent keys fall back to the config's own defaults.
 """
 from __future__ import annotations
 
+import ctypes
 import json
 import os
 import re
 import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Literal
@@ -22,6 +24,8 @@ CLEANUPS = ("auto", "rules", "groq", "local")
 STT_CHOICES = ("auto", "parakeet", "whisper")
 DEFAULTS = {"input_mode": "paste", "press_enter": False, "cleanup": "auto", "stt": "auto"}
 LATENCY_KEEP = 50
+DICTIONARY_MAX = 500
+_DICTIONARY_LOCK = threading.Lock()
 
 
 # ---------------------------------------------------------------- persistence
@@ -56,19 +60,31 @@ def write_settings(flow, data: dict) -> None:
 
 
 def apply_settings(flow, data: dict) -> None:
-    """Push the stored choices onto the live Flow settings object."""
+    """Push the stored choices onto the live Flow settings object.
+
+    "auto" must restore the values the config started with: an explicit
+    rules/groq/local choice overwrites them, and choosing "auto" again used to
+    leave those forced flags stuck on the live object until a Core restart.
+    """
     s = flow.s
+    if not hasattr(flow, "_flow_config_defaults"):
+        flow._flow_config_defaults = (
+            getattr(s, "flow_cloud", False),
+            getattr(s, "flow_cleanup_llm", False),
+            getattr(s, "stt_provider", ""),
+        )
+    cloud, local_llm, stt_default = flow._flow_config_defaults
     cleanup = data.get("cleanup", "auto")
-    if cleanup == "rules":
+    if cleanup == "auto":
+        s.flow_cloud, s.flow_cleanup_llm = cloud, local_llm
+    elif cleanup == "rules":
         s.flow_cloud, s.flow_cleanup_llm = False, False
     elif cleanup == "groq":
-        s.flow_cleanup_llm = False
-        s.flow_cloud = True
+        s.flow_cloud, s.flow_cleanup_llm = True, False
     elif cleanup == "local":
         s.flow_cloud, s.flow_cleanup_llm = False, True
     stt = data.get("stt", "auto")
-    if stt in ("parakeet", "whisper"):
-        s.stt_provider = stt
+    s.stt_provider = stt_default if stt == "auto" else stt
 
 
 def effective_cleanup(flow) -> str:
@@ -105,7 +121,13 @@ def save_lines(flow, lines: list[str]) -> None:
     """
     path = dictionary_path(flow)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+    handle, temporary = tempfile.mkstemp(dir=path.parent, prefix=".dictionary-", suffix=".txt")
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8") as stream:
+            stream.write("\n".join(lines) + ("\n" if lines else ""))
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
     flow.lines = lines
     flow.words = [split_line(line)[0] for line in lines]
 
@@ -196,31 +218,46 @@ def insert_text(text: str, enter: bool = False, flow=None) -> str:
     return "paste"
 
 
+# Windows INPUT layout, spelled with fixed-width ctypes so the size is identical
+# on 64-bit Windows and on Linux CI. On 64-bit Windows the union must be at
+# least as large as MOUSEINPUT (32 bytes); a KEYBDINPUT-only union is 24 and
+# makes sizeof(INPUT) 32, so user32.SendInput rejects the call as invalid.
+class MOUSEINPUT(ctypes.Structure):
+    _fields_ = [("dx", ctypes.c_int32), ("dy", ctypes.c_int32),
+                ("mouseData", ctypes.c_uint32), ("dwFlags", ctypes.c_uint32),
+                ("time", ctypes.c_uint32), ("dwExtraInfo", ctypes.c_void_p)]
+
+
+class KEYBDINPUT(ctypes.Structure):
+    _fields_ = [("wVk", ctypes.c_uint16), ("wScan", ctypes.c_uint16),
+                ("dwFlags", ctypes.c_uint32), ("time", ctypes.c_uint32),
+                ("dwExtraInfo", ctypes.c_void_p)]
+
+
+class INPUT(ctypes.Structure):
+    class _U(ctypes.Union):
+        _fields_ = [("mi", MOUSEINPUT), ("ki", KEYBDINPUT)]
+
+    _anonymous_ = ("u",)
+    _fields_ = [("type", ctypes.c_uint32), ("u", _U)]
+
+
 def type_text(text: str) -> None:
     """Send literal characters as unicode key events (no clipboard touched)."""
-    import ctypes
-    from ctypes import wintypes
-
-    class KEYBDINPUT(ctypes.Structure):
-        _fields_ = [("wVk", wintypes.WORD), ("wScan", wintypes.WORD),
-                    ("dwFlags", wintypes.DWORD), ("time", wintypes.DWORD),
-                    ("dwExtraInfo", ctypes.POINTER(wintypes.ULONG))]
-
-    class INPUT(ctypes.Structure):
-        class _U(ctypes.Union):
-            _fields_ = [("ki", KEYBDINPUT)]
-
-        _anonymous_ = ("u",)
-        _fields_ = [("type", wintypes.DWORD), ("u", _U)]
-
     u = ctypes.windll.user32
     KEYEVENTF_UNICODE, KEYEVENTF_KEYUP = 0x0004, 0x0002
     units = text.encode("utf-16-le")
+    events = []
     for index in range(0, len(units), 2):
         code = int.from_bytes(units[index:index + 2], "little")
         for flags in (KEYEVENTF_UNICODE, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP):
-            event = INPUT(type=1, ki=KEYBDINPUT(0, code, flags, 0, None))
-            u.SendInput(1, ctypes.byref(event), ctypes.sizeof(INPUT))
+            events.append(INPUT(type=1, ki=KEYBDINPUT(0, code, flags, 0, None)))
+    if not events:
+        return
+    array = (INPUT * len(events))(*events)
+    sent = u.SendInput(len(events), array, ctypes.sizeof(INPUT))
+    if sent != len(events):
+        raise OSError(f"SendInput sent {sent}/{len(events)} events")
 
 
 def _tap(*vks: int) -> None:
@@ -294,28 +331,32 @@ def build_flow_router(flow) -> APIRouter:
     def add_word(body: WordIn):
         word = clean_line(body.word)
         term, aliases = split_line(word)
-        lines = dictionary_lines(flow)
-        for index, line in enumerate(lines):
-            existing_term, existing_aliases = split_line(line)
-            if existing_term.lower() != term.lower():
-                continue
-            known = {a.lower() for a in existing_aliases}
-            merged = [*existing_aliases, *(a for a in aliases if a.lower() not in known)]
-            if merged != existing_aliases:
-                lines[index] = f"{existing_term}: {', '.join(merged)}"
-                save_lines(flow, lines)
+        with _DICTIONARY_LOCK:
+            lines = dictionary_lines(flow)
+            for index, line in enumerate(lines):
+                existing_term, existing_aliases = split_line(line)
+                if existing_term.lower() != term.lower():
+                    continue
+                known = {a.lower() for a in existing_aliases}
+                merged = [*existing_aliases, *(a for a in aliases if a.lower() not in known)]
+                if merged != existing_aliases:
+                    lines[index] = f"{existing_term}: {', '.join(merged)}"
+                    save_lines(flow, lines)
+                return dictionary_view(flow)
+            if len(lines) >= DICTIONARY_MAX:
+                raise HTTPException(400, f"dictionary is full ({DICTIONARY_MAX} words)")
+            save_lines(flow, [*lines, word])
             return dictionary_view(flow)
-        save_lines(flow, [*lines, word])
-        return dictionary_view(flow)
 
     @api.delete("/flow/dictionary/{word}")
     def remove_word(word: str):
         target = split_line(word)[0].lower()
-        lines = dictionary_lines(flow)
-        keep = [line for line in lines if split_line(line)[0].lower() != target]
-        if len(keep) != len(lines):
-            save_lines(flow, keep)
-        return dictionary_view(flow)
+        with _DICTIONARY_LOCK:
+            lines = dictionary_lines(flow)
+            keep = [line for line in lines if split_line(line)[0].lower() != target]
+            if len(keep) != len(lines):
+                save_lines(flow, keep)
+            return dictionary_view(flow)
 
     @api.get("/flow/status")
     def status():
