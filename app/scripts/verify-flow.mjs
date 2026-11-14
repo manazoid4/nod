@@ -91,6 +91,9 @@ await page.screenshot({ path: path.join(shots, 'settings-dictation-1280.png') })
 
 await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(900, 700));
 await page.waitForTimeout(600);
+const wordsRow = flow.locator('.setting', { hasText: 'Words Piblo should get right' });
+const label = await wordsRow.locator('strong').evaluate((el) => ({ w: Math.round(el.getBoundingClientRect().width), h: Math.round(el.getBoundingClientRect().height), rowW: Math.round(el.closest('.setting').getBoundingClientRect().width), growW: Math.round(el.parentElement.getBoundingClientRect().width), kids: [...el.closest('.setting').children].map((c) => `${c.className}:${Math.round(c.getBoundingClientRect().width)}`) }));
+check('the words label keeps a usable column', label.w >= 150 && label.h <= 26, `${label.w}x${label.h} row=${label.rowW} grow=${label.growW} [${label.kids.join(' ')}]`);
 const overflow = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
 check('no horizontal overflow at 900x700', overflow.scroll <= overflow.client + 1, `${overflow.scroll} <= ${overflow.client}`);
 await page.screenshot({ path: path.join(shots, 'settings-dictation-900.png') });
