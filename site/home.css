@@ -226,3 +226,14 @@ section[id] { scroll-margin-top: 116px; }
 .tile-stage .scr-label--ok { color: #0d6e4f; }
 .tile-stage .scr-keys b { border-color: rgba(29,27,24,.25); }
 .tile-stage .scr-list--lined dt, .tile-stage .scr-list--lined dd { border-top-color: rgba(29,27,24,.12); }
+
+/* A concrete prototype moment, using the existing site colours and type. */
+.proof { display: grid; gap: 24px; padding-top: 72px; padding-bottom: 24px; align-items: center; }
+.proof h2 { max-width: 13ch; margin: 16px 0; text-align: left; }
+.proof p { max-width: 52ch; color: var(--ink-2); }
+.proof .link { display: inline-block; margin-top: 18px; font-weight: 700; }
+.proof-example { padding: clamp(24px, 4vw, 48px); border-radius: 28px; background: var(--tint); }
+.proof-example span { font: 12px var(--font-mono); color: var(--accent-ink); }
+.proof-example p { margin: 20px 0; color: var(--ink); font-size: clamp(24px, 3vw, 38px); line-height: 1.2; font-weight: 700; }
+.proof-example small { display: block; margin-top: 22px; color: var(--ink-2); }
+@media (min-width: 720px) { .proof { grid-template-columns: 1fr 1fr; gap: 8%; padding-top: 104px; } }
