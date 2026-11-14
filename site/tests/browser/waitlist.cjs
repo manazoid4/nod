@@ -1,4 +1,4 @@
-﻿// Run with the installed Playwright skill runner; no site dependency is needed.
+// Run with the installed Playwright skill runner; no site dependency is needed.
 const { chromium } = require('playwright');
 const { createServer } = require('node:http');
 const { readFile } = require('node:fs/promises');
@@ -45,11 +45,14 @@ const assert = require('node:assert/strict');
     assert.deepEqual(contacts[0].segments, [{id:'piblo-test-segment'}]);
     assert.ok(await page.locator('#share-box').isVisible());
     console.log('PASS: browser -> real waitlist handler -> isolated provider; consent, invalid email, correct segment, success and referral');
+    await page.reload();
     for (const width of [360,390,768,1280]) {
       await page.setViewportSize({width,height:844});
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth), false);
       await page.locator('.buddy-stage img').scrollIntoViewIfNeeded();
       await page.locator('.buddy-stage img').evaluate(img=>img.decode());
+      await page.locator('.founder-photo').scrollIntoViewIfNeeded();
+      await page.locator('.founder-photo').evaluate(img=>img.decode());
       await page.evaluate(()=>scrollTo(0,0));
       await page.screenshot({path:path.join(require('node:os').tmpdir(),`piblo-conversion-${width}.png`),fullPage:true});
     }
