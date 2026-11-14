@@ -428,9 +428,9 @@ public:
 
     const char* hints() const override {
         switch (dictate::state()) {
-            case dictate::State::Listening: return "release SPACE: type  ESC cancel";
+            case dictate::State::Listening: return _toggle ? "tap SPACE: type  ESC cancel" : "release SPACE: type  ESC cancel";
             case dictate::State::Working:   return "typing on PC...";
-            default: return "hold SPACE: speak to type on PC";
+            default: return "hold or tap SPACE to speak";
         }
     }
 
@@ -447,14 +447,25 @@ public:
     bool onKey(const KeyEvent& e) override {
         const bool mine = dictate::active(this);
         if (e.code == KEY_SPACE) {
-            if (e.down && !mine) begin();
-            else if (!e.down && mine && dictate::state() == dictate::State::Listening) dictate::stop();
+            const bool listening = mine && dictate::state() == dictate::State::Listening;
+            if (e.down && !mine) {
+                begin();
+                _downAt = millis();
+            } else if (e.down && listening && _toggle) {
+                _toggle = false;  // second tap ends a tap-started recording
+                dictate::stop();
+            } else if (!e.down && listening) {
+                // A quick tap keeps recording until the next tap; a real hold ends on release.
+                if (millis() - _downAt < 350) _toggle = true;
+                else dictate::stop();
+            }
             invalidate();
             return true;
         }
         if (e.down && e.code == KEY_ESC && mine) {  // cancel, stay on the screen
             dictate::cancel();
             sfx::recStop();
+            _toggle = false;
             _status = "Cancelled";
             _text.clear();
             invalidate();
@@ -505,6 +516,7 @@ public:
 
 private:
     void begin() {
+        _toggle = false;
         _status.clear();
         _text.clear();
         if (!Sys.wifiConnected || !host::configured()) {
@@ -519,6 +531,8 @@ private:
     }
 
     bool        _held    = false;
+    bool        _toggle  = false;   // started by a tap: next tap ends it
+    uint32_t    _downAt  = 0;
     bool        _wasMine = false;
     bool        _ok      = false;
     std::string _status;
