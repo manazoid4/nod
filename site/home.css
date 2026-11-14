@@ -30,7 +30,7 @@ p { text-wrap: pretty; }
 .chip-none { background: transparent; box-shadow: inset 0 0 0 1px var(--chip-line, var(--line)); }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 22px; border: 0; border-radius: 999px; font-weight: 700; font-size: 15px; letter-spacing: -.01em; text-decoration: none; cursor: pointer; transition: background .2s, box-shadow .2s, transform .2s; }
-.btn-primary { background: var(--tomato); color: var(--on-accent); box-shadow: 0 10px 22px -12px rgba(238,90,54,.75); }
+.btn-primary { background: var(--tomato); color: var(--on-accent); box-shadow: 0 8px 18px -12px rgba(40,30,18,.3); }
 .btn-primary:hover { background: #f26d4b; transform: translateY(-1px); }
 .btn-primary:active { transform: none; }
 .btn-quiet { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
@@ -247,3 +247,31 @@ section[id] { scroll-margin-top: 116px; }
 .waitlist-check { min-height: 44px; padding: 8px 0; cursor: pointer; }
 .waitlist-input[aria-invalid="true"] { border-color: var(--accent-ink); }
 @media (max-width: 480px) { .founder { flex-direction: column; } }
+
+/* A pocket-sized object deserves a product stage, not another software dashboard. */
+.hero { padding: 38px 0 16px; text-align: left; }
+.hero h1 { max-width: 11ch; margin: 0; font-size: clamp(45px, 6vw, 82px); line-height: 1.03; }
+.hero h1 span { display: block; color: #b83d24; }
+.hero .lede { margin: 20px 0 0; max-width: 31em; }
+.hero .actions { justify-content: flex-start; }
+.hero-fig { margin-top: 32px; }
+.hero-stage { background: #c5e2d1; border-radius: 30px; padding: 38px 0 52px; }
+.hero-fig figcaption { text-align: center; }
+.label { background: #f4dfd3; color: #74331f; font-weight: 600; }
+.sec-no::before, .sec-no::after { display: none; }
+.steps li { background: #f3eee6; box-shadow: none; }
+.steps li:nth-child(2) { background: #e2f0e4; }
+.steps li:nth-child(3) { background: #f9e5d7; }
+.tile { box-shadow: none; border: 1px solid var(--line); }
+.tile:nth-child(2) .tile-stage, .tile:nth-child(3) .tile-stage { background: #e1eee1; }
+.proof-example { background: #e0efdf; }
+.join-card { background: #f9e5d7; box-shadow: none; }
+.join-card .waitlist-input { background: #fffdfa; }
+.founder-photo { border-radius: 50%; }
+@media (min-width: 980px) {
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 42px; max-width: 1180px; margin: 0 auto; padding: 58px 28px 20px; }
+  .hero-copy, .hero-fig { padding: 0; }
+  .hero-fig { margin: 0; }
+  .hero-stage { min-height: 600px; align-items: center; padding: 58px 0 76px; }
+  .hero-stage .device { --u: 4.2px; }
+}
